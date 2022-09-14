@@ -92,7 +92,7 @@ for station in stations:
 	magData['MLAT'] = magData.MLAT.interpolate(method=method, limit=limit)
 	magData['MLT'] = magData.MLT.interpolate(method=method, limit=limit)
 
-	magData.reset_index(inplace=True, drop=False)
+	magData.reset_index(inplace=True, drop=True)
 
 	# saving as feather to conserve memory and imporve perfromance
 	magData.to_feather(dataDump+'{0}.feather'.format(station))
