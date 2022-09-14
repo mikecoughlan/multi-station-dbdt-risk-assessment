@@ -27,21 +27,20 @@ from tensorflow.keras.utils import Sequence, to_categorical
 projectDir = '~/projects/ml_helio_paper/'
 
 # stops this program from hogging the GPU
-physical_devices = tf.config.list_physical_devices('GPU')
+physical_devices = tf.CONFIG.list_physical_devices('GPU')
 try:
-  tf.config.experimental.set_memory_growth(physical_devices[0], True)
+  tf.CONFIG.experimental.set_memory_growth(physical_devices[0], True)
 except:
   # Invalid device or cannot modify virtual devices once initialized.
   pass
 
 
-CONFIG = {'thresholds': [7.15],	# list of thresholds to be examined.
+CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'NGK', 'BFE']
+			'thresholds': [7.15],	# list of thresholds to be examined.
 			'params': ['Date_UTC', 'N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
 	   					'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T',
 	   					 'AE_INDEX', 'SZA', 'dBHt', 'B'],								# List of parameters that will be used for training.
 	   																							# Date_UTC will be removed, kept here for resons that will be evident below
-			# 'test_storm_stime': ['2011-05-01 00:00:00', '2006-09-01 00:00:00', '2001-01-01 00:00:00'],	# These are the start times for testing storms
-			# 'test_storm_etime': ['2011-11-30 23:59:00', '2007-03-31 23:59:00', '2001-06-30 23:59:00'],	# end times for testing storms. This will remove them from training
 			'test_storm_stime': ['2001-03-29 09:59:00', '2001-08-29 21:59:00', '2005-05-13 21:59:00',
 								 '2005-08-30 07:59:00', '2006-12-13 09:59:00', '2010-04-03 21:59:00',
 								 '2011-08-04 06:59:00', '2015-03-15 23:59:00'],						# These are the start times for testing storms
@@ -55,7 +54,8 @@ CONFIG = {'thresholds': [7.15],	# list of thresholds to be examined.
 			'window': 30,																	# time window over which the metrics will be calculated
 			'k_fold_splits': 100,													# amount of k fold splits to be performed. Program will create this many models
 			'lead': 12,																# lead time added to each storm minimum in SYM-H
-			'recovery':24}															# recovery time added to each storm minimum in SYM-H
+			'recovery':24,
+			'random_seed':42}															# recovery time added to each storm minimum in SYM-H
 
 MODEL_CONFIG = {'time_history': 60, 	# How much time history the model will use, defines the 2nd dimension of the model input array
 					'epochs': 100, 		# Maximum amount of empoch the model will run if not killed by early stopping
@@ -67,7 +67,9 @@ MODEL_CONFIG = {'time_history': 60, 	# How much time history the model will use,
 					'lr_decay_steps':230,				# If a learning ray decay funtion is used, dictates the number of decay steps
 					'early_stop_patience':5}
 
-
+# setting the random seeds for reproducibility
+random.seed(CONFIG['random_seed'])
+np.random.seed(CONFIG['random_seed'])
 
 def classification_column(df, param, thresholds, forecast, window):
 	'''creating a new column which labels whether there will be a dBT that crosses the threshold in the forecast window.
@@ -133,7 +135,7 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 		window: the size of the window that will be exaimned for a threshold crossing. i.e. 30 means the maximum
 				value within a 30 minute window will be examined.
 		do_calc: (bool) is true if the calculations need to be done, false if this is not the first time
-				running this specific configuration and a csv has been saved. If this is the case the csv
+				running this specific CONFIGuration and a csv has been saved. If this is the case the csv
 				file will be loaded.
 	'''
 	print('preparing data...')
@@ -184,7 +186,7 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 	return df
 
 
-def split_sequences(sequences, result_y1=None, result_y2=None, result_y3=None, result_y4=None, result_y5=None, n_steps=30, include_target=True):
+def split_sequences(sequences, result_y1=None, n_steps=30, include_target=True):
 	'''takes input from the data frames and creates the input and target arrays that can go into the models.
 		Inputs:
 		sequences: dataframe of the input features.
@@ -198,6 +200,8 @@ def split_sequences(sequences, result_y1=None, result_y2=None, result_y3=None, r
 		if end_ix > len(sequences):												# check if we are beyond the dataset
 			break
 		seq_x = sequences[i:end_ix, :]											# grabs the appropriate chunk of the data
+		if np.isnan(seq_x):														# doesn't add arrays with nan values to the training set
+			continue
 		if include_target:
 			seq_y1 = result_y1[end_ix]											# gets the appropriate target
 			y1.append(seq_y1)
@@ -225,15 +229,13 @@ def prep_test_data(df, stime, etime, thresholds, params, scaler, time_history, p
 	test_dict = {}
 	ratios=[]
 	total_ratio = pd.DataFrame()										# initalizing the dictonary for storing everything
-	for start, end, i in zip(stime, etime, range(len(stime))):		# looping through the different storms
+	for i, (start, end) in enumerate(zip(stime, etime)):		# looping through the different storms
 		test_dict['storm_{0}'.format(i)] = {}						# creating a sub-dict for this particular storm
 
 		storm_df = df[start:end]									# cutting out the storm from the greater dataframe
 		storm_df.reset_index(inplace=True, drop=False)
 		test_dict['storm_{0}'.format(i)]['date'] = storm_df['Date_UTC']		# storing the date series for later plotting
-		real_cols = ['Date_UTC', 'dBHt']									# defining real_cols and then adding in the real data to the columns. Used to segment the important data needed for comparison to model outputs
-		for thresh in thresholds:
-			real_cols.append('crossing')
+		real_cols = ['Date_UTC', 'dBHt', 'crossing']						# defining real_cols and then adding in the real data to the columns. Used to segment the important data needed for comparison to model outputs
 
 		real_df = storm_df[real_cols][time_history:(len(storm_df)-prediction_length)]		# cutting out the relevent columns. trimmed at the edges to keep length consistent with model outputs
 		real_df.reset_index(inplace=True, drop=True)
@@ -252,10 +254,9 @@ def prep_test_data(df, stime, etime, thresholds, params, scaler, time_history, p
 		ratio = re.sum(axis=0)/len(re)
 		ratios.append(ratio)
 
-		n_features = test_dict['storm_{0}'.format(i)]['Y'].shape[2]				# grabs the amount of input features for the model to read as input
 	print(ratios)
 	print(total_ratio.sum(axis=0)/len(total_ratio))
-	return test_dict, n_features
+	return test_dict
 
 
 def storm_extract(data, storm_list, lead, recovery):
@@ -325,7 +326,7 @@ def prep_train_data(df, stime, etime, lead, recovery, time_history):
 			data.append(df[(df.index > end[i-1]) & (df.index < start[i])])
 			data.append(df[df.index > end[i]])
 
-	# # resetting the indexes. The sequence_splitting and storm_search functions are not written to handle datetime index
+	# resetting the indexes. The sequence_splitting and storm_search functions are not written to handle datetime index
 	for df in data:
 		df.reset_index(inplace=True, drop=False)
 
@@ -344,7 +345,7 @@ def prep_train_data(df, stime, etime, lead, recovery, time_history):
 	storms, y_1 = storm_extract(data, dates, lead=lead, recovery=recovery)		# extracting the storms using list method
 	print('Number of storms: '+str(len(storms)))
 
-	to_scale_with = pd.concat(storms, axis=0, ignore_index=True)					# finding the largest storm with which we can scale the data. Not sure this is the best way to do this
+	to_scale_with = pd.concat(storms, axis=0, ignore_index=True)			# finding the largest storm with which we can scale the data. Not sure this is the best way to do this
 	scaler = StandardScaler()									# defining the type of scaler to use
 	print('Fitting scaler')
 	scaler.fit(to_scale_with)									# fitting the scaler to the longest storm
@@ -367,18 +368,17 @@ def prep_train_data(df, stime, etime, lead, recovery, time_history):
 	train_dict['crossing'] = train1
 	n_features = train_dict['X'].shape[2]
 
-
 	print('Finished calculating percent')
 
-	return train_dict, scaler, n_features
+	return train_dict, scaler
 
 
-def main(path, config, model_config, station, first_time=True):
+def main(path, station):
 	'''Here we go baby! bringing it all together.
 		Inputs:
 		path: path to the data.
-		config: dictonary containing different specifications for the data prep and other things that aren;t the models themselves.
-		model_config: dictonary containing model specifications.
+		CONFIG: dictonary containing different specifications for the data prep and other things that aren;t the models themselves.
+		MODEL_CONFIG: dictonary containing model specifications.
 		station: the ground magnetometer station being examined.
 		first_time: if True the model will be training and the data prep perfromed. If False will skip these stpes and I probably messed up the plotting somehow.
 		'''
@@ -386,40 +386,47 @@ def main(path, config, model_config, station, first_time=True):
 	print('Entering main...')
 	print('First time: '+str(first_time))
 
-	splits = config['k_fold_splits']		# denines the number of splits
-	if first_time==True:					# If this is the first time we're going through this.
-		df = data_prep(path, station, config['thresholds'], config['params'], config['forecast'], config['window'], do_calc=True)		# calling the data prep function
-		train_dict, scaler, n_features = prep_train_data(df, config['test_storm_stime'], config['test_storm_etime'], config['lead'], config['recovery'],
-												model_config['time_history'])  												# calling the training data prep function
-		with open('models/standardscaler.pkl', 'wb') as f:					# saving the scaler in case I have to run this again
-			pickle.dump(scaler, f)
-	if first_time==False:													# loads the scaler if this is not the first time we have run this
-		with open('models/standardscaler.pkl', 'rb') as f:
-			scaler = pickle.load(f)
+	splits = CONFIG['k_fold_splits']		# denines the number of splits
+	df = data_prep(path, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep function
+	train_dict, scaler = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'],
+											MODEL_CONFIG['time_history'])  												# calling the training data prep function
+	with open('models/{0}_standardscaler.pkl'.format(station), 'wb') as f:					# saving the scaler in case I have to run this again
+		pickle.dump(scaler, f)			# Goes through all the model training processes if first time going through model
 
-	if first_time==True:				# Goes through all the model training processes if first time going through model
+	train_indicies = pd.DataFrame()
+	val_indicies = pd.DataFrame()
 
-		train_indicies = pd.DataFrame()
-		val_indicies = pd.DataFrame()
+	test_dict = prep_test_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['thresholds'], CONFIG['params'],
+								scaler, MODEL_CONFIG['time_history'], prediction_length=CONFIG['forecast']+CONFIG['window'])						# processing the tesing data
 
-		test_dict, n_features = prep_test_data(df, config['test_storm_stime'], config['test_storm_etime'], config['thresholds'], config['params'],
-									scaler, model_config['time_history'], prediction_length=config['forecast']+config['window'])						# processing the tesing data
+	sss = ShuffleSplit(n_splits=splits, test_size=0.2, random_state=CONFIG['random_seed'])		# defines the lists of training and validation indicies to perform the k fold splitting
+	X = train_dict['X']		 # grabbing the training data for model input
 
-		sss = ShuffleSplit(n_splits=splits, test_size=0.2, random_state=12)						# defines the lists of training and validation indicies to perform the k fold splitting
-		X = train_dict['X']		 # grabbing the training data for model input
+	y = train_dict['crossing']				# grabbing the target arrays for training
 
-		y = train_dict['crossing']					# grabbing the target arrays for training
+	train_index, val_index = [], []				# initalizes lists for the indexes to be stored
+	for train_i, val_i in sss.split(y):			# looping through the lists, adding them to other differentiated lists
+		train_index.append(train_i)
+		val_index.append(val_i)
 
-		train_index, val_index = [], []					# initalizes lists for the indexes to be stored
-		for train_i, val_i in sss.split(y):				# looping through the lists, adding them to other differentiated lists
-			train_index.append(train_i)
-			val_index.append(val_i)
-		print("TRAIN: "+str(len(train_index))+ "\tTEST: "+str(len(val_index)))
+	for train_i, val_i, split in zip(train_index, val_index, range(splits)):
+		train_indicies['split_{0}'.format(split)] = train_i
+		val_indicies['split_{0}'.format(split)] = val_i
 
 
-		for train_i, val_i, split in zip(train_index, val_index, range(splits)):
-			train_indicies['split_{0}'.format(split)] = train_i
-			val_indicies['split_{0}'.format(split)] = val_i
+	train_indicies.to_feather(path+'../data/prepared_data/{0}_train_indicies.csv'.format(station))
+	val_indicies.to_feather(path+'../data/prepared_data/{0}_val_indicies.csv'.format(station))
 
-		train_indicies.to_csv('outputs/ACE_data/train_indicies.csv')
-		val_indicies.to_csv('outputs/ACE_data/val_indicies.csv')
+	with open(path+'../data/prepared_data/{0}_train_dict.pkl'.format(station), 'wb') as train:
+		pickle.dump(train_dict, train)
+	with open(path+'../data/prepared_data/{0}_test_dict.pkl'.format(station), 'wb') as test:
+		pickle.dump(test_dict, test)
+
+
+if __name__ == '__main__':
+
+	for station in CONFIG['stations']:
+		main(projectDir, station)
+		print('Finished {0}'.format(station))
+
+	print('It ran. Good job!')

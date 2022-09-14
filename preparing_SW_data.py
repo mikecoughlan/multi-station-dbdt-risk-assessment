@@ -225,13 +225,13 @@ def processing_ACE():
 	p, m = [], []
 	for fil in sorted(plasmaFiles):
 		acePlasma = ace_to_dataframe(fil, 'sweswi')
-		acePlasma.index = pd.to_datetime(acePlasma['ACEepoch'], unit='s', origin=pd.Timestamp('1996-01-01'))
+		acePlasma.index = pd.to_datetime(acePlasma['ACEepoch'], unit='s', origin=pd.Timestamp('1996-01-01'))  # type: ignore
 		acePlasma = bad_ace_to_nan(acePlasma, 'sweswi')
 		p.append(acePlasma)
 
 	for fil in sorted(magFiles):
 		aceMag = ace_to_dataframe(fil, 'mag')
-		aceMag.index = pd.to_datetime(aceMag['ACEepoch'], unit='s', origin=pd.Timestamp('1996-01-01'))
+		aceMag.index = pd.to_datetime(aceMag['ACEepoch'], unit='s', origin=pd.Timestamp('1996-01-01'))  # type: ignore
 		aceMag = bad_ace_to_nan(aceMag, 'mag')
 		m.append(aceMag)
 
