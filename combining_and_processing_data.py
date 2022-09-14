@@ -287,8 +287,7 @@ def storm_extract(data, storm_list, lead, recovery):
 		storm.reset_index(drop=True, inplace=True)		# resetting the storm index and simultaniously dropping the date so it doesn't get trained on
 		y_1.append(to_categorical(storm['crossing'].to_numpy(), num_classes=2))			# turns the one demensional resulting array for the storm into a
 		storm.drop('crossing', axis=1, inplace=True)  	# removing the target variable from the storm data so we don't train on it
-		print(storm)
-		print(storm.isnull().sum())
+
 	return storms, y_1
 
 
@@ -353,8 +352,8 @@ def prep_train_data(df, stime, etime, lead, recovery, time_history):
 	for storm, y1, i in zip(storms, y_1, range(len(storms))):		# looping through the storms
 		print(storm)
 		X, x1 = split_sequences(storm, y1, n_steps=time_history)				# splitting the sequences for each storm individually
-		print(X)
-
+		if X.size == 0:
+			continue
 		# concatiningting all of the results together into one array for training
 		Train = np.concatenate([Train, X])
 		train1 = np.concatenate([train1, x1])
