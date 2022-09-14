@@ -287,7 +287,8 @@ def storm_extract(data, storm_list, lead, recovery):
 		storm.reset_index(drop=True, inplace=True)		# resetting the storm index and simultaniously dropping the date so it doesn't get trained on
 		y_1.append(to_categorical(storm['crossing'].to_numpy(), num_classes=2))			# turns the one demensional resulting array for the storm into a
 		storm.drop('crossing', axis=1, inplace=True)  	# removing the target variable from the storm data so we don't train on it
-
+		print(storm)
+		print(storm.isnull().sum())
 	return storms, y_1
 
 
