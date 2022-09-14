@@ -350,7 +350,6 @@ def prep_train_data(df, stime, etime, lead, recovery, time_history):
 	train_dict = {}												# creatinga  training dictonary for storing everything
 	Train, train1 = np.empty((1,time_history,n_features)), np.empty((1,2))	# creating empty arrays for storing sequences
 	for storm, y1, i in zip(storms, y_1, range(len(storms))):		# looping through the storms
-		print(storm)
 		X, x1 = split_sequences(storm, y1, n_steps=time_history)				# splitting the sequences for each storm individually
 		if X.size == 0:
 			continue
