@@ -154,11 +154,11 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 		df.reset_index(drop=True, inplace=True)
 		df.set_index('Date_UTC', inplace=True, drop=False)
 		df.index = pd.to_datetime(df.index)
-		print(df)
+		print(df.columns)
 
 		print('Getting ACE data...')
 		acedf = ace_prep(path)
-		print(acedf)
+		print(acedf.columns)
 
 		print('Concatinating dfs...')
 		df = pd.concat([df, acedf], axis=1, ignore_index=False)	# adding on the omni data
@@ -196,7 +196,7 @@ def split_sequences(sequences, result_y1=None, n_steps=30, include_target=True):
 		if end_ix > len(sequences):												# check if we are beyond the dataset
 			break
 		seq_x = sequences[i:end_ix, :]											# grabs the appropriate chunk of the data
-		if np.isnan(seq_x):														# doesn't add arrays with nan values to the training set
+		if np.isnan(seq_x).any():														# doesn't add arrays with nan values to the training set
 			continue
 		if include_target:
 			seq_y1 = result_y1[end_ix]											# gets the appropriate target
