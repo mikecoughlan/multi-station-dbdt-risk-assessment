@@ -383,7 +383,10 @@ def main(path, station):
 	df = data_prep(path, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep function
 	train_dict, scaler = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'],
 											MODEL_CONFIG['time_history'])  												# calling the training data prep function
-	with open('models/{0}_standardscaler.pkl'.format(station), 'wb') as f:					# saving the scaler in case I have to run this again
+	if not os.path.exists('multi-station-dbdt-risk-assessment/models/scalers/'):
+		os.makedirs('multi-station-dbdt-risk-assessment/models/scalers/')
+
+	with open('multi-station-dbdt-risk-assessment/models/scalers/{0}_standardscaler.pkl'.format(station), 'wb') as f:					# saving the scaler in case I have to run this again
 		pickle.dump(scaler, f)			# Goes through all the model training processes if first time going through model
 
 	train_indicies = pd.DataFrame()
