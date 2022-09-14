@@ -108,7 +108,7 @@ def ace_prep(path):
 	'''
 	df = pd.read_feather(path+'../data/SW/solarwind_and_indicies.feather') 		# loading the omni data
 
-	df.reset_index(drop=False, inplace=True) 		# reseting the index so its easier to work with integer indexes
+	df.reset_index(drop=True, inplace=True) 		# reseting the index so its easier to work with integer indexes
 
 	# reassign the datetime object as the index
 	pd.to_datetime(df['Date_UTC'], format='%Y-%m-%d %H:%M:%S')
@@ -139,7 +139,6 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 	if do_calc:
 		print('Reading in CSV...')
 		df = pd.read_feather(path+'../data/supermag/{0}.feather'.format(station)) # loading the station data.
-		print(df)
 		print('Doing calculations...')
 		df['dN'] = df['N'].diff(1) # creates the dN column
 		df['dE'] = df['E'].diff(1) # creates the dE column
@@ -155,6 +154,7 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 		df.reset_index(drop=True, inplace=True)
 		df.set_index('Date_UTC', inplace=True, drop=False)
 		df.index = pd.to_datetime(df.index)
+		print(df)
 
 		print('Getting ACE data...')
 		acedf = ace_prep(path)
@@ -168,8 +168,8 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 
 		print('Creating Classification column...')
 		df = classification_column(df, 'dBHt', thresholds, forecast=forecast, window=window)		# calling the classification column function
-		print(datum)
 		datum = df.reset_index(inplace=True, drop=False)
+		print(datum)
 		datum.to_feather(path+'../data/ace_and_supermag/{0}_prepared.feather'.format(station))
 
 	if not do_calc:		# does not do the above calculations and instead just loads a csv file, then creates the cross column
