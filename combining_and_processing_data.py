@@ -139,6 +139,7 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 	if do_calc:
 		print('Reading in CSV...')
 		df = pd.read_feather(path+'../data/supermag/{0}.feather'.format(station)) # loading the station data.
+		print(df)
 		print('Doing calculations...')
 		df['dN'] = df['N'].diff(1) # creates the dN column
 		df['dE'] = df['E'].diff(1) # creates the dE column
@@ -157,6 +158,7 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 
 		print('Getting ACE data...')
 		acedf = ace_prep(path)
+		print(acedf)
 
 		print('Concatinating dfs...')
 		df = pd.concat([df, acedf], axis=1, ignore_index=False)	# adding on the omni data
@@ -166,7 +168,7 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 
 		print('Creating Classification column...')
 		df = classification_column(df, 'dBHt', thresholds, forecast=forecast, window=window)		# calling the classification column function
-
+		print(datum)
 		datum = df.reset_index(inplace=True, drop=False)
 		datum.to_feather(path+'../data/ace_and_supermag/{0}_prepared.feather'.format(station))
 
