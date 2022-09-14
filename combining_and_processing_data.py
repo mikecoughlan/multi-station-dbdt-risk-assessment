@@ -168,7 +168,7 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 
 		print('Creating Classification column...')
 		df = classification_column(df, 'dBHt', thresholds, forecast=forecast, window=window)		# calling the classification column function
-		datum = df.reset_index(inplace=True, drop=False)
+		datum = df.reset_index(drop=False)
 		print(datum)
 		datum.to_feather(path+'../data/ace_and_supermag/{0}_prepared.feather'.format(station))
 
