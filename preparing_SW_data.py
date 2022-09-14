@@ -255,6 +255,7 @@ def combining_dfs(omniData, aceData):
 	'''
 	df = pd.concat([aceData, omniData], axis=1, ignore_index=False)
 	df.reset_index(drop=False, inplace=True)
+	df.rename(columns={'index': 'Date_UTC'}, inplace=True)
 
 	return df
 
