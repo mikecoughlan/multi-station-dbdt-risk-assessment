@@ -193,8 +193,6 @@ def split_sequences(sequences, result_y1=None, n_steps=30, include_target=True):
 		if end_ix > len(sequences):												# check if we are beyond the dataset
 			break
 		seq_x = sequences[i:end_ix, :]											# grabs the appropriate chunk of the data
-		print(seq_x)
-		print(np.isnan(seq_x).any())
 		if np.isnan(seq_x).any():														# doesn't add arrays with nan values to the training set
 			continue
 		if include_target:
