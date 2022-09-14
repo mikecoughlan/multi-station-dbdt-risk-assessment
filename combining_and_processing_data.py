@@ -9,33 +9,30 @@
 #
 ##########################################################################################
 
-import gc
 import pickle
 import random
 from datetime import datetime
 
-import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from sklearn.model_selection import (ShuffleSplit, StratifiedShuffleSplit,
-                                     train_test_split)
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
-from tensorflow.keras.utils import Sequence, to_categorical
+from sklearn.model_selection import ShuffleSplit
+from sklearn.preprocessing import StandardScaler
+from tensorflow.keras.utils import to_categorical
 
 # Data directories
 projectDir = '~/projects/ml_helio_paper/'
 
 # stops this program from hogging the GPU
-physical_devices = tf.CONFIG.list_physical_devices('GPU')
+physical_devices = tf.config.list_physical_devices('GPU')
 try:
-  tf.CONFIG.experimental.set_memory_growth(physical_devices[0], True)
+  tf.config.experimental.set_memory_growth(physical_devices[0], True)
 except:
   # Invalid device or cannot modify virtual devices once initialized.
   pass
 
 
-CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'NGK', 'BFE']
+CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'NGK', 'BFE'],
 			'thresholds': [7.15],	# list of thresholds to be examined.
 			'params': ['Date_UTC', 'N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
 	   					'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T',
@@ -139,7 +136,6 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 				file will be loaded.
 	'''
 	print('preparing data...')
-
 	if do_calc:
 		print('Reading in CSV...')
 		df = pd.read_feather(path+'../data/supermag/{0}.feather'.format(station)) # loading the station data.
@@ -175,13 +171,11 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 		datum.to_feather(path+'../data/ace_and_supermag/{0}_prepared.feather'.format(station))
 
 	if not do_calc:		# does not do the above calculations and instead just loads a csv file, then creates the cross column
-
 		df = pd.read_feather('../data/{0}_prepared.feather'.format(station))
 		pd.to_datetime(df['Date_UTC'], format='%Y-%m-%d %H:%M:%S')
 		df.reset_index(drop=True, inplace=True)
 		df.set_index('Date_UTC', inplace=True, drop=False)
 		df.index = pd.to_datetime(df.index)
-
 
 	return df
 
@@ -384,7 +378,6 @@ def main(path, station):
 		'''
 
 	print('Entering main...')
-	print('First time: '+str(first_time))
 
 	splits = CONFIG['k_fold_splits']		# denines the number of splits
 	df = data_prep(path, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep function
