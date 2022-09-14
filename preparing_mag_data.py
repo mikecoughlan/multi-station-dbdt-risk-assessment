@@ -25,15 +25,11 @@ plt.rcParams['figure.figsize'] = [15, 5]
 dataDir = '../../../../data/supermag/baseline/'
 
 syear = 1995
-smonth = 1
-sday = 1
 eyear = 2019
-emonth = 12
-eday = 31
 
-start_time = str(pd.Timestamp(syear,smonth,sday))
+start_time = str(pd.Timestamp(syear,1,1))
 start_time = start_time.replace(' ', '').replace('-', '').replace(':', '')
-end_time = str(pd.Timestamp(eyear,emonth,eday,23,59,59))
+end_time = str(pd.Timestamp(eyear,12,31,23,59,59))
 end_time = end_time.replace(' ', '').replace('-', '').replace(':', '')
 
 
