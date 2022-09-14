@@ -414,9 +414,9 @@ def main(path, station):
 	train_indicies.to_feather(path+'../data/prepared_data/{0}_train_indicies.csv'.format(station))
 	val_indicies.to_feather(path+'../data/prepared_data/{0}_val_indicies.csv'.format(station))
 
-	with open(path+'../data/prepared_data/{0}_train_dict.pkl'.format(station), 'wb') as train:
+	with open('../data/prepared_data/{0}_train_dict.pkl'.format(station), 'wb') as train:
 		pickle.dump(train_dict, train)
-	with open(path+'../data/prepared_data/{0}_test_dict.pkl'.format(station), 'wb') as test:
+	with open('../data/prepared_data/{0}_test_dict.pkl'.format(station), 'wb') as test:
 		pickle.dump(test_dict, test)
 
 
