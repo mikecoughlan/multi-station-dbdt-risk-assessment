@@ -154,11 +154,9 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 		df.reset_index(drop=True, inplace=True)
 		df.set_index('Date_UTC', inplace=True, drop=False)
 		df.index = pd.to_datetime(df.index)
-		print(df.columns)
 
 		print('Getting ACE data...')
 		acedf = ace_prep(path)
-		print(acedf.columns)
 
 		print('Concatinating dfs...')
 		df = pd.concat([df, acedf], axis=1, ignore_index=False)	# adding on the omni data
@@ -169,7 +167,6 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 		print('Creating Classification column...')
 		df = classification_column(df, 'dBHt', thresholds, forecast=forecast, window=window)		# calling the classification column function
 		datum = df.reset_index(drop=False)
-		print(datum)
 		datum.to_feather(path+'../data/ace_and_supermag/{0}_prepared.feather'.format(station))
 
 	if not do_calc:		# does not do the above calculations and instead just loads a csv file, then creates the cross column
@@ -289,7 +286,7 @@ def storm_extract(data, storm_list, lead, recovery):
 	for storm in storms:
 		storm.reset_index(drop=True, inplace=True)		# resetting the storm index and simultaniously dropping the date so it doesn't get trained on
 		y_1.append(to_categorical(storm['crossing'].to_numpy(), num_classes=2))			# turns the one demensional resulting array for the storm into a
-		storm.drop(['crossing'], axis=1, inplace=True)  	# removing the target variable from the storm data so we don't train on it
+		storm.drop('crossing', axis=1, inplace=True)  	# removing the target variable from the storm data so we don't train on it
 
 	return storms, y_1
 
@@ -354,6 +351,7 @@ def prep_train_data(df, stime, etime, lead, recovery, time_history):
 	Train, train1 = np.empty((1,time_history,n_features)), np.empty((1,2))	# creating empty arrays for storing sequences
 	for storm, y1, i in zip(storms, y_1, range(len(storms))):		# looping through the storms
 		X, x1 = split_sequences(storm, y1, n_steps=time_history)				# splitting the sequences for each storm individually
+		print(X)
 
 		# concatiningting all of the results together into one array for training
 		Train = np.concatenate([Train, X])
