@@ -47,6 +47,7 @@ CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'NGK', '
 			'random_seed':42}															# recovery time added to each storm minimum in SYM-H
 
 MODEL_CONFIG = {'version':0,
+					'splits':100,
 					'time_history': 60, 	# How much time history the model will use, defines the 2nd dimension of the model input array
 					'epochs': 100, 		# Maximum amount of empoch the model will run if not killed by early stopping
 					'layers': 1, 		# How many CNN layers the model will have.
@@ -190,7 +191,7 @@ def main(station):
 
 	train_dict, test_dict, train_indicies, val_indicies = loading_data_and_indicies(station)
 
-	for split in range(CONFIG['splits']):		# this is the bulk of the K fold. We loop through the list of indexes and train on the different train-val indices
+	for split in range(MODEL_CONFIG['splits']):		# this is the bulk of the K fold. We loop through the list of indexes and train on the different train-val indices
 
 		train_index = train_indicies['split_{0}'.format(split)].to_numpy()
 		val_index = val_indicies['split_{0}'.format(split)].to_numpy()
