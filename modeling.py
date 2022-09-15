@@ -10,6 +10,7 @@
 ##########################################################################################
 
 import argparse
+import os
 import pickle
 import random
 
@@ -200,16 +201,16 @@ def main(station):
 		print(MODEL.summary())
 
 		# pulling the data and catagorizing it into the train-val pairs
-		xtrain = X[train_index]
+		xtrain = train_dict['X'][train_index]
 		array_sum = np.sum(xtrain)
 		print(np.isnan(array_sum))
-		xval =  X[val_index]
+		xval =  train_dict['X'][val_index]
 		array_sum = np.sum(xval)
 		print(np.isnan(array_sum))
-		ytrain = y[train_index]
+		ytrain = train_dict['crossing'][train_index]
 		array_sum = np.sum(ytrain)
 		print(np.isnan(array_sum))
-		yval = y[val_index]
+		yval = train_dict['crossing'][val_index]
 		array_sum = np.sum(yval)
 		print(np.isnan(array_sum))
 
