@@ -80,7 +80,7 @@ def loading_data_and_indicies(station):
 	with open('../data/prepared_data/{0}_test_dict.pkl'.format(station), 'rb') as test:
 		test_dict = pickle.load(test)
 	train_indicies = pd.read_feather('../data/prepared_data/{0}_train_indicies.feather'.format(station))
-	val_indicies = pd.read_feather('../prepared_data/{0}_val_indicies.feather'.format(station))
+	val_indicies = pd.read_feather('../data/prepared_data/{0}_val_indicies.feather'.format(station))
 
 	return train_dict, test_dict, train_indicies, val_indicies
 
