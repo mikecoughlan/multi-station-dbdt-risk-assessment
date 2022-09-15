@@ -145,7 +145,7 @@ def fit_CNN(model, xtrain, xval, ytrain, yval, early_stop, split, station, first
 		Xtrain = xtrain.reshape((xtrain.shape[0], xtrain.shape[1], xtrain.shape[2], 1))
 		Xval = xval.reshape((xval.shape[0], xval.shape[1], xval.shape[2], 1))
 
-		model.fit(Xtrain, ytrain, validation_data=(Xval, yval),
+		model.fit(Xtrain, ytrain, validation_data=(Xval, yval), batch_size=1024,
 					verbose=1, shuffle=True, epochs=MODEL_CONFIG['epochs'], callbacks=[early_stop])			# doing the training! Yay!
 
 		if not os.path.exists('models/{0}'.format(station)):
