@@ -23,6 +23,7 @@ from tensorflow.keras.utils import to_categorical
 
 # Data directories
 projectDir = '~/projects/ml_helio_paper/'
+pd.options.mode.chained_assignment = None # muting an irrelevent warning
 
 # stops this program from hogging the GPU
 physical_devices = tf.config.list_physical_devices('GPU')
@@ -167,7 +168,7 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 
 		print('Creating Classification column...')
 		df = classification_column(df, 'dBHt', thresholds, forecast=forecast, window=window)		# calling the classification column function
-		datum = df.reset_index(drop=False)
+		datum = df.reset_index(drop=True)
 		datum.to_feather(path+'../data/ace_and_supermag/{0}_prepared.feather'.format(station))
 
 	if not do_calc:		# does not do the above calculations and instead just loads a csv file, then creates the cross column
@@ -411,8 +412,8 @@ def main(path, station):
 		val_indicies['split_{0}'.format(split)] = val_i
 
 
-	train_indicies.to_feather(path+'../data/prepared_data/{0}_train_indicies.csv'.format(station))
-	val_indicies.to_feather(path+'../data/prepared_data/{0}_val_indicies.csv'.format(station))
+	train_indicies.to_feather(path+'../data/prepared_data/{0}_train_indicies.feather'.format(station))
+	val_indicies.to_feather(path+'../data/prepared_data/{0}_val_indicies.feather'.format(station))
 
 	with open('../data/prepared_data/{0}_train_dict.pkl'.format(station), 'wb') as train:
 		pickle.dump(train_dict, train)
