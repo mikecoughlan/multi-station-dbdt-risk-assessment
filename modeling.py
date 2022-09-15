@@ -24,6 +24,15 @@ from tensorflow.keras.layers import (Conv2D, Dense, Dropout, Flatten,
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.optimizers import Adam
 
+# stops this program from hogging the GPU
+physical_devices = tf.config.list_physical_devices('GPU')
+try:
+  tf.config.experimental.set_memory_growth(physical_devices[0], True)
+except:
+  # Invalid device or cannot modify virtual devices once initialized.
+  pass
+
+
 CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'NGK', 'BFE'],
 			'thresholds': [7.15],	# list of thresholds to be examined.
 			'params': ['Date_UTC', 'N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
@@ -61,6 +70,7 @@ MODEL_CONFIG = {'version':0,
 # setting the random seeds for reproducibility
 random.seed(CONFIG['random_seed'])
 np.random.seed(CONFIG['random_seed'])
+
 
 def loading_data_and_indicies(station):
 	'''

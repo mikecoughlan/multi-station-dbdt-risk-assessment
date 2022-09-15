@@ -1,0 +1,292 @@
+import pickle
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import tensorflow as tf
+from sklearn.calibration import calibration_curve
+from sklearn.metrics import auc
+from tensorflow.keras.models import load_model
+
+# stops this program from hogging the GPU
+physical_devices = tf.config.list_physical_devices('GPU')
+try:
+  tf.config.experimental.set_memory_growth(physical_devices[0], True)
+except:
+  # Invalid device or cannot modify virtual devices once initialized.
+  pass
+
+CONFIG = {'version':0,
+			'thresholds': [7.15], # list of thresholds to be examined.
+      		'params': ['Date_UTC', 'N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
+              'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T',
+               'AE_INDEX', 'SZA', 'dBHt', 'B', 'MLT'],                  # List of parameters that will be used for training.
+                                                  # Date_UTC will be removed, kept here for resons that will be evident below
+      		'test_storm_stime': ['2001-03-29 09:59:00', '2001-08-29 21:59:00', '2005-05-13 21:59:00',
+                 '2005-08-30 07:59:00', '2006-12-13 09:59:00', '2010-04-03 21:59:00',
+                 '2011-08-04 06:59:00', '2015-03-15 23:59:00'],           # These are the start times for testing storms
+      		'test_storm_etime': ['2001-04-02 12:00:00', '2001-09-02 00:00:00', '2005-05-17 00:00:00',
+                  '2005-09-02 12:00:00', '2006-12-17 00:00:00', '2010-04-07 00:00:00',
+                  '2011-08-07 09:00:00', '2015-03-19 14:00:00'],  # end times for testing storms. This will remove them from training
+			'plot_titles': ['Mar 2001', 'Sep 2001', 'May 2005', 'Sep 2005', 'Dec 2006', 'Apr 2010', 'Aug 2011', 'Mar 2015'],						# list used for plot titles so I don't have to do it manually
+			'forecast': 30,
+			'window': 30,																	# time window over which the metrics will be calculated
+			'splits': 100,															# amount of k fold splits to be performed. Program will create this many models
+			'stations': ['OTT', 'VIC', 'NEW', 'WNG', 'ESK', 'STJ'],
+			'metrics': ['HSS', 'BIAS', 'STD_PRED', 'RMSE', 'AUC']}
+
+
+
+def load_stats():
+
+	with open('outputs/stations_results_dict.pkl', 'rb') as f:
+		stations_dict = pickle.load(f)
+
+	return stations_dict
+
+
+def sorting_metrics(results_dict, stations, metrics, length):
+
+	metrics_dict = {}
+	for metric in metrics:
+		metric_dict = {}
+		for i in range(length):
+			df = pd.DataFrame()
+			for station in stations:
+				df[station] = results_dict[station]['storm_{0}'.format(i)]['metrics'][metric]
+			metric_dict['storm_{0}'.format(i)] = df.T
+		metrics_dict[metric] = metric_dict
+
+	return metrics_dict
+
+
+
+def plot_metrics(metrics_dict, stations, metrics):
+	'''plotting function for the metrics. Not a lot of comments in this one.
+		Inputs:
+		metrics: dataframe of the saved metrics from the classification function.
+		thresholds: list of thresholds. There will be one plot for each threshold.
+		'''
+	for metric in metrics:
+
+		fig = plt.figure(figsize=(60,55))													# establishing the figure
+		plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)			# trimming the whitespace in the subplots
+
+		X = [5, 35, 65, 95, 125, 155]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+
+		x0 = [(num-3.5) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+		x1 = [(num-2.5) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+		x2 = [(num-1.5) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+		x3 = [(num-0.5) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+		x4 = [(num+0.5) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+		x5 = [(num+1.5) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+		x6 = [(num+2.5) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+		x7 = [(num+3.5) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+
+		ax = fig.add_subplot(111)					# adding the subplot
+		y0 = metrics_dict[metric]['storm_0']['mean'].to_numpy()		# defining the y center point
+		ymax0 = metrics_dict[metric]['storm_0']['max'].to_numpy()	# defining the y upper bound
+		ymin0 = metrics_dict[metric]['storm_0']['min'].to_numpy()	# defining the y lower bound
+
+		ymax0 = ymax0 - y0
+		ymin0 = y0 - ymin0
+
+		y1 = metrics_dict[metric]['storm_1']['mean'].to_numpy()		# defining the y center point
+		ymax1 = metrics_dict[metric]['storm_1']['max'].to_numpy()	# defining the y upper bound
+		ymin1 = metrics_dict[metric]['storm_1']['min'].to_numpy()	# defining the y lower bound
+
+		ymax1 = ymax1 - y1
+		ymin1 = y1 - ymin1
+
+		y2 = metrics_dict[metric]['storm_2']['mean'].to_numpy()		# defining the y center point
+		ymax2 = metrics_dict[metric]['storm_2']['max'].to_numpy()	# defining the y upper bound
+		ymin2 = metrics_dict[metric]['storm_2']['min'].to_numpy()	# defining the y lower bound
+
+		ymax2 = ymax2 - y2
+		ymin2 = y2 - ymin2
+
+		y3 = metrics_dict[metric]['storm_3']['mean'].to_numpy()		# defining the y center point
+		ymax3 = metrics_dict[metric]['storm_3']['max'].to_numpy()	# defining the y upper bound
+		ymin3 = metrics_dict[metric]['storm_3']['min'].to_numpy()	# defining the y lower bound
+
+		ymax3 = ymax3 - y3
+		ymin3 = y3 - ymin3
+
+		y4 = metrics_dict[metric]['storm_4']['mean'].to_numpy()		# defining the y center point
+		ymax4 = metrics_dict[metric]['storm_4']['max'].to_numpy()	# defining the y upper bound
+		ymin4 = metrics_dict[metric]['storm_4']['min'].to_numpy()	# defining the y lower bound
+
+		ymax4 = ymax4 - y4
+		ymin4 = y4 - ymin4
+
+		y5 = metrics_dict[metric]['storm_5']['mean'].to_numpy()		# defining the y center point
+		ymax5 = metrics_dict[metric]['storm_5']['max'].to_numpy()	# defining the y upper bound
+		ymin5 = metrics_dict[metric]['storm_5']['min'].to_numpy()	# defining the y lower bound
+
+		ymax5 = ymax5 - y5
+		ymin5 = y5 - ymin5
+
+		y6 = metrics_dict[metric]['storm_6']['mean'].to_numpy()		# defining the y center point
+		ymax6 = metrics_dict[metric]['storm_6']['max'].to_numpy()	# defining the y upper bound
+		ymin6 = metrics_dict[metric]['storm_6']['min'].to_numpy()	# defining the y lower bound
+
+		ymax6 = ymax6 - y6
+		ymin6 = y6 - ymin6
+
+		y7 = metrics_dict[metric]['storm_7']['mean'].to_numpy()		# defining the y center point
+		ymax7 = metrics_dict[metric]['storm_7']['max'].to_numpy()	# defining the y upper bound
+		ymin7 = metrics_dict[metric]['storm_7']['min'].to_numpy()	# defining the y lower bound
+
+		ymax7 = ymax7 - y7
+		ymin7 = y7 - ymin7
+
+		plt.title('HSS', fontsize='100')		# titling the plot
+		ax.errorbar(x0, y0, yerr=[ymin0, ymax0], fmt='.k', color='blue', label='Mar 2001', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		ax.errorbar(x1, y1, yerr=[ymin1, ymax1], fmt='.k', color='orange', label='Sep 2001', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		ax.errorbar(x2, y2, yerr=[ymin2, ymax2], fmt='.k', color='green', label='May 2005', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		ax.errorbar(x3, y3, yerr=[ymin3, ymax3], fmt='.k', color='red', label='Sep 2005', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		ax.errorbar(x4, y4, yerr=[ymin4, ymax4], fmt='.k', color='purple', label='Dec 2006', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		ax.errorbar(x5, y5, yerr=[ymin5, ymax5], fmt='.k', color='brown', label='Apr 2010', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		ax.errorbar(x6, y6, yerr=[ymin6, ymax6], fmt='.k', color='pink', label='Aug 2011', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		ax.errorbar(x7, y7, yerr=[ymin7, ymax7], fmt='.k', color='black', label='Mar 2015', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		plt.axhline(0, color='black')
+		# plt.ylim(0,1)																# keeping the plot within limits to eliminate as much white space as possible.
+		# plt.xlim(0,70)
+		plt.xlabel('Stations', fontsize='70')			# adding the label on the x axis label
+		plt.ylabel(metric, fontsize='70')				# adding teh y axis label
+		plt.xticks(X, stations, fontsize='70')		# adding ticks to the points on the x axis
+		plt.yticks(fontsize='58')						# making the y ticks a bit bigger. They're a bit more important
+		plt.legend(fontsize='65')
+
+		plt.savefig('plots/{0}_version_{1}.png'.format(metric, CONFIG['version']))
+
+
+def prep_k_fold_results(df, splits):
+	'''prepares the data from the k-folds for plotting and examination. Creates a dataframe that stores the upper and lower calculated bounds for the plotting.
+		Inputs:
+		df: dataframe from a particular storm that is being examined. Includes the real data and the predicted data for each split model.
+		threshold: threshold that is being examined.
+		splits: integer number of split models that have been trained. Used here for indexing.
+		stime: datetime string that defines the start time for the plotting.
+		etime: datetime string that defines the end time for the plotting.'''
+
+	newdf = pd.DataFrame()				# initalizes the new dataframe
+	for split in range(splits):			# looping through the splits
+		newdf['split_{0}'.format(split)] = df['predicted_split_{0}'.format(split)]		# grabs the predicted data for the threshold examined and puts them in the newdf
+	mean = newdf.mean(axis=1)
+	top_perc = newdf.quantile(0.975, axis=1)
+	bottom_perc = newdf.quantile(0.025, axis=1)
+	newdf['cross'] = df['crossing']
+	newdf['mean'] = mean			# calculated the mean for each row and creates a new collumn
+	newdf['top_perc'] = top_perc	# creates a new column and populates it with the 97.5th percentile data from each row
+	newdf['bottom_perc'] = bottom_perc		# creates a new column and populates it with the 2.5th percentile data from each row
+	newdf['date'] = df.index							# establishes a date column that will be used as the index
+
+	# establishes the datetime index from the date column
+	pd.to_datetime(newdf['date'], format='%Y-%m-%d %H:%M:%S')
+	newdf.reset_index(drop=True, inplace=True)
+	newdf.set_index('date', inplace=True, drop=True)
+	newdf.index = pd.to_datetime(newdf.index)
+
+	return newdf
+
+
+
+def sorting_PR(results_dict, station):
+
+	PR_dict = {}
+	for i in range(len(results_dict[station])):
+		PR_dict['storm_{0}'.format(i)] = {}
+		df = results_dict[station]['storm_{0}'.format(i)]['precision_recall']
+		try:
+			PR_dict['storm_{0}'.format(i)]['prec'] = df['prec'].to_numpy()
+			PR_dict['storm_{0}'.format(i)]['rec'] = df['rec'].to_numpy()
+			PR_dict['storm_{0}'.format(i)]['auc'] = auc(df['rec'].to_numpy(), df['prec'].to_numpy()).round(decimals=3)
+		except KeyError:
+			print('skipping this storm-station combo')
+
+	return PR_dict
+
+
+def plot_precision_recall(results_dict, station, plot_titles):
+
+	PR_dict = sorting_PR(results_dict, station)
+
+	fig = plt.figure(figsize=(60,55))
+	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)
+
+	ax = fig.add_subplot(111)
+	plt.title('Precision-Recall Curves for {0} Station'.format(station), fontsize='130')
+	for i, title in enumerate(plot_titles):
+		try:
+			prec = PR_dict['storm_{0}'.format(i)]['prec']
+			rec = PR_dict['storm_{0}'.format(i)]['rec']
+			area = PR_dict['storm_{0}'.format(i)]['auc']
+			plt.plot(rec, prec, linewidth=4, label='{0} AUC:{1}'.format(title, area))
+		except:
+			print('skipping this station-storm combo')
+	plt.xlabel('Recall', fontsize='90')
+	plt.ylabel('Precision', fontsize='90')
+	plt.legend(fontsize='60', loc='lower center')
+	plt.xticks(fontsize='58')
+	plt.yticks(fontsize='58')
+	plt.savefig('plots/precision_recall_{0}.png'.format(station))
+
+
+
+def reliability_plots(results_dict, station, splits, plot_titles):
+	'''plotting the reliability of our model results'''
+
+	storm0 = prep_k_fold_results(results_dict[station]['storm_0']['raw_results'], splits)
+	storm1 = prep_k_fold_results(results_dict[station]['storm_1']['raw_results'], splits)
+	storm2 = prep_k_fold_results(results_dict[station]['storm_2']['raw_results'], splits)
+	storm3 = prep_k_fold_results(results_dict[station]['storm_3']['raw_results'], splits)
+	storm4 = prep_k_fold_results(results_dict[station]['storm_4']['raw_results'], splits)
+	storm5 = prep_k_fold_results(results_dict[station]['storm_5']['raw_results'], splits)
+	storm6 = prep_k_fold_results(results_dict[station]['storm_6']['raw_results'], splits)
+	storm7 = prep_k_fold_results(results_dict[station]['storm_7']['raw_results'], splits)
+
+	newdfs = [storm0, storm1, storm2, storm3, storm4, storm5, storm6, storm7]
+
+	fig = plt.figure(figsize=(20,18))
+	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)
+
+	ax = fig.add_subplot(111)
+	ax.set_title('{0} Reliability Plot'.format(station), fontsize=30)
+	plt.plot([0, 1], [0, 1], 'xkcd:black')
+	for df, title in zip(newdfs, plot_titles):
+		true, pred = calibration_curve(df['cross'], df['mean'], n_bins=10)
+		plt.plot(pred, true, marker='.', label='{0}'.format(title))
+		ax.set_xlabel('Predicted Probability', fontsize=20)
+		ax.set_ylabel('Observed Probability', fontsize=20)
+	plt.legend(fontsize=15)
+	plt.yticks(fontsize=15)
+	plt.xticks(fontsize=15)
+	ax.margins(x=0, y=0)
+	plt.savefig('plots/{0}_reliability_plot.png'.format(station))
+
+
+
+def main():
+
+	print('Entering main...')
+
+	results_dict = load_stats()
+	metrics_dict = sorting_metrics(results_dict, CONFIG['stations'], CONFIG['metrics'], len(CONFIG['test_storm_stime']))
+
+	plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'])
+
+	for station in CONFIG['stations']:
+		plot_precision_recall(results_dict, station, CONFIG['plot_titles'])
+		reliability_plots(results_dict, station, CONFIG['splits'], CONFIG['plot_titles'])
+
+
+if __name__ == '__main__':
+
+	main()
+
+	print('It ran. Good job!')
+
+
+
+
+
