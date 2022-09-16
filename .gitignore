@@ -131,3 +131,4 @@ dmypy.json
 # Files and folders
 outputs/
 .pylintrc
+exe_modeling_OTT.sh
