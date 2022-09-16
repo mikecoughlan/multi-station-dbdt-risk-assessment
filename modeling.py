@@ -19,8 +19,8 @@ import pandas as pd
 import tensorflow as tf
 from sklearn.metrics import mean_squared_error
 from tensorflow.keras.callbacks import EarlyStopping
-from tensorflow.keras.layers import (Conv2D, Dense, Dropout, Flatten,
-                                     MaxPooling2D)
+from tensorflow.keras.layers import (BatchNormalization, Conv2D, Dense,
+                                     Dropout, Flatten, MaxPooling2D)
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.optimizers import Adam
 
@@ -107,20 +107,28 @@ def create_CNN_model(n_features, loss='categorical_crossentropy', early_stop_pat
 
 	model = Sequential()						# initalizing the model
 
+	model.add(BatchNormalization())
 	model.add(Conv2D(MODEL_CONFIG['filters'], 4, padding='same',
 									activation='relu', input_shape=(MODEL_CONFIG['time_history'], n_features, 1)))			# adding the CNN layer
-	model.add(MaxPooling2D())						# maxpooling layer reduces the demensions of the training data. Speeds up models and improves results
+	model.add(MaxPooling2D())
+	model.add(BatchNormalization())						# maxpooling layer reduces the demensions of the training data. Speeds up models and improves results
 	model.add(Conv2D(MODEL_CONFIG['filters']*2, 3, padding='same', activation='relu'))
+	model.add(BatchNormalization())
 	model.add(Conv2D(MODEL_CONFIG['filters']*2, 3, padding='same', activation='relu'))
 	model.add(MaxPooling2D())
+	model.add(BatchNormalization())
 	model.add(Conv2D(MODEL_CONFIG['filters']*4, 2, padding='same', activation='relu'))
+	model.add(BatchNormalization())
 	model.add(Conv2D(MODEL_CONFIG['filters']*4, 2, padding='same', activation='relu'))
 	model.add(MaxPooling2D())
 	model.add(Flatten())							# changes dimensions of model. Not sure exactly how this works yet but improves results
+	model.add(BatchNormalization())
 	model.add(Dense(MODEL_CONFIG['filters']*2, activation='relu'))		# Adding dense layers with dropout in between
 	model.add(Dropout(0.2))
+	model.add(BatchNormalization())
 	model.add(Dense(MODEL_CONFIG['filters'], activation='relu'))
 	model.add(Dropout(0.2))
+	model.add(BatchNormalization())
 	model.add(Dense(2, activation='softmax'))
 	opt = tf.keras.optimizers.Adam(learning_rate=MODEL_CONFIG['learning_rate'])		# learning rate that actually started producing good results
 	model.compile(optimizer=opt, loss=loss, metrics = ['accuracy'])					# Ive read that cross entropy is good for this type of model
