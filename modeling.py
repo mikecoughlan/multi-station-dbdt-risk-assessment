@@ -237,6 +237,9 @@ def main(station):
 		real_df.reset_index(drop=True, inplace=True)
 		real_df.set_index('Date_UTC', inplace=True, drop=False)
 		real_df.index = pd.to_datetime(real_df.index)
+
+		if not os.path.exists('outputs/{0}/version_{1}_storm_{2}.feather'.format(station, MODEL_CONFIG['version'], i)):
+			os.makedirs('outputs/{0}/version_{1}_storm_{2}.feather'.format(station, MODEL_CONFIG['version'], i))
 		real_df.to_feather('outputs/{0}/version_{1}_storm_{2}.feather'.format(station, MODEL_CONFIG['version'], i))
 
 
