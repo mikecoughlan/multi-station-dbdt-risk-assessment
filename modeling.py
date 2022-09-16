@@ -217,7 +217,7 @@ def main(station):
 		print('Split: '+ str(split))
 		tf.keras.backend.clear_session() 				# clearing the information from any old models so we can run clean new ones.
 		MODEL, early_stop = create_CNN_model(n_features=train_dict['X'].shape[2], loss='categorical_crossentropy', early_stop_patience=5)					# creating the model
-		print(MODEL.summary())
+		# print(MODEL.summary())
 
 		# pulling the data and catagorizing it into the train-val pairs
 		xtrain = train_dict['X'][train_index]
