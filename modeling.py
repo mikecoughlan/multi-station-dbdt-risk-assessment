@@ -60,10 +60,10 @@ MODEL_CONFIG = {'version':0,
 					'time_history': 60, 	# How much time history the model will use, defines the 2nd dimension of the model input array
 					'epochs': 100, 		# Maximum amount of empoch the model will run if not killed by early stopping
 					'layers': 1, 		# How many CNN layers the model will have.
-					'filters': 64, 		# Number of filters in the first CNN layer. Will decrease by half for any subsequent layers if "layers">1
+					'filters': 128, 		# Number of filters in the first CNN layer. Will decrease by half for any subsequent layers if "layers">1
 					'dropout': 0.2, 		# Dropout rate for the layers
 					'loss':'mse',
-					'learning_rate': 1e-5,		# Learning rate, used as the inital learning rate if a learning rate decay function is used
+					'learning_rate': 1e-6,		# Learning rate, used as the inital learning rate if a learning rate decay function is used
 					'lr_decay_steps':230,				# If a learning ray decay funtion is used, dictates the number of decay steps
 					'early_stop_patience':5}
 
