@@ -243,6 +243,8 @@ def prep_test_data(df, stime, etime, params, scaler, time_history, prediction_le
 		storm_df = scaler.transform(storm_df)									# scaling the model input data
 		storm_df = split_sequences(storm_df, n_steps=time_history, include_target=False)	# calling the split sequences function to create the additional demension
 
+		print('Length of testing inputs: '+str(len(storm_df)))
+		print('Length of real storm: '+str(len(real_df)))
 		test_dict['storm_{0}'.format(i)]['Y'] = storm_df						# creating a dict element for the model input data
 		test_dict['storm_{0}'.format(i)]['real_df'] = real_df					# dict element for the real data for comparison
 		re = real_df['crossing']
