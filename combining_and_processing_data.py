@@ -194,9 +194,10 @@ def split_sequences(sequences, result_y1=None, n_steps=30, include_target=True):
 		end_ix = i + n_steps													# find the end of this pattern
 		if end_ix > len(sequences):												# check if we are beyond the dataset
 			break
-		seq_x = sequences[i:end_ix, :]											# grabs the appropriate chunk of the data
-		if np.isnan(seq_x).any():														# doesn't add arrays with nan values to the training set
-			continue
+		seq_x = sequences[i:end_ix, :]
+		if include_target:										# grabs the appropriate chunk of the data
+			if np.isnan(seq_x).any():														# doesn't add arrays with nan values to the training set
+				continue
 		if include_target:
 			seq_y1 = result_y1[end_ix]											# gets the appropriate target
 			y1.append(seq_y1)
@@ -208,7 +209,7 @@ def split_sequences(sequences, result_y1=None, n_steps=30, include_target=True):
 		return np.array(X)
 
 
-def prep_test_data(df, stime, etime, thresholds, params, scaler, time_history, prediction_length):
+def prep_test_data(df, stime, etime, params, scaler, time_history, prediction_length):
 	'''function that segments the selected storms for testing the models. Pulls the data out of the
 		dataframe, splits the sequences, and stores the model input arrays and the real results.
 		Inputs:
@@ -394,7 +395,7 @@ def main(path, station):
 	train_indicies = pd.DataFrame()
 	val_indicies = pd.DataFrame()
 
-	test_dict = prep_test_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['thresholds'], CONFIG['params'],
+	test_dict = prep_test_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['params'],
 								scaler, MODEL_CONFIG['time_history'], prediction_length=CONFIG['forecast']+CONFIG['window'])						# processing the tesing data
 
 	sss = ShuffleSplit(n_splits=splits, test_size=0.2, random_state=CONFIG['random_seed'])		# defines the lists of training and validation indicies to perform the k fold splitting
