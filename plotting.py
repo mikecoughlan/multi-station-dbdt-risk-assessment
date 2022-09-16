@@ -265,7 +265,6 @@ def reliability_plots(results_dict, station, splits, plot_titles):
 	plt.savefig('plots/{0}_reliability_plot.png'.format(station))
 
 
-
 def main():
 
 	print('Entering main...')
