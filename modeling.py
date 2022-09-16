@@ -155,7 +155,7 @@ def fit_CNN(model, xtrain, xval, ytrain, yval, early_stop, split, station, first
 		Xtrain = xtrain.reshape((xtrain.shape[0], xtrain.shape[1], xtrain.shape[2], 1))
 		Xval = xval.reshape((xval.shape[0], xval.shape[1], xval.shape[2], 1))
 
-		model.fit(Xtrain, ytrain, validation_data=(Xval, yval), batch_size=1024,
+		model.fit(Xtrain, ytrain, validation_data=(Xval, yval),
 					verbose=1, shuffle=True, epochs=MODEL_CONFIG['epochs'], callbacks=[early_stop])			# doing the training! Yay!
 
 		if not os.path.exists('models/{0}'.format(station)):
@@ -235,11 +235,9 @@ def main(station):
 		real_df = test_dict['storm_{0}'.format(i)]['real_df']
 		pd.to_datetime(real_df['Date_UTC'], format='%Y-%m-%d %H:%M:%S')
 		real_df.reset_index(drop=True, inplace=True)
-		real_df.set_index('Date_UTC', inplace=True, drop=False)
-		real_df.index = pd.to_datetime(real_df.index)
 
-		if not os.path.exists('outputs/{0}/version_{1}_storm_{2}.feather'.format(station, MODEL_CONFIG['version'], i)):
-			os.makedirs('outputs/{0}/version_{1}_storm_{2}.feather'.format(station, MODEL_CONFIG['version'], i))
+		if not os.path.exists('outputs/{0}'.format(station)):
+			os.makedirs('outputs/{0}'.format(station))
 		real_df.to_feather('outputs/{0}/version_{1}_storm_{2}.feather'.format(station, MODEL_CONFIG['version'], i))
 
 
