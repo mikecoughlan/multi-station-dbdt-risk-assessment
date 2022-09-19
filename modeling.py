@@ -192,10 +192,9 @@ def making_predictions(model, test_dict, split):
 
 		df = test_dict[key]['real_df']									# calling the correct dataframe
 		df['predicted_split_{0}'.format(split)] = predicted		# and storing the results
-		re = df['crossing']
-		print(df)
 		df.dropna(inplace=True)
-		print(df)
+		re = df['crossing']
+
 		print('Pred has Nan: '+str(predicted.isnull().sum()))
 		print('Real has Nan: '+str(re.isnull().sum()))
 		print('RMSE: '+str(np.sqrt(mean_squared_error(re,df['predicted_split_{0}'.format(split)]))))
