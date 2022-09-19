@@ -192,7 +192,7 @@ def making_predictions(model, test_dict, split):
 
 		df = test_dict[key]['real_df']									# calling the correct dataframe
 		df['predicted_split_{0}'.format(split)] = predicted		# and storing the results
-		# df.dropna(inplace=True)
+		df.dropna(inplace=True)
 		re = df['crossing']
 
 		print('Pred has Nan: '+str(predicted.isnull().sum()))
@@ -230,7 +230,7 @@ def main(station):
 		array_sum = np.sum(yval)
 		print(np.isnan(array_sum))
 
-		model = fit_CNN(MODEL, xtrain, xval, ytrain, yval, early_stop, split, station, first_time=True)			# does the model fit!
+		model = fit_CNN(MODEL, xtrain, xval, ytrain, yval, early_stop, split, station, first_time=False)			# does the model fit!
 
 		test_dict = making_predictions(model, test_dict, split)					# defines the test dictonary for storing results
 
