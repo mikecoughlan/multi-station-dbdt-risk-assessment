@@ -55,7 +55,7 @@ CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'NGK', '
 			'recovery':24,
 			'random_seed':42}															# recovery time added to each storm minimum in SYM-H
 
-MODEL_CONFIG = {'version':1,
+MODEL_CONFIG = {'version':2,
 					'splits':1,
 					'time_history': 60, 	# How much time history the model will use, defines the 2nd dimension of the model input array
 					'epochs': 100, 		# Maximum amount of empoch the model will run if not killed by early stopping
@@ -193,6 +193,7 @@ def making_predictions(model, test_dict, split):
 		df = test_dict[key]['real_df']									# calling the correct dataframe
 		df['predicted_split_{0}'.format(split)] = predicted		# and storing the results
 		re = df['crossing']
+		df.dropna(inplace=True)
 		print('Pred has Nan: '+str(predicted.isnull().sum()))
 		print('Real has Nan: '+str(re.isnull().sum()))
 		print('RMSE: '+str(np.sqrt(mean_squared_error(re,predicted))))
