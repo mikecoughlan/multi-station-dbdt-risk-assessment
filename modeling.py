@@ -55,7 +55,7 @@ CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'NGK', '
 			'recovery':24,
 			'random_seed':42}															# recovery time added to each storm minimum in SYM-H
 
-MODEL_CONFIG = {'version':2,
+MODEL_CONFIG = {'version':3,
 					'splits':1,
 					'time_history': 60, 	# How much time history the model will use, defines the 2nd dimension of the model input array
 					'epochs': 100, 		# Maximum amount of empoch the model will run if not killed by early stopping
@@ -107,12 +107,12 @@ def create_CNN_model(n_features, loss='categorical_crossentropy', early_stop_pat
 
 	model = Sequential()						# initalizing the model
 
-	model.add(Conv2D(MODEL_CONFIG['filters'], (1,2), padding='same',
+	model.add(Conv2D(MODEL_CONFIG['filters'], 2, padding='same',
 									activation='relu', input_shape=(MODEL_CONFIG['time_history'], n_features, 1)))			# adding the CNN layer
-	model.add(MaxPooling2D())
-	# model.add(Conv2D(MODEL_CONFIG['filters']*2, 2, padding='same', activation='relu'))
-	# model.add(Conv2D(MODEL_CONFIG['filters']*2, 2, padding='same', activation='relu'))
 	# model.add(MaxPooling2D())
+	model.add(Conv2D(MODEL_CONFIG['filters']*2, (1,2), padding='same', activation='relu'))
+	# model.add(Conv2D(MODEL_CONFIG['filters']*2, 2, padding='same', activation='relu'))
+	model.add(MaxPooling2D())
 	# model.add(Conv2D(MODEL_CONFIG['filters']*4, (1,2), padding='same', activation='relu'))
 	# model.add(Conv2D(MODEL_CONFIG['filters']*4, (1,2), padding='same', activation='relu'))
 	# model.add(MaxPooling2D())
@@ -192,7 +192,7 @@ def making_predictions(model, test_dict, split):
 
 		df = test_dict[key]['real_df']									# calling the correct dataframe
 		df['predicted_split_{0}'.format(split)] = predicted		# and storing the results
-		df.dropna(inplace=True)
+		# df.dropna(inplace=True)
 		re = df['crossing']
 
 		print('Pred has Nan: '+str(predicted.isnull().sum()))
@@ -230,7 +230,7 @@ def main(station):
 		array_sum = np.sum(yval)
 		print(np.isnan(array_sum))
 
-		model = fit_CNN(MODEL, xtrain, xval, ytrain, yval, early_stop, split, station, first_time=False)			# does the model fit!
+		model = fit_CNN(MODEL, xtrain, xval, ytrain, yval, early_stop, split, station, first_time=True)			# does the model fit!
 
 		test_dict = making_predictions(model, test_dict, split)					# defines the test dictonary for storing results
 
