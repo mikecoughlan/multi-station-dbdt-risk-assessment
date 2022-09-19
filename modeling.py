@@ -55,7 +55,7 @@ CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'NGK', '
 			'recovery':24,
 			'random_seed':42}															# recovery time added to each storm minimum in SYM-H
 
-MODEL_CONFIG = {'version':1,
+MODEL_CONFIG = {'version':2,
 					'splits':1,
 					'time_history': 60, 	# How much time history the model will use, defines the 2nd dimension of the model input array
 					'epochs': 100, 		# Maximum amount of empoch the model will run if not killed by early stopping
@@ -107,19 +107,19 @@ def create_CNN_model(n_features, loss='categorical_crossentropy', early_stop_pat
 
 	model = Sequential()						# initalizing the model
 
-	model.add(Conv2D(MODEL_CONFIG['filters'], 3, padding='same',
+	model.add(Conv2D(MODEL_CONFIG['filters'], (1,2), padding='same',
 									activation='relu', input_shape=(MODEL_CONFIG['time_history'], n_features, 1)))			# adding the CNN layer
 	model.add(MaxPooling2D())
-	model.add(Conv2D(MODEL_CONFIG['filters']*2, 2, padding='same', activation='relu'))
-	model.add(Conv2D(MODEL_CONFIG['filters']*2, 2, padding='same', activation='relu'))
-	model.add(MaxPooling2D())
-	model.add(Conv2D(MODEL_CONFIG['filters']*4, (1,2), padding='same', activation='relu'))
-	model.add(Conv2D(MODEL_CONFIG['filters']*4, (1,2), padding='same', activation='relu'))
-	model.add(MaxPooling2D())
+	# model.add(Conv2D(MODEL_CONFIG['filters']*2, 2, padding='same', activation='relu'))
+	# model.add(Conv2D(MODEL_CONFIG['filters']*2, 2, padding='same', activation='relu'))
+	# model.add(MaxPooling2D())
+	# model.add(Conv2D(MODEL_CONFIG['filters']*4, (1,2), padding='same', activation='relu'))
+	# model.add(Conv2D(MODEL_CONFIG['filters']*4, (1,2), padding='same', activation='relu'))
+	# model.add(MaxPooling2D())
 	model.add(Flatten())							# changes dimensions of model. Not sure exactly how this works yet but improves results
-	model.add(Dense(MODEL_CONFIG['filters']*2, activation='relu'))		# Adding dense layers with dropout in between
+	model.add(Dense(MODEL_CONFIG['filters'], activation='relu'))		# Adding dense layers with dropout in between
 	model.add(Dropout(0.2))
-	model.add(Dense(MODEL_CONFIG['filters'], activation='relu'))
+	model.add(Dense(MODEL_CONFIG['filters']//2, activation='relu'))
 	model.add(Dropout(0.2))
 	model.add(Dense(2, activation='softmax'))
 	opt = tf.keras.optimizers.Adam(learning_rate=MODEL_CONFIG['learning_rate'])		# learning rate that actually started producing good results
@@ -225,7 +225,7 @@ def main(station):
 		array_sum = np.sum(yval)
 		print(np.isnan(array_sum))
 
-		model = fit_CNN(MODEL, xtrain, xval, ytrain, yval, early_stop, split, station, first_time=False)			# does the model fit!
+		model = fit_CNN(MODEL, xtrain, xval, ytrain, yval, early_stop, split, station, first_time=True)			# does the model fit!
 
 		test_dict = making_predictions(model, test_dict, split)					# defines the test dictonary for storing results
 

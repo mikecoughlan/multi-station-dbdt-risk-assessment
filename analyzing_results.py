@@ -48,7 +48,7 @@ CONFIG = {'thresholds': [7.15], # list of thresholds to be examined.
       'window': 30,                                 # time window over which the metrics will be calculated
       'splits': 1,                         # amount of k fold splits to be performed. Program will create this many models
       'stations':['OTT', 'STJ', 'VIC', 'NEW', 'ESK', 'WNG', 'LER', 'BFE', 'NGK'],
-	  'version':1}    # list of stations being examined
+	  'version':2}    # list of stations being examined
 
 
 
