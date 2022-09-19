@@ -182,7 +182,7 @@ def making_predictions(model, test_dict, split):
 
 		Xtest = test_dict[key]['Y']							# defining the testing inputs
 		Xtest = Xtest.reshape((Xtest.shape[0], Xtest.shape[1], Xtest.shape[2], 1))				# reshpaing for one channel input
-		print('Test input Nans: '+str(Xtest.isnull().sum()))
+		print('Test input Nans: '+str(np.isnan(Xtest).sum()))
 
 		predicted = model.predict(Xtest, verbose=1)						# predicting on the testing input data
 
