@@ -152,7 +152,7 @@ def calculating_scores(df, splits):
   metrics['AUC'] = [np.mean(area_uc), np.percentile(area_uc, max_perc), np.percentile(area_uc, min_perc)]
 
   metrics.set_index('ind', drop=True, inplace=True)
-
+  print(metrics['AUC'])
 
   return prec_recall, metrics
 
