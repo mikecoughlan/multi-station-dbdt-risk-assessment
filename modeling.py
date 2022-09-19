@@ -196,7 +196,7 @@ def making_predictions(model, test_dict, split):
 		df.dropna(inplace=True)
 		print('Pred has Nan: '+str(predicted.isnull().sum()))
 		print('Real has Nan: '+str(re.isnull().sum()))
-		print('RMSE: '+str(np.sqrt(mean_squared_error(re,predicted))))
+		print('RMSE: '+str(np.sqrt(mean_squared_error(re,df['predicted_split_{0}'.format(split)]))))
 
 	return test_dict
 
