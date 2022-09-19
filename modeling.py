@@ -56,7 +56,7 @@ CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'NGK', '
 			'random_seed':42}															# recovery time added to each storm minimum in SYM-H
 
 MODEL_CONFIG = {'version':1,
-					'splits':100,
+					'splits':1,
 					'time_history': 60, 	# How much time history the model will use, defines the 2nd dimension of the model input array
 					'epochs': 100, 		# Maximum amount of empoch the model will run if not killed by early stopping
 					'layers': 1, 		# How many CNN layers the model will have.
@@ -225,7 +225,7 @@ def main(station):
 		array_sum = np.sum(yval)
 		print(np.isnan(array_sum))
 
-		model = fit_CNN(MODEL, xtrain, xval, ytrain, yval, early_stop, split, station, first_time=True)			# does the model fit!
+		model = fit_CNN(MODEL, xtrain, xval, ytrain, yval, early_stop, split, station, first_time=False)			# does the model fit!
 
 		test_dict = making_predictions(model, test_dict, split)					# defines the test dictonary for storing results
 
