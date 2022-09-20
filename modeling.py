@@ -24,13 +24,13 @@ from tensorflow.keras.layers import (BatchNormalization, Conv2D, Dense,
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.optimizers import Adam
 
-# stops this program from hogging the GPU
-physical_devices = tf.config.list_physical_devices('GPU')
-try:
-  tf.config.experimental.set_memory_growth(physical_devices[0], True)
-except:
-  # Invalid device or cannot modify virtual devices once initialized.
-  pass
+# # stops this program from hogging the GPU
+# physical_devices = tf.config.list_physical_devices('GPU')
+# try:
+#   tf.config.experimental.set_memory_growth(physical_devices[0], True)
+# except:
+#   # Invalid device or cannot modify virtual devices once initialized.
+#   pass
 
 
 CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'NGK', 'BFE'],
