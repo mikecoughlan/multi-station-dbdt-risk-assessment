@@ -19,8 +19,8 @@ import pandas as pd
 import tensorflow as tf
 from sklearn.metrics import mean_squared_error
 from tensorflow.keras.callbacks import EarlyStopping
-from tensorflow.keras.layers import (Conv2D, Dense, Dropout, Flatten,
-                                     MaxPooling2D)
+from tensorflow.keras.layers import (BatchNormalization, Conv2D, Dense,
+                                     Dropout, Flatten, MaxPooling2D)
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.optimizers import Adam
 
@@ -55,15 +55,15 @@ CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'NGK', '
 			'recovery':24,
 			'random_seed':42}															# recovery time added to each storm minimum in SYM-H
 
-MODEL_CONFIG = {'version':0,
-					'splits':100,
-					'time_history': 60, 	# How much time history the model will use, defines the 2nd dimension of the model input array
+MODEL_CONFIG = {'version':5,
+					'splits':1,
+					'time_history': 30, 	# How much time history the model will use, defines the 2nd dimension of the model input array
 					'epochs': 100, 		# Maximum amount of empoch the model will run if not killed by early stopping
 					'layers': 1, 		# How many CNN layers the model will have.
-					'filters': 64, 		# Number of filters in the first CNN layer. Will decrease by half for any subsequent layers if "layers">1
+					'filters': 128, 		# Number of filters in the first CNN layer. Will decrease by half for any subsequent layers if "layers">1
 					'dropout': 0.2, 		# Dropout rate for the layers
 					'loss':'mse',
-					'learning_rate': 1e-5,		# Learning rate, used as the inital learning rate if a learning rate decay function is used
+					'learning_rate': 1e-6,		# Learning rate, used as the inital learning rate if a learning rate decay function is used
 					'lr_decay_steps':230,				# If a learning ray decay funtion is used, dictates the number of decay steps
 					'early_stop_patience':5}
 
@@ -107,19 +107,19 @@ def create_CNN_model(n_features, loss='categorical_crossentropy', early_stop_pat
 
 	model = Sequential()						# initalizing the model
 
-	model.add(Conv2D(MODEL_CONFIG['filters'], 4, padding='same',
+	model.add(Conv2D(MODEL_CONFIG['filters'], 2, padding='same',
 									activation='relu', input_shape=(MODEL_CONFIG['time_history'], n_features, 1)))			# adding the CNN layer
-	model.add(MaxPooling2D())						# maxpooling layer reduces the demensions of the training data. Speeds up models and improves results
-	model.add(Conv2D(MODEL_CONFIG['filters']*2, 3, padding='same', activation='relu'))
-	model.add(Conv2D(MODEL_CONFIG['filters']*2, 3, padding='same', activation='relu'))
-	model.add(MaxPooling2D())
-	model.add(Conv2D(MODEL_CONFIG['filters']*4, 2, padding='same', activation='relu'))
-	model.add(Conv2D(MODEL_CONFIG['filters']*4, 2, padding='same', activation='relu'))
+	# model.add(MaxPooling2D())
+	# model.add(Conv2D(MODEL_CONFIG['filters']*2, (1,2), padding='same', activation='relu'))
+	# model.add(Conv2D(MODEL_CONFIG['filters']*2, 2, padding='same', activation='relu'))
+	# model.add(MaxPooling2D())
+	# model.add(Conv2D(MODEL_CONFIG['filters']*4, (1,2), padding='same', activation='relu'))
+	# model.add(Conv2D(MODEL_CONFIG['filters']*4, (1,2), padding='same', activation='relu'))
 	model.add(MaxPooling2D())
 	model.add(Flatten())							# changes dimensions of model. Not sure exactly how this works yet but improves results
-	model.add(Dense(MODEL_CONFIG['filters']*2, activation='relu'))		# Adding dense layers with dropout in between
+	model.add(Dense(MODEL_CONFIG['filters'], activation='relu'))		# Adding dense layers with dropout in between
 	model.add(Dropout(0.2))
-	model.add(Dense(MODEL_CONFIG['filters'], activation='relu'))
+	model.add(Dense(MODEL_CONFIG['filters']//2, activation='relu'))
 	model.add(Dropout(0.2))
 	model.add(Dense(2, activation='softmax'))
 	opt = tf.keras.optimizers.Adam(learning_rate=MODEL_CONFIG['learning_rate'])		# learning rate that actually started producing good results
@@ -155,7 +155,7 @@ def fit_CNN(model, xtrain, xval, ytrain, yval, early_stop, split, station, first
 		Xtrain = xtrain.reshape((xtrain.shape[0], xtrain.shape[1], xtrain.shape[2], 1))
 		Xval = xval.reshape((xval.shape[0], xval.shape[1], xval.shape[2], 1))
 
-		model.fit(Xtrain, ytrain, validation_data=(Xval, yval), batch_size=1024,
+		model.fit(Xtrain, ytrain, validation_data=(Xval, yval),
 					verbose=1, shuffle=True, epochs=MODEL_CONFIG['epochs'], callbacks=[early_stop])			# doing the training! Yay!
 
 		if not os.path.exists('models/{0}'.format(station)):
@@ -182,6 +182,7 @@ def making_predictions(model, test_dict, split):
 
 		Xtest = test_dict[key]['Y']							# defining the testing inputs
 		Xtest = Xtest.reshape((Xtest.shape[0], Xtest.shape[1], Xtest.shape[2], 1))				# reshpaing for one channel input
+		print('Test input Nans: '+str(np.isnan(Xtest).sum()))
 
 		predicted = model.predict(Xtest, verbose=1)						# predicting on the testing input data
 
@@ -191,8 +192,12 @@ def making_predictions(model, test_dict, split):
 
 		df = test_dict[key]['real_df']									# calling the correct dataframe
 		df['predicted_split_{0}'.format(split)] = predicted		# and storing the results
+		df.dropna(inplace=True)
 		re = df['crossing']
-		print('RMSE: '+str(np.sqrt(mean_squared_error(re,predicted))))
+
+		print('Pred has Nan: '+str(predicted.isnull().sum()))
+		print('Real has Nan: '+str(re.isnull().sum()))
+		print('RMSE: '+str(np.sqrt(mean_squared_error(re,df['predicted_split_{0}'.format(split)]))))
 
 	return test_dict
 
@@ -209,7 +214,7 @@ def main(station):
 		print('Split: '+ str(split))
 		tf.keras.backend.clear_session() 				# clearing the information from any old models so we can run clean new ones.
 		MODEL, early_stop = create_CNN_model(n_features=train_dict['X'].shape[2], loss='categorical_crossentropy', early_stop_patience=5)					# creating the model
-		print(MODEL.summary())
+		# print(MODEL.summary())
 
 		# pulling the data and catagorizing it into the train-val pairs
 		xtrain = train_dict['X'][train_index]
@@ -235,11 +240,9 @@ def main(station):
 		real_df = test_dict['storm_{0}'.format(i)]['real_df']
 		pd.to_datetime(real_df['Date_UTC'], format='%Y-%m-%d %H:%M:%S')
 		real_df.reset_index(drop=True, inplace=True)
-		real_df.set_index('Date_UTC', inplace=True, drop=False)
-		real_df.index = pd.to_datetime(real_df.index)
 
-		if not os.path.exists('outputs/{0}/version_{1}_storm_{2}.feather'.format(station, MODEL_CONFIG['version'], i)):
-			os.makedirs('outputs/{0}/version_{1}_storm_{2}.feather'.format(station, MODEL_CONFIG['version'], i))
+		if not os.path.exists('outputs/{0}'.format(station)):
+			os.makedirs('outputs/{0}'.format(station))
 		real_df.to_feather('outputs/{0}/version_{1}_storm_{2}.feather'.format(station, MODEL_CONFIG['version'], i))
 
 

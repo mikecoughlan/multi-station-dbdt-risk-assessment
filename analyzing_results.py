@@ -46,9 +46,10 @@ CONFIG = {'thresholds': [7.15], # list of thresholds to be examined.
                   '2011-08-07 09:00:00', '2015-03-19 14:00:00'],  # end times for testing storms. This will remove them from training
       'forecast': 30,
       'window': 30,                                 # time window over which the metrics will be calculated
-      'splits': 100,                         # amount of k fold splits to be performed. Program will create this many models
+      'splits': 1,                         # amount of k fold splits to be performed. Program will create this many models
       'stations':['OTT', 'STJ', 'VIC', 'NEW', 'ESK', 'WNG', 'LER', 'BFE', 'NGK'],
-	  'version':0}    # list of stations being examined
+	  'version':5}    # list of stations being examined
+
 
 
 
@@ -152,7 +153,7 @@ def calculating_scores(df, splits):
   metrics['AUC'] = [np.mean(area_uc), np.percentile(area_uc, max_perc), np.percentile(area_uc, min_perc)]
 
   metrics.set_index('ind', drop=True, inplace=True)
-
+  print(metrics['AUC'])
 
   return prec_recall, metrics
 
