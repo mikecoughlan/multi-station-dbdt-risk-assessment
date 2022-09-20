@@ -56,7 +56,7 @@ CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'NGK', '
 			'recovery':24,
 			'random_seed':42}															# recovery time added to each storm minimum in SYM-H
 
-MODEL_CONFIG = {'time_history': 30, 	# How much time history the model will use, defines the 2nd dimension of the model input array
+MODEL_CONFIG = {'time_history': 45, 	# How much time history the model will use, defines the 2nd dimension of the model input array
 					'epochs': 100, 		# Maximum amount of empoch the model will run if not killed by early stopping
 					'layers': 1, 		# How many CNN layers the model will have.
 					'filters': 128, 		# Number of filters in the first CNN layer. Will decrease by half for any subsequent layers if "layers">1
