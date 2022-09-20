@@ -55,12 +55,12 @@ CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'NGK', '
 			'recovery':24,
 			'random_seed':42}															# recovery time added to each storm minimum in SYM-H
 
-MODEL_CONFIG = {'version':4,
+MODEL_CONFIG = {'version':5,
 					'splits':1,
-					'time_history': 60, 	# How much time history the model will use, defines the 2nd dimension of the model input array
+					'time_history': 30, 	# How much time history the model will use, defines the 2nd dimension of the model input array
 					'epochs': 100, 		# Maximum amount of empoch the model will run if not killed by early stopping
 					'layers': 1, 		# How many CNN layers the model will have.
-					'filters': 256, 		# Number of filters in the first CNN layer. Will decrease by half for any subsequent layers if "layers">1
+					'filters': 128, 		# Number of filters in the first CNN layer. Will decrease by half for any subsequent layers if "layers">1
 					'dropout': 0.2, 		# Dropout rate for the layers
 					'loss':'mse',
 					'learning_rate': 1e-6,		# Learning rate, used as the inital learning rate if a learning rate decay function is used
@@ -115,15 +115,11 @@ def create_CNN_model(n_features, loss='categorical_crossentropy', early_stop_pat
 	# model.add(MaxPooling2D())
 	# model.add(Conv2D(MODEL_CONFIG['filters']*4, (1,2), padding='same', activation='relu'))
 	# model.add(Conv2D(MODEL_CONFIG['filters']*4, (1,2), padding='same', activation='relu'))
-	# model.add(MaxPooling2D())
+	model.add(MaxPooling2D())
 	model.add(Flatten())							# changes dimensions of model. Not sure exactly how this works yet but improves results
-	model.add(Dense(MODEL_CONFIG['filters']*2, activation='relu'))		# Adding dense layers with dropout in between
-	model.add(Dropout(0.2))
-	model.add(Dense(MODEL_CONFIG['filters'], activation='relu'))
+	model.add(Dense(MODEL_CONFIG['filters'], activation='relu'))		# Adding dense layers with dropout in between
 	model.add(Dropout(0.2))
 	model.add(Dense(MODEL_CONFIG['filters']//2, activation='relu'))
-	model.add(Dropout(0.2))
-	model.add(Dense(MODEL_CONFIG['filters']//4, activation='relu'))
 	model.add(Dropout(0.2))
 	model.add(Dense(2, activation='softmax'))
 	opt = tf.keras.optimizers.Adam(learning_rate=MODEL_CONFIG['learning_rate'])		# learning rate that actually started producing good results
