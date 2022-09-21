@@ -263,6 +263,7 @@ def main():
 	'''
 	Main function calling both the indicies and the ACE data processing functions.
 	'''
+	print('Entering main of preparing SW')
 	omniData = get_indicies_from_omni()
 	aceData = processing_ACE()
 	df = combining_dfs(omniData=omniData, aceData=aceData)
