@@ -24,9 +24,9 @@ os.environ["CDF_LIB"] = "~/lib"
 
 import cdflib
 
-omni_dir = '../../../../data/omni/hro_1min/'
-plasmaDir = '../../../../data/ace/sweswi/'
-magDir = '../../../../data/ace/mag/'
+omni_dir = '../../data/omni/'
+plasmaDir = '../../data/ace/'
+magDir = '../../data/ace/'
 dataDump = '../data/SW/'
 
 method = 'linear'
