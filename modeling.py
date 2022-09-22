@@ -16,7 +16,10 @@ import random
 
 import numpy as np
 import pandas as pd
+import tensorflow
 import tensorflow as tf
+from keras.backend.tensorflow_backend import (clear_session, get_session,
+                                              set_session)
 from sklearn.metrics import mean_squared_error
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.layers import (BatchNormalization, Conv2D, Dense,
@@ -70,6 +73,26 @@ MODEL_CONFIG = {'version':5,
 # setting the random seeds for reproducibility
 random.seed(CONFIG['random_seed'])
 np.random.seed(CONFIG['random_seed'])
+
+# Reset Keras Session
+def reset_keras():
+    sess = get_session()
+    clear_session()
+    sess.close()
+    sess = get_session()
+
+    try:
+        del model # this is from global space - change this as you need
+    except:
+        pass
+
+    print(gc.collect()) # if it's done something you should see a number being outputted
+
+    # use the same config as you used to create the session
+    config = tensorflow.ConfigProto()
+    config.gpu_options.per_process_gpu_memory_fraction = 1
+    config.gpu_options.visible_device_list = "0"
+    set_session(tensorflow.Session(config=config))
 
 
 def loading_data_and_indicies(station):
@@ -212,7 +235,7 @@ def main(station):
 		val_index = val_indicies['split_{0}'.format(split)].to_numpy()
 
 		print('Split: '+ str(split))
-		tf.keras.backend.clear_session() 				# clearing the information from any old models so we can run clean new ones.
+		reset_keras()			# clearing the information from any old models so we can run clean new ones.
 		MODEL, early_stop = create_CNN_model(n_features=train_dict['X'].shape[2], loss='categorical_crossentropy', early_stop_patience=5)					# creating the model
 		# print(MODEL.summary())
 
