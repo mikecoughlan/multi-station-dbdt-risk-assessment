@@ -231,7 +231,8 @@ def main(station):
 		val_index = val_indicies['split_{0}'.format(split)].to_numpy()
 
 		print('Split: '+ str(split))
-		reset_keras()			# clearing the information from any old models so we can run clean new ones.
+		if MODEL in locals():
+			reset_keras(MODEL)			# clearing the information from any old models so we can run clean new ones.
 		MODEL, early_stop = create_CNN_model(n_features=train_dict['X'].shape[2], loss='categorical_crossentropy', early_stop_patience=5)					# creating the model
 		# print(MODEL.summary())
 
