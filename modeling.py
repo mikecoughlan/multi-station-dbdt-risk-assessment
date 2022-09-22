@@ -10,6 +10,7 @@
 ##########################################################################################
 
 import argparse
+import gc
 import os
 import pickle
 import random
@@ -18,14 +19,14 @@ import numpy as np
 import pandas as pd
 import tensorflow
 import tensorflow as tf
-from keras.backend.tensorflow_backend import (clear_session, get_session,
-                                              set_session)
 from sklearn.metrics import mean_squared_error
+from tensorflow.keras.backend import clear_session
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.layers import (BatchNormalization, Conv2D, Dense,
                                      Dropout, Flatten, MaxPooling2D)
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.optimizers import Adam
+from tensorflow.python.keras.backend import get_session, set_session
 
 # stops this program from hogging the GPU
 physical_devices = tf.config.list_physical_devices('GPU')
@@ -75,7 +76,7 @@ random.seed(CONFIG['random_seed'])
 np.random.seed(CONFIG['random_seed'])
 
 # Reset Keras Session
-def reset_keras():
+def reset_keras(model):
     sess = get_session()
     clear_session()
     sess.close()
@@ -88,11 +89,6 @@ def reset_keras():
 
     print(gc.collect()) # if it's done something you should see a number being outputted
 
-    # use the same config as you used to create the session
-    config = tensorflow.ConfigProto()
-    config.gpu_options.per_process_gpu_memory_fraction = 1
-    config.gpu_options.visible_device_list = "0"
-    set_session(tensorflow.Session(config=config))
 
 
 def loading_data_and_indicies(station):
