@@ -24,9 +24,9 @@ os.environ["CDF_LIB"] = "~/lib"
 
 import cdflib
 
-omni_dir = '../../../../data/omni/hro_1min/'
-plasmaDir = '../../../../data/ace/sweswi/'
-magDir = '../../../../data/ace/mag/'
+omni_dir = '../../data/omni/'
+plasmaDir = '../../data/ace/'
+magDir = '../../data/ace/'
 dataDump = '../data/SW/'
 
 method = 'linear'
@@ -263,6 +263,7 @@ def main():
 	'''
 	Main function calling both the indicies and the ACE data processing functions.
 	'''
+	print('Entering main of preparing SW')
 	omniData = get_indicies_from_omni()
 	aceData = processing_ACE()
 	df = combining_dfs(omniData=omniData, aceData=aceData)

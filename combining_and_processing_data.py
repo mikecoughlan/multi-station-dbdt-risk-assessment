@@ -56,7 +56,7 @@ CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'NGK', '
 			'recovery':24,
 			'random_seed':42}															# recovery time added to each storm minimum in SYM-H
 
-MODEL_CONFIG = {'time_history': 45, 	# How much time history the model will use, defines the 2nd dimension of the model input array
+MODEL_CONFIG = {'time_history': 30, 	# How much time history the model will use, defines the 2nd dimension of the model input array
 					'epochs': 100, 		# Maximum amount of empoch the model will run if not killed by early stopping
 					'layers': 1, 		# How many CNN layers the model will have.
 					'filters': 128, 		# Number of filters in the first CNN layer. Will decrease by half for any subsequent layers if "layers">1
@@ -108,7 +108,7 @@ def ace_prep(path):
 		Inputs:
 		path: path to project directory
 	'''
-	df = pd.read_feather(path+'../data/SW/solarwind_and_indicies.feather') 		# loading the omni data
+	df = pd.read_feather('../data/SW/solarwind_and_indicies.feather') 		# loading the omni data
 
 	df.reset_index(drop=True, inplace=True) 		# reseting the index so its easier to work with integer indexes
 
@@ -140,7 +140,7 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 	print('preparing data...')
 	if do_calc:
 		print('Reading in CSV...')
-		df = pd.read_feather(path+'../data/supermag/{0}.feather'.format(station)) # loading the station data.
+		df = pd.read_feather('../data/supermag/{0}.feather'.format(station)) # loading the station data.
 		print('Doing calculations...')
 		df['dN'] = df['N'].diff(1) # creates the dN column
 		df['dE'] = df['E'].diff(1) # creates the dE column
@@ -169,7 +169,7 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 		print('Creating Classification column...')
 		df = classification_column(df, 'dBHt', thresholds, forecast=forecast, window=window)		# calling the classification column function
 		datum = df.reset_index(drop=True)
-		datum.to_feather(path+'../data/ace_and_supermag/{0}_prepared.feather'.format(station))
+		datum.to_feather('../data/ace_and_supermag/{0}_prepared.feather'.format(station))
 
 	if not do_calc:		# does not do the above calculations and instead just loads a csv file, then creates the cross column
 		df = pd.read_feather('../data/{0}_prepared.feather'.format(station))
@@ -415,8 +415,8 @@ def main(path, station):
 		val_indicies['split_{0}'.format(split)] = val_i
 
 
-	train_indicies.to_feather(path+'../data/prepared_data/{0}_train_indicies.feather'.format(station))
-	val_indicies.to_feather(path+'../data/prepared_data/{0}_val_indicies.feather'.format(station))
+	train_indicies.to_feather('../data/prepared_data/{0}_train_indicies.feather'.format(station))
+	val_indicies.to_feather('../data/prepared_data/{0}_val_indicies.feather'.format(station))
 
 	with open('../data/prepared_data/{0}_train_dict.pkl'.format(station), 'wb') as train:
 		pickle.dump(train_dict, train)

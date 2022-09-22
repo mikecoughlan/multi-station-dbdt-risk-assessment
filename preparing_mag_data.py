@@ -22,7 +22,7 @@ unix_time = dt.date(1971,1,1).toordinal()*24*60*60
 plt.rcParams['figure.figsize'] = [15, 5]
 
 #dataDir = 'D:/Data/supermag/'
-dataDir = '../../../../data/supermag/baseline/'
+dataDir = '../../data/supermag/'
 
 syear = 1995
 eyear = 2019
