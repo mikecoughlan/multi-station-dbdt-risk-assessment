@@ -37,7 +37,7 @@ stations = ['VIC', 'NEW', 'OTT', 'STJ',
 			'ESK', 'LER', 'WNG', 'NGK',
 			'BFE']
 method = 'linear'
-limit = 15
+limit = 0
 
 dataDump = '../data/supermag/'
 
@@ -91,7 +91,7 @@ for station in stations:
 	magData.reset_index(inplace=True, drop=True)
 
 	# saving as feather to conserve memory and imporve perfromance
-	magData.to_feather(dataDump+'{0}.feather'.format(station))
+	magData.to_feather(dataDump+'{0}_no_interp.feather'.format(station))
 
 	print('{0} completed'.format(station))
 
