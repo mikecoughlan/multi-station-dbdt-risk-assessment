@@ -30,7 +30,7 @@ magDir = '../../data/ace/'
 dataDump = '../data/SW/'
 
 method = 'linear'
-limit = 15
+limit = 0
 
 if not os.path.exists(dataDump):
 	os.makedirs(dataDump)
@@ -271,9 +271,9 @@ def main():
 	omniData.reset_index(drop=False, inplace=True)
 	aceData.reset_index(drop=False, inplace=True)
 
-	omniData.to_feather(dataDump+'indicies_data.feather')
-	aceData.to_feather(dataDump+'ace_data.feather')
-	df.to_feather(dataDump+'solarwind_and_indicies.feather')
+	omniData.to_feather(dataDump+'indicies_data_no_interp.feather')
+	aceData.to_feather(dataDump+'ace_data_no_interp.feather')
+	df.to_feather(dataDump+'solarwind_and_indicies_no_interp.feather')
 
 
 
