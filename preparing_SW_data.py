@@ -162,7 +162,9 @@ def ace_to_dataframe(file, dataType):
     if dataType == 'mag':
         dType = 'MAG_data_16sec'
 
+	print(hdf.datasets())
     hdf = HDF(file)
+	print(hdf.datasets())
     vs = hdf.vstart()
     vd = vs.attach(dType)
 
