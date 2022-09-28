@@ -37,7 +37,7 @@ stations = ['VIC', 'NEW', 'OTT', 'STJ',
 			'ESK', 'LER', 'WNG',
 			'BFE']
 method = 'linear'
-limit = 0
+limit = 5
 
 dataDump = '../data/supermag/'
 
@@ -76,22 +76,22 @@ for station in stations:
 	magData.index = magData.Date_UTC
 	magData = magData[start_time:end_time]
 
-	#interpolating over missing data within a limit
-	# magData['Z'] = magData.Z.interpolate(method=method, limit=limit)
-	# magData['E'] = magData.E.interpolate(method=method, limit=limit)
-	# magData['N'] = magData.N.interpolate(method=method, limit=limit)
-	# magData['MAGNITUDE'] = magData.MAGNITUDE.interpolate(method=method, limit=limit)
+	# interpolating over missing data within a limit
+	magData['Z'] = magData.Z.interpolate(method=method, limit=limit)
+	magData['E'] = magData.E.interpolate(method=method, limit=limit)
+	magData['N'] = magData.N.interpolate(method=method, limit=limit)
+	magData['MAGNITUDE'] = magData.MAGNITUDE.interpolate(method=method, limit=limit)
 
-	# magData['SZA'] = magData.SZA.interpolate(method=method, limit=limit)
-	# magData['IGRF_DECL'] = magData.IGRF_DECL.interpolate(method=method, limit=limit)
+	magData['SZA'] = magData.SZA.interpolate(method=method, limit=limit)
+	magData['IGRF_DECL'] = magData.IGRF_DECL.interpolate(method=method, limit=limit)
 
-	# magData['MLAT'] = magData.MLAT.interpolate(method=method, limit=limit)
-	# magData['MLT'] = magData.MLT.interpolate(method=method, limit=limit)
+	magData['MLAT'] = magData.MLAT.interpolate(method=method, limit=limit)
+	magData['MLT'] = magData.MLT.interpolate(method=method, limit=limit)
 
 	magData.reset_index(inplace=True, drop=True)
 
 	# saving as feather to conserve memory and imporve perfromance
-	magData.to_feather(dataDump+'{0}_no_interp.feather'.format(station))
+	magData.to_feather(dataDump+'{0}_5_interp.feather'.format(station))
 
 	print('{0} completed'.format(station))
 
