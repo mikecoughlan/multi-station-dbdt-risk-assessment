@@ -22,7 +22,7 @@ unix_time = dt.date(1971,1,1).toordinal()*24*60*60
 plt.rcParams['figure.figsize'] = [15, 5]
 
 #dataDir = 'D:/Data/supermag/'
-dataDir = '../../data/supermag/'
+dataDir = '../../../../data/supermag/baseline/'
 
 syear = 1995
 eyear = 2019
@@ -34,7 +34,7 @@ end_time = end_time.replace(' ', '').replace('-', '').replace(':', '')
 
 
 stations = ['VIC', 'NEW', 'OTT', 'STJ',
-			'ESK', 'LER', 'WNG', 'NGK',
+			'ESK', 'LER', 'WNG',
 			'BFE']
 method = 'linear'
 limit = 0
