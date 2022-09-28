@@ -30,7 +30,7 @@ magDir = '../../../../data/ace/mag'
 dataDump = '../data/SW/'
 
 method = 'linear'
-limit = 0
+limit = 5
 
 if not os.path.exists(dataDump):
 	os.makedirs(dataDump)
@@ -144,8 +144,8 @@ def get_indicies_from_omni():
 
 	omniData = omniData.drop(to_drop, axis=1)
 	clean_omni(omniData)
-	# omniData['AE_INDEX'].interpolate(method=method, limit=limit)
-	# omniData['SYM_H'].interpolate(method=method, limit=limit)
+	omniData['AE_INDEX'].interpolate(method=method, limit=limit)
+	omniData['SYM_H'].interpolate(method=method, limit=limit)
 
 	return omniData
 
@@ -162,7 +162,9 @@ def ace_to_dataframe(file, dataType):
     if dataType == 'mag':
         dType = 'MAG_data_16sec'
 
+	print(hdf.datasets())
     hdf = HDF(file)
+	print(hdf.datasets())
     vs = hdf.vstart()
     vd = vs.attach(dType)
 
@@ -195,11 +197,11 @@ def bad_ace_to_nan(df, dataType):
 
 def ace_as_omni(plasmaData, magData, delay=0):
 
-    # plasmaData = plasmaData.interpolate(method=method, limit=limit)
+    plasmaData = plasmaData.interpolate(method=method, limit=limit)
     plasmaData = plasmaData.resample('1 min').bfill()
 
     # magData = magData[sdate:edate]
-    # magData = magData.interpolate(method=method, limit=limit)
+    magData = magData.interpolate(method=method, limit=limit)
     magData = magData.resample('1 min').mean()
 
     aceData = pd.DataFrame()
@@ -271,9 +273,9 @@ def main():
 	omniData.reset_index(drop=False, inplace=True)
 	aceData.reset_index(drop=False, inplace=True)
 
-	omniData.to_feather(dataDump+'indicies_data_no_interp.feather')
-	aceData.to_feather(dataDump+'ace_data_no_interp.feather')
-	df.to_feather(dataDump+'solarwind_and_indicies_no_interp.feather')
+	omniData.to_feather(dataDump+'indicies_data_5_interp.feather')
+	aceData.to_feather(dataDump+'ace_data_5_interp.feather')
+	df.to_feather(dataDump+'solarwind_and_indicies_5_interp.feather')
 
 
 
