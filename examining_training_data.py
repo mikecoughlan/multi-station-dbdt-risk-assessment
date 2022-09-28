@@ -11,7 +11,9 @@
 
 import random
 from datetime import datetime
+from typing import no_type_check
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -30,7 +32,7 @@ except:
   pass
 
 
-CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'NGK', 'BFE'],
+CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'BFE'],
 			'thresholds': [7.15],	# list of thresholds to be examined.
 			'params': ['Date_UTC', 'N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
 	   					'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T',
@@ -342,7 +344,7 @@ def prep_train_data(df, stime, etime, lead, recovery):
 	return Total, Nans
 
 
-def main(station):
+def main():
 	'''Here we go baby! bringing it all together.
 		Inputs:
 		path: path to the data.
@@ -351,22 +353,40 @@ def main(station):
 		station: the ground magnetometer station being examined.
 		first_time: if True the model will be training and the data prep perfromed. If False will skip these stpes and I probably messed up the plotting somehow.
 		'''
-
-	file_names = ['_no_interp', '_5_interp', '']
-	print('Entering main...')
-	totals, nans, percentages = [], [], []
-	for file in file_names:
-		df = data_prep(file, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep function
-		Total, Nans = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'])
-		totals.append(Total)
-		nans.append(Nans)
-		percentages.append(100-((Nans/Total)*100))												# calling the training data prep function
-	print(station)
-	print('Totals: '+str(Total))
-	print('Nans: '+str(Nans))
-	print('Precentages: '+str(percentages))
-	test_dict = prep_test_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['params'],
+	no_interp, 5_interp, 15_interp = [], [], []
+	interp = [no_interp, 5_interp, 15_interp]
+	for station in CONFIG['stations']:
+		file_names = ['_no_interp', '_5_interp', '']
+		print('Entering main...')
+		for file, interp_len in zip(file_names, interp:
+			df = data_prep(file, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep
+			Total, Nans = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'])
+			interp_len.append(100-((Nans/Total)*100))											# calling the training data prep function
+		print(station)
+		print('Totals: '+str(Total))
+		print('Nans: '+str(Nans))
+		print('Precentages: '+str(percentages))
+		test_dict = prep_test_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['params'],
 								MODEL_CONFIG['time_history'], prediction_length=CONFIG['forecast']+CONFIG['window'])
+
+		PR_dict = sorting_PR(results_dict, station)
+
+	fig = plt.figure(figsize=(30,25))
+	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)
+
+	ax = fig.add_subplot(111)
+	plt.title('Percentage of Data Avalable Based on Limit of Interpolation ', fontsize='30')
+	x = [i for in in range(len(CONFIG['stations']))]
+	plt.scatter(x,interp[0], label='No interpolation')
+	plt.scatter(x,interp[1], label='5 minutes')
+	plt.scatter(x,interp[2], label='15 minutes')
+	plt.xlabel('Stations', fontsize='40')
+	plt.ylabel('Percentage of Avalable Data', fontsize='40')
+	plt.legend(fontsize='30', loc='lower center')
+	plt.xticks(ticks=x, labels=CONFIG['stations'], fontsize='28')
+	plt.yticks(fontsize='28')
+	plt.show()
+	plt.savefig('plots/avalable_data.png')
 
 if __name__ == '__main__':
 
