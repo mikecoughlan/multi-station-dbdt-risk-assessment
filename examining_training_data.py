@@ -353,8 +353,8 @@ def main():
 		station: the ground magnetometer station being examined.
 		first_time: if True the model will be training and the data prep perfromed. If False will skip these stpes and I probably messed up the plotting somehow.
 		'''
-	no_interp, 5_interp, 15_interp = [], [], []
-	interp = [no_interp, 5_interp, 15_interp]
+	no_interp, interp5, interp15 = [], [], []
+	interp = [no_interp, interp5, interp15]
 	for station in CONFIG['stations']:
 		file_names = ['_no_interp', '_5_interp', '']
 		print('Entering main...')
