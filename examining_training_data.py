@@ -178,6 +178,7 @@ def split_sequences(sequences, n_steps=30, remove_nan=True):
 
 	X = list()		# creating lists for storing results
 	nans = 0
+	sequences = sequences.to_numpy()
 	for i in range(len(sequences)-n_steps):										# going to the end of the dataframes
 		end_ix = i + n_steps													# find the end of this pattern
 		if end_ix > len(sequences):												# check if we are beyond the dataset
@@ -359,7 +360,7 @@ def main(station):
 		Total, Nans = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'])
 		totals.append(Total)
 		nans.append(Nans)
-		percentages.append((Nans/Total)*100)												# calling the training data prep function
+		percentages.append(100-((Nans/Total)*100))												# calling the training data prep function
 	print(station)
 	print('Totals: '+str(Total))
 	print('Nans: '+str(Nans))
