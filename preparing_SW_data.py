@@ -144,8 +144,8 @@ def get_indicies_from_omni():
 
 	omniData = omniData.drop(to_drop, axis=1)
 	clean_omni(omniData)
-	omniData['AE_INDEX'].interpolate(method=method, limit=limit)
-	omniData['SYM_H'].interpolate(method=method, limit=limit)
+	# omniData['AE_INDEX'].interpolate(method=method, limit=limit)
+	# omniData['SYM_H'].interpolate(method=method, limit=limit)
 
 	return omniData
 
@@ -195,11 +195,11 @@ def bad_ace_to_nan(df, dataType):
 
 def ace_as_omni(plasmaData, magData, delay=0):
 
-    plasmaData = plasmaData.interpolate(method=method, limit=limit)
+    # plasmaData = plasmaData.interpolate(method=method, limit=limit)
     plasmaData = plasmaData.resample('1 min').bfill()
 
     # magData = magData[sdate:edate]
-    magData = magData.interpolate(method=method, limit=limit)
+    # magData = magData.interpolate(method=method, limit=limit)
     magData = magData.resample('1 min').mean()
 
     aceData = pd.DataFrame()

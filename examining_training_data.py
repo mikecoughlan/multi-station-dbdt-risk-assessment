@@ -356,7 +356,7 @@ def main():
 	no_interp, interp5, interp15 = [], [], []
 	interp = [no_interp, interp5, interp15]
 	for station in CONFIG['stations']:
-		file_names = ['_no_interp', '_5_interp', '']
+		file_names = ['_no_interp', '_5_interp', '_15_interp']
 		print('Entering main...')
 		for file, interp_len in zip(file_names, interp):
 			df = data_prep(file, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep
@@ -381,7 +381,6 @@ def main():
 	plt.legend(fontsize='30', loc='lower right')
 	plt.xticks(ticks=x, labels=CONFIG['stations'], fontsize='28')
 	plt.yticks(fontsize='28')
-	plt.show()
 	plt.savefig('plots/avalable_data.png')
 
 if __name__ == '__main__':
