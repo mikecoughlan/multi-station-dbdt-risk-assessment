@@ -144,8 +144,8 @@ def get_indicies_from_omni():
 
 	omniData = omniData.drop(to_drop, axis=1)
 	clean_omni(omniData)
-	omniData['AE_INDEX'].interpolate(method=method, limit=limit)
-	omniData['SYM_H'].interpolate(method=method, limit=limit)
+	# omniData['AE_INDEX'].interpolate(method=method, limit=limit)
+	# omniData['SYM_H'].interpolate(method=method, limit=limit)
 
 	return omniData
 
@@ -157,8 +157,8 @@ def ace_to_dataframe(file, dataType):
     ** Will get only the 12 minutes data from file "SWESWI_data_12min"
     """
 
-    if dataType == 'sweswi':
-        dType = 'SWESWI_data_12min'
+    if dataType == 'swepam':
+        dType = 'SWEPAM_data_64sec'
     if dataType == 'mag':
         dType = 'MAG_data_16sec'
 
@@ -175,7 +175,7 @@ def ace_to_dataframe(file, dataType):
     return df
 
 def bad_ace_to_nan(df, dataType):
-    if dataType == 'sweswi':
+    if dataType == 'swepam':
 
         if 'proton_speed' in df.columns: df.loc[df['proton_speed'] <= -9999, 'proton_speed'] = np.nan
         if 'y_dot_GSM' in df.columns: df.loc[df['y_dot_GSM'] <= -9999, 'y_dot_GSM'] = np.nan
@@ -195,11 +195,11 @@ def bad_ace_to_nan(df, dataType):
 
 def ace_as_omni(plasmaData, magData, delay=0):
 
-    plasmaData = plasmaData.interpolate(method=method, limit=limit)
+    # plasmaData = plasmaData.interpolate(method=method, limit=limit)
     plasmaData = plasmaData.resample('1 min').bfill()
 
     # magData = magData[sdate:edate]
-    magData = magData.interpolate(method=method, limit=limit)
+    # magData = magData.interpolate(method=method, limit=limit)
     magData = magData.resample('1 min').mean()
 
     aceData = pd.DataFrame()
@@ -219,14 +219,14 @@ def ace_as_omni(plasmaData, magData, delay=0):
 
 def processing_ACE():
 
-	plasmaFiles = glob.glob(plasmaDir+'sweswi_data_12min_year*.hdf', recursive=True)
+	plasmaFiles = glob.glob(plasmaDir+'swepam_data_64sec_year*.hdf', recursive=True)
 	magFiles = glob.glob(magDir+'mag_data_16sec_year*.hdf', recursive=True)
 
 	p, m = [], []
 	for fil in sorted(plasmaFiles):
-		acePlasma = ace_to_dataframe(fil, 'sweswi')
+		acePlasma = ace_to_dataframe(fil, 'swepam')
 		acePlasma.index = pd.to_datetime(acePlasma['ACEepoch'], unit='s', origin=pd.Timestamp('1996-01-01'))  # type: ignore
-		acePlasma = bad_ace_to_nan(acePlasma, 'sweswi')
+		acePlasma = bad_ace_to_nan(acePlasma, 'swepam')
 		p.append(acePlasma)
 
 	for fil in sorted(magFiles):

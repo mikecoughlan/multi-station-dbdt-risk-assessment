@@ -11,7 +11,9 @@
 
 import random
 from datetime import datetime
+from typing import no_type_check
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -30,7 +32,7 @@ except:
   pass
 
 
-CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'NGK', 'BFE'],
+CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'BFE'],
 			'thresholds': [7.15],	# list of thresholds to be examined.
 			'params': ['Date_UTC', 'N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
 	   					'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T',
@@ -98,13 +100,13 @@ def classification_column(df, param, thresholds, forecast, window):
 	return df
 
 
-def ace_prep(path):
+def ace_prep(name):
 
 	'''Preparing the omnidata for plotting.
 		Inputs:
 		path: path to project directory
 	'''
-	df = pd.read_feather('../data/SW/solarwind_and_indicies.feather') 		# loading the omni data
+	df = pd.read_feather('../data/SW/solarwind_and_indicies{0}.feather'.format(name)) 		# loading the omni data
 
 	df.reset_index(drop=True, inplace=True) 		# reseting the index so its easier to work with integer indexes
 
@@ -118,7 +120,7 @@ def ace_prep(path):
 	return df
 
 
-def data_prep(path, station, thresholds, params, forecast, window, do_calc=True):
+def data_prep(name, station, thresholds, params, forecast, window, do_calc=True):
 	''' Preparing the magnetometer data for the other functions and concatinating with the other loaded dfs.
 		Inputs:
 		path: the file path to the project directory
@@ -134,7 +136,7 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 				file will be loaded.
 	'''
 	if do_calc:
-		df = pd.read_feather('../data/supermag/{0}.feather'.format(station)) # loading the station data.
+		df = pd.read_feather('../data/supermag/{0}{1}.feather'.format(station, name)) # loading the station data.
 		df['dN'] = df['N'].diff(1) # creates the dN column
 		df['dE'] = df['E'].diff(1) # creates the dE column
 		df['B'] = np.sqrt((df['N']**2)+((df['E']**2))) # creates the combined dB/dt column
@@ -149,7 +151,7 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 		df.set_index('Date_UTC', inplace=True, drop=False)
 		df.index = pd.to_datetime(df.index)
 
-		acedf = ace_prep(path)
+		acedf = ace_prep(name)
 
 		df = pd.concat([df, acedf], axis=1, ignore_index=False)	# adding on the omni data
 
@@ -168,7 +170,7 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 	return df
 
 
-def split_sequences(sequences, result_y1=None, n_steps=30, include_target=True):
+def split_sequences(sequences, n_steps=30, remove_nan=True):
 	'''takes input from the data frames and creates the input and target arrays that can go into the models.
 		Inputs:
 		sequences: dataframe of the input features.
@@ -176,24 +178,20 @@ def split_sequences(sequences, result_y1=None, n_steps=30, include_target=True):
 		n_steps: the time history that will define the 2nd demension of the resulting array.
 		include_target: true if there will be a target output. False for the testing data.'''
 
-	X, y1 = list(), list()		# creating lists for storing results
+	X = list()		# creating lists for storing results
+	nans = 0
+	sequences = sequences.to_numpy()
 	for i in range(len(sequences)-n_steps):										# going to the end of the dataframes
 		end_ix = i + n_steps													# find the end of this pattern
 		if end_ix > len(sequences):												# check if we are beyond the dataset
 			break
 		seq_x = sequences[i:end_ix, :]
-		if include_target:										# grabs the appropriate chunk of the data
+		if remove_nan:										# grabs the appropriate chunk of the data
 			if np.isnan(seq_x).any():														# doesn't add arrays with nan values to the training set
-				continue
-		if include_target:
-			seq_y1 = result_y1[end_ix]											# gets the appropriate target
-			y1.append(seq_y1)
+				nans = nans + 1
 		X.append(seq_x)
 
-	if include_target:
-		return np.array(X), np.array(y1)
-	if not include_target:
-		return np.array(X)
+	return len(X), nans
 
 
 def prep_test_data(df, stime, etime, params, time_history, prediction_length):
@@ -327,9 +325,12 @@ def prep_train_data(df, stime, etime, lead, recovery):
 	print('Number of storms: '+str(len(storms)))
 
 
-	train_dict = {}												# creatinga  training dictonary for storing everything
+	Total, Nans = 0, 0
 	Train, train1 = pd.DataFrame(), pd.Series()	# creating empty arrays for storing sequences
 	for storm, y1, i in zip(storms, y_1, range(len(storms))):		# looping through the storms
+		total, nans = split_sequences(storm)
+		Total = Total + total
+		Nans = Nans + nans
 		Train = pd.concat([Train, storm], axis=0, ignore_index=True)
 		train1 = pd.concat([train1, y1], axis=0)
 
@@ -340,10 +341,10 @@ def prep_train_data(df, stime, etime, lead, recovery):
 	print('Length of training df: '+str(len(Train)))
 	print('Length of Train with dropped Nan: '+str(len(dropped_nans)))
 
-	return Train
+	return Total, Nans
 
 
-def main(path, station):
+def main():
 	'''Here we go baby! bringing it all together.
 		Inputs:
 		path: path to the data.
@@ -352,19 +353,38 @@ def main(path, station):
 		station: the ground magnetometer station being examined.
 		first_time: if True the model will be training and the data prep perfromed. If False will skip these stpes and I probably messed up the plotting somehow.
 		'''
+	no_interp, interp5, interp15 = [], [], []
+	interp = [no_interp, interp5, interp15]
+	for station in CONFIG['stations']:
+		file_names = ['_no_interp', '_5_interp', '_15_interp']
+		print('Entering main...')
+		for file, interp_len in zip(file_names, interp):
+			df = data_prep(file, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep
+			Total, Nans = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'])
+			interp_len.append(100-((Nans/Total)*100))											# calling the training data prep function
 
-	print('Entering main...')
+		# test_dict = prep_test_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['params'],
+		# 						MODEL_CONFIG['time_history'], prediction_length=CONFIG['forecast']+CONFIG['window'])
 
-	df = data_prep(path, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep function
-	train_dict = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'])  												# calling the training data prep function
 
-	test_dict = prep_test_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['params'],
-								MODEL_CONFIG['time_history'], prediction_length=CONFIG['forecast']+CONFIG['window'])
+	fig = plt.figure(figsize=(30,25))
+	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)
+
+	ax = fig.add_subplot(111)
+	plt.title('Percentage of Data Avalable Based on Limit of Interpolation ', fontsize='30')
+	x = [i for i in range(len(CONFIG['stations']))]
+	plt.scatter(x,interp[0], label='No interpolation')
+	plt.scatter(x,interp[1], label='5 minutes')
+	plt.scatter(x,interp[2], label='15 minutes')
+	plt.xlabel('Stations', fontsize='40')
+	plt.ylabel('Percentage of Avalable Data', fontsize='40')
+	plt.legend(fontsize='30', loc='lower right')
+	plt.xticks(ticks=x, labels=CONFIG['stations'], fontsize='28')
+	plt.yticks(fontsize='28')
+	plt.savefig('plots/avalable_data.png')
 
 if __name__ == '__main__':
 
-	for station in CONFIG['stations']:
-		main(projectDir, station)
-		print('Finished {0}'.format(station))
+	main()
 
 	print('It ran. Good job!')
