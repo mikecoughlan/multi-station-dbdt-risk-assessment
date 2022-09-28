@@ -358,31 +358,27 @@ def main():
 	for station in CONFIG['stations']:
 		file_names = ['_no_interp', '_5_interp', '']
 		print('Entering main...')
-		for file, interp_len in zip(file_names, interp:
+		for file, interp_len in zip(file_names, interp):
 			df = data_prep(file, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep
 			Total, Nans = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'])
 			interp_len.append(100-((Nans/Total)*100))											# calling the training data prep function
-		print(station)
-		print('Totals: '+str(Total))
-		print('Nans: '+str(Nans))
-		print('Precentages: '+str(percentages))
-		test_dict = prep_test_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['params'],
-								MODEL_CONFIG['time_history'], prediction_length=CONFIG['forecast']+CONFIG['window'])
 
-		PR_dict = sorting_PR(results_dict, station)
+		# test_dict = prep_test_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['params'],
+		# 						MODEL_CONFIG['time_history'], prediction_length=CONFIG['forecast']+CONFIG['window'])
+
 
 	fig = plt.figure(figsize=(30,25))
 	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)
 
 	ax = fig.add_subplot(111)
 	plt.title('Percentage of Data Avalable Based on Limit of Interpolation ', fontsize='30')
-	x = [i for in in range(len(CONFIG['stations']))]
+	x = [i for i in range(len(CONFIG['stations']))]
 	plt.scatter(x,interp[0], label='No interpolation')
 	plt.scatter(x,interp[1], label='5 minutes')
 	plt.scatter(x,interp[2], label='15 minutes')
 	plt.xlabel('Stations', fontsize='40')
 	plt.ylabel('Percentage of Avalable Data', fontsize='40')
-	plt.legend(fontsize='30', loc='lower center')
+	plt.legend(fontsize='30', loc='lower right')
 	plt.xticks(ticks=x, labels=CONFIG['stations'], fontsize='28')
 	plt.yticks(fontsize='28')
 	plt.show()
@@ -390,8 +386,6 @@ def main():
 
 if __name__ == '__main__':
 
-	for station in CONFIG['stations']:
-		main(station)
-		print('Finished {0}'.format(station))
+	main()
 
 	print('It ran. Good job!')
