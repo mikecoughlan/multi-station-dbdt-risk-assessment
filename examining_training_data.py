@@ -98,13 +98,13 @@ def classification_column(df, param, thresholds, forecast, window):
 	return df
 
 
-def ace_prep(path):
+def ace_prep(name):
 
 	'''Preparing the omnidata for plotting.
 		Inputs:
 		path: path to project directory
 	'''
-	df = pd.read_feather('../data/SW/solarwind_and_indicies.feather') 		# loading the omni data
+	df = pd.read_feather('../data/SW/solarwind_and_indicies{0}.feather'.format(name)) 		# loading the omni data
 
 	df.reset_index(drop=True, inplace=True) 		# reseting the index so its easier to work with integer indexes
 
@@ -118,7 +118,7 @@ def ace_prep(path):
 	return df
 
 
-def data_prep(path, station, thresholds, params, forecast, window, do_calc=True):
+def data_prep(name, station, thresholds, params, forecast, window, do_calc=True):
 	''' Preparing the magnetometer data for the other functions and concatinating with the other loaded dfs.
 		Inputs:
 		path: the file path to the project directory
@@ -134,7 +134,7 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 				file will be loaded.
 	'''
 	if do_calc:
-		df = pd.read_feather('../data/supermag/{0}.feather'.format(station)) # loading the station data.
+		df = pd.read_feather('../data/supermag/{0}{1}.feather'.format(station, name)) # loading the station data.
 		df['dN'] = df['N'].diff(1) # creates the dN column
 		df['dE'] = df['E'].diff(1) # creates the dE column
 		df['B'] = np.sqrt((df['N']**2)+((df['E']**2))) # creates the combined dB/dt column
@@ -149,7 +149,7 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 		df.set_index('Date_UTC', inplace=True, drop=False)
 		df.index = pd.to_datetime(df.index)
 
-		acedf = ace_prep(path)
+		acedf = ace_prep(name)
 
 		df = pd.concat([df, acedf], axis=1, ignore_index=False)	# adding on the omni data
 
@@ -168,7 +168,7 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 	return df
 
 
-def split_sequences(sequences, result_y1=None, n_steps=30, include_target=True):
+def split_sequences(sequences, n_steps=30, remove_nan=True):
 	'''takes input from the data frames and creates the input and target arrays that can go into the models.
 		Inputs:
 		sequences: dataframe of the input features.
@@ -176,24 +176,19 @@ def split_sequences(sequences, result_y1=None, n_steps=30, include_target=True):
 		n_steps: the time history that will define the 2nd demension of the resulting array.
 		include_target: true if there will be a target output. False for the testing data.'''
 
-	X, y1 = list(), list()		# creating lists for storing results
+	X = list()		# creating lists for storing results
+	nans = 0
 	for i in range(len(sequences)-n_steps):										# going to the end of the dataframes
 		end_ix = i + n_steps													# find the end of this pattern
 		if end_ix > len(sequences):												# check if we are beyond the dataset
 			break
 		seq_x = sequences[i:end_ix, :]
-		if include_target:										# grabs the appropriate chunk of the data
+		if remove_nan:										# grabs the appropriate chunk of the data
 			if np.isnan(seq_x).any():														# doesn't add arrays with nan values to the training set
-				continue
-		if include_target:
-			seq_y1 = result_y1[end_ix]											# gets the appropriate target
-			y1.append(seq_y1)
+				nans = nans + 1
 		X.append(seq_x)
 
-	if include_target:
-		return np.array(X), np.array(y1)
-	if not include_target:
-		return np.array(X)
+	return len(X), nans
 
 
 def prep_test_data(df, stime, etime, params, time_history, prediction_length):
@@ -327,9 +322,12 @@ def prep_train_data(df, stime, etime, lead, recovery):
 	print('Number of storms: '+str(len(storms)))
 
 
-	train_dict = {}												# creatinga  training dictonary for storing everything
+	Total, Nans = 0, 0
 	Train, train1 = pd.DataFrame(), pd.Series()	# creating empty arrays for storing sequences
 	for storm, y1, i in zip(storms, y_1, range(len(storms))):		# looping through the storms
+		total, nans = split_sequences(storm)
+		Total = Total + total
+		Nans = Nans + nans
 		Train = pd.concat([Train, storm], axis=0, ignore_index=True)
 		train1 = pd.concat([train1, y1], axis=0)
 
@@ -340,10 +338,10 @@ def prep_train_data(df, stime, etime, lead, recovery):
 	print('Length of training df: '+str(len(Train)))
 	print('Length of Train with dropped Nan: '+str(len(dropped_nans)))
 
-	return Train
+	return Total, Nans
 
 
-def main(path, station):
+def main(station):
 	'''Here we go baby! bringing it all together.
 		Inputs:
 		path: path to the data.
@@ -353,18 +351,26 @@ def main(path, station):
 		first_time: if True the model will be training and the data prep perfromed. If False will skip these stpes and I probably messed up the plotting somehow.
 		'''
 
+	file_names = ['_no_interp', '_5_interp', '']
 	print('Entering main...')
-
-	df = data_prep(path, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep function
-	train_dict = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'])  												# calling the training data prep function
-
+	totals, nans, percentages = [], [], []
+	for file in file_names:
+		df = data_prep(file, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep function
+		Total, Nans = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'])
+		totals.append(Total)
+		nans.append(Nans)
+		percentages.append((Nans/Total)*100)												# calling the training data prep function
+	print(station)
+	print('Totals: '+str(Total))
+	print('Nans: '+str(Nans))
+	print('Precentages: '+str(percentages))
 	test_dict = prep_test_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['params'],
 								MODEL_CONFIG['time_history'], prediction_length=CONFIG['forecast']+CONFIG['window'])
 
 if __name__ == '__main__':
 
 	for station in CONFIG['stations']:
-		main(projectDir, station)
+		main(station)
 		print('Finished {0}'.format(station))
 
 	print('It ran. Good job!')
