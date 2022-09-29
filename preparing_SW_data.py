@@ -30,74 +30,74 @@ magDir = '../../../../../data/ace/mag/'
 dataDump = '../../data/SW/'
 
 method = 'linear'
-limit = 5
+limit = 15
 
 if not os.path.exists(dataDump):
 	os.makedirs(dataDump)
 
 
 def break_dates(df, dateField, drop=False, errors="raise"):
-    """break_dates expands a column of df from a datetime64 to many columns containing
-    the information from the date. This applies changes inplace.
-    Parameters:
-    -----------
-    df: A pandas data frame. df gain several new columns.
-    dateField: A string that is the name of the date column you wish to expand.
-        If it is not a datetime64 series, it will be converted to one with pd.to_datetime.
-    drop: If true then the original date column will be removed.
+	"""break_dates expands a column of df from a datetime64 to many columns containing
+	the information from the date. This applies changes inplace.
+	Parameters:
+	-----------
+	df: A pandas data frame. df gain several new columns.
+	dateField: A string that is the name of the date column you wish to expand.
+		If it is not a datetime64 series, it will be converted to one with pd.to_datetime.
+	drop: If true then the original date column will be removed.
 
-    Modified from FastAI software by Victor Pinto.
-    """
-    field = df[dateField]
-    field_dtype = field.dtype
-    if isinstance(field_dtype, pd.core.dtypes.dtypes.DatetimeTZDtype):
-        field_dtype = np.datetime64
+	Modified from FastAI software by Victor Pinto.
+	"""
+	field = df[dateField]
+	field_dtype = field.dtype
+	if isinstance(field_dtype, pd.core.dtypes.dtypes.DatetimeTZDtype):
+		field_dtype = np.datetime64
 
-    if not np.issubdtype(field_dtype, np.datetime64):
-        df[dateField] = field = pd.to_datetime(field, infer_datetime_format=True, errors=errors)
+	if not np.issubdtype(field_dtype, np.datetime64):
+		df[dateField] = field = pd.to_datetime(field, infer_datetime_format=True, errors=errors)
 
-    attr = ['Year', 'Month', 'Day', 'Dayofyear', 'Hour', 'Minute']
+	attr = ['Year', 'Month', 'Day', 'Dayofyear', 'Hour', 'Minute']
 
-    for n in attr: df[n] = getattr(field.dt, n.lower())
-    if drop: df.drop(dateField, axis=1, inplace=True)
+	for n in attr: df[n] = getattr(field.dt, n.lower())
+	if drop: df.drop(dateField, axis=1, inplace=True)
 
 def omnicdf2dataframe(file):
-    """
-    Load a CDF File and convert it in a Pandas DataFrame.
+	"""
+	Load a CDF File and convert it in a Pandas DataFrame.
 
-    WARNING: This will not return the CDF Attributes, just the variables.
-    WARNING: Only works for CDFs of the same array lenght (OMNI)
-    """
-    cdf = cdflib.CDF(file)
-    cdfdict = {}
+	WARNING: This will not return the CDF Attributes, just the variables.
+	WARNING: Only works for CDFs of the same array lenght (OMNI)
+	"""
+	cdf = cdflib.CDF(file)
+	cdfdict = {}
 
-    for key in cdf.cdf_info()['zVariables']:
-        cdfdict[key] = cdf[key]
+	for key in cdf.cdf_info()['zVariables']:
+		cdfdict[key] = cdf[key]
 
-    cdfdf = pd.DataFrame(cdfdict)
+	cdfdf = pd.DataFrame(cdfdict)
 
-    if 'Epoch' in cdf.cdf_info()['zVariables']:
-        cdfdf['Epoch'] = pd.to_datetime(cdflib.cdfepoch.encode(cdfdf['Epoch'].values))
+	if 'Epoch' in cdf.cdf_info()['zVariables']:
+		cdfdf['Epoch'] = pd.to_datetime(cdflib.cdfepoch.encode(cdfdf['Epoch'].values))
 
-    return cdfdf
+	return cdfdf
 
 def clean_omni(df):
-    """
-    Remove filling numbers for missing data in OMNI data (1 min) and replace
-    them with np.nan values
+	"""
+	Remove filling numbers for missing data in OMNI data (1 min) and replace
+	them with np.nan values
 
-    """
+	"""
 
-    # Indices
-    df.loc[df['AE_INDEX'] >= 99999, 'AE_INDEX'] = np.nan
-    df.loc[df['AL_INDEX'] >= 99999, 'AL_INDEX'] = np.nan
-    df.loc[df['AU_INDEX'] >= 99999, 'AU_INDEX'] = np.nan
-    df.loc[df['SYM_D'] >= 99999, 'SYM_D'] = np.nan
-    df.loc[df['SYM_H'] >= 99999, 'ASY_D'] = np.nan
-    df.loc[df['ASY_H'] >= 99999, 'ASY_H'] = np.nan
-    df.loc[df['PC_N_INDEX'] >= 999, 'PC_N_INDEX'] = np.nan
+	# Indices
+	df.loc[df['AE_INDEX'] >= 99999, 'AE_INDEX'] = np.nan
+	df.loc[df['AL_INDEX'] >= 99999, 'AL_INDEX'] = np.nan
+	df.loc[df['AU_INDEX'] >= 99999, 'AU_INDEX'] = np.nan
+	df.loc[df['SYM_D'] >= 99999, 'SYM_D'] = np.nan
+	df.loc[df['SYM_H'] >= 99999, 'ASY_D'] = np.nan
+	df.loc[df['ASY_H'] >= 99999, 'ASY_H'] = np.nan
+	df.loc[df['PC_N_INDEX'] >= 999, 'PC_N_INDEX'] = np.nan
 
-    return(df)
+	return(df)
 
 def get_indicies_from_omni():
 	'''
@@ -151,72 +151,75 @@ def get_indicies_from_omni():
 
 
 def ace_to_dataframe(file, dataType):
-    """
-    Load ACE HDF4 SWESWI file and convert it to Pandas DataFrame
+	"""
+	Load ACE HDF4 SWESWI file and convert it to Pandas DataFrame
 
-    ** Will get only the 12 minutes data from file "SWESWI_data_12min"
-    """
+	** Will get only the 12 minutes data from file "SWESWI_data_12min"
+	"""
 
-    if dataType == 'swepam':
-        dType = 'SWEPAM_ion'
-    if dataType == 'mag':
-        dType = 'MAG_data_16sec'
+	if dataType == 'swepam':
+		dType = 'SWEPAM_ion'
+	if dataType == 'mag':
+		dType = 'MAG_data_16sec'
 
-    hdf = HDF(file)
-    vs = hdf.vstart()
-    vinfo = vs.vdatainfo()
-    vd = vs.attach(dType)
+	hdf = HDF(file)
+	vs = hdf.vstart()
+	vinfo = vs.vdatainfo()
+	vd = vs.attach(dType)
 
-    df = pd.DataFrame(vd[:], columns=vd._fields)
+	df = pd.DataFrame(vd[:], columns=vd._fields)
 
-    vd.detach()
-    vs.end()
-    hdf.close()
+	vd.detach()
+	vs.end()
+	hdf.close()
 
-    return df
+	return df
 
 def bad_ace_to_nan(df, dataType):
-    if dataType == 'swepam':
+	if dataType == 'swepam':
 
-        if 'proton_speed' in df.columns: df.loc[df['proton_speed'] <= -9999, 'proton_speed'] = np.nan
-        if 'y_dot_GSM' in df.columns: df.loc[df['y_dot_GSM'] <= -9999, 'y_dot_GSM'] = np.nan
-        if 'z_dot_GSM' in df.columns: df.loc[df['z_dot_GSM'] <= -9999, 'z_dot_GSM'] = np.nan
+		if 'proton_speed' in df.columns: df.loc[df['proton_speed'] <= -9999, 'proton_speed'] = np.nan
+		if 'y_dot_GSM' in df.columns: df.loc[df['y_dot_GSM'] <= -9999, 'y_dot_GSM'] = np.nan
+		if 'z_dot_GSM' in df.columns: df.loc[df['z_dot_GSM'] <= -9999, 'z_dot_GSM'] = np.nan
 
-        if 'proton_density' in df.columns: df.loc[df['proton_density'] <= -9999, 'proton_density'] = np.nan
-        if 'proton_density' in df.columns: df.loc[df['proton_density'] >=  999, 'proton_density'] = np.nan
-        if 'proton_temp' in df.columns: df.loc[df['proton_temp'] <=  -9999, 'proton_temp'] = np.nan
+		if 'proton_density' in df.columns: df.loc[df['proton_density'] <= -9999, 'proton_density'] = np.nan
+		if 'proton_density' in df.columns: df.loc[df['proton_density'] >=  999, 'proton_density'] = np.nan
+		if 'proton_temp' in df.columns: df.loc[df['proton_temp'] <=  -9999, 'proton_temp'] = np.nan
 
-    if dataType == 'mag':
-        if 'Bt' in df.columns: df.loc[df['Bt'] <= -999, 'Bt'] = np.nan
-        if 'Bgse_x' in df.columns: df.loc[df['Bgse_x'] <= -999, 'Bgse_x'] = np.nan
-        if 'Bgsm_y' in df.columns: df.loc[df['Bgsm_y'] <= -999, 'Bgsm_y'] = np.nan
-        if 'Bgsm_z' in df.columns: df.loc[df['Bgsm_z'] <= -999, 'Bgsm_z'] = np.nan
+	if dataType == 'mag':
+		if 'Bt' in df.columns: df.loc[df['Bt'] <= -999, 'Bt'] = np.nan
+		if 'Bgse_x' in df.columns: df.loc[df['Bgse_x'] <= -999, 'Bgse_x'] = np.nan
+		if 'Bgsm_y' in df.columns: df.loc[df['Bgsm_y'] <= -999, 'Bgsm_y'] = np.nan
+		if 'Bgsm_z' in df.columns: df.loc[df['Bgsm_z'] <= -999, 'Bgsm_z'] = np.nan
 
-    return(df)
+	return(df)
 
 def ace_as_omni(plasmaData, magData, delay=0):
 
-    plasmaData = plasmaData.interpolate(method=method, limit=limit)
-    plasmaData = plasmaData.resample('1 min').bfill()
+	# plasmaData.drop_duplicates(subset='ACEepoch', inplace=True)
+	plasmaData.groupby('ACEepoch').mean()
+	plasmaData = plasmaData.interpolate(method=method, limit=limit)
+	plasmaData = plasmaData.resample('1 min').bfill()
 
-    # magData = magData[sdate:edate]
-    magData = magData.interpolate(method=method, limit=limit)
-    magData = magData.resample('1 min').mean()
+	# magData = magData[sdate:edate]
+	magData = magData.interpolate(method=method, limit=limit)
+	magData = magData.resample('1 min').mean()
 
-    aceData = pd.DataFrame()
 
-    aceData['B_Total'] = magData['Bt']
-    aceData['BY_GSM'] = magData['Bgsm_y']
-    aceData['BZ_GSM'] = magData['Bgsm_z']
-    aceData['Vx'] = plasmaData['proton_speed']
-    aceData['Vy'] = plasmaData['y_dot_GSM']
-    aceData['Vz'] = plasmaData['z_dot_GSM']
-    aceData['proton_density'] = plasmaData['proton_density']
-    aceData['T'] = plasmaData['proton_temp']
-    aceData['Pressure'] = (2*1e-6)*aceData['proton_density']*aceData['Vx']**2
-    aceData['E_Field'] = -aceData['Vx'] * aceData['BZ_GSM'] * 1e-3
+	aceData = pd.DataFrame()
 
-    return aceData
+	aceData['B_Total'] = magData['Bt']
+	aceData['BY_GSM'] = magData['Bgsm_y']
+	aceData['BZ_GSM'] = magData['Bgsm_z']
+	aceData['Vx'] = plasmaData['proton_speed']
+	aceData['Vy'] = plasmaData['y_dot_GSM']
+	aceData['Vz'] = plasmaData['z_dot_GSM']
+	aceData['proton_density'] = plasmaData['proton_density']
+	aceData['T'] = plasmaData['proton_temp']
+	aceData['Pressure'] = (2*1e-6)*aceData['proton_density']*aceData['Vx']**2
+	aceData['E_Field'] = -aceData['Vx'] * aceData['BZ_GSM'] * 1e-3
+
+	return aceData
 
 def processing_ACE():
 
@@ -265,16 +268,17 @@ def main():
 	Main function calling both the indicies and the ACE data processing functions.
 	'''
 	print('Entering main of preparing SW')
-	omniData = get_indicies_from_omni()
+
 	aceData = processing_ACE()
+	omniData = get_indicies_from_omni()
 	df = combining_dfs(omniData=omniData, aceData=aceData)
 
 	omniData.reset_index(drop=False, inplace=True)
 	aceData.reset_index(drop=False, inplace=True)
 
-	omniData.to_feather(dataDump+'indicies_data_5_interp.feather')
-	aceData.to_feather(dataDump+'ace_data_5_interp.feather')
-	df.to_feather(dataDump+'solarwind_and_indicies_5_interp.feather')
+	omniData.to_feather(dataDump+'indicies_data_no_interp.feather')
+	aceData.to_feather(dataDump+'ace_data_no_interp.feather')
+	df.to_feather(dataDump+'solarwind_and_indicies_no_interp.feather')
 
 
 
