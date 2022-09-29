@@ -33,7 +33,7 @@ except:
 
 
 CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'BFE'],
-			'thresholds': [7.15],	# list of thresholds to be examined.
+			'thresholds': 0.99,	# list of thresholds to be examined.
 			'params': ['Date_UTC', 'N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
 	   					'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T',
 	   					 'AE_INDEX', 'SZA', 'dBHt', 'B'],								# List of parameters that will be used for training.
@@ -68,7 +68,7 @@ MODEL_CONFIG = {'time_history': 30, 	# How much time history the model will use,
 random.seed(CONFIG['random_seed'])
 np.random.seed(CONFIG['random_seed'])
 
-def classification_column(df, param, thresholds, forecast, window):
+def classification_column(df, param, thresh, forecast, window):
 	'''creating a new column which labels whether there will be a dBT that crosses the threshold in the forecast window.
 		Inputs:
 		df: the dataframe containing all of the relevent data.
@@ -84,15 +84,15 @@ def classification_column(df, param, thresholds, forecast, window):
 	df['window_max'] = df.shifted_dBHt.rolling(indexer, min_periods=1).max()					# creates new coluimn in the df labeling the maximum parameter value in the forecast:forecast+window time frame
 	df.reset_index(drop=True, inplace=True)														# just resets the index
 
-	for thresh in thresholds:
-		'''This section creates a binary column for each of the thresholds. Binary will be one if the parameter
-			goes above the given threshold, and zero if it does not.'''
 
-		conditions = [(df['window_max'] < thresh), (df['window_max'] >= thresh)]			# defining the conditions
+	'''This section creates a binary column for each of the thresholds. Binary will be one if the parameter
+		goes above the given threshold, and zero if it does not.'''
 
-		binary = [0, 1] 																	# 0 if not cross 1 if cross
+	conditions = [(df['window_max'] < thresh), (df['window_max'] >= thresh)]			# defining the conditions
 
-		df['crossing'] = np.select(conditions, binary)						# new column created using the conditions and the binary
+	binary = [0, 1] 																	# 0 if not cross 1 if cross
+
+	df['crossing'] = np.select(conditions, binary)						# new column created using the conditions and the binary
 
 
 	df.drop(['window_max', 'shifted_dBHt'], axis=1, inplace=True)							# removes the two working columns for memory purposes
@@ -155,9 +155,11 @@ def data_prep(name, station, thresholds, params, forecast, window, do_calc=True)
 
 		df = pd.concat([df, acedf], axis=1, ignore_index=False)	# adding on the omni data
 
+		threshold = df['dBHt'].quantile(CONFIG['thresholds'])
+
 		df = df[params][1:]	# drops all features not in the features list above and drops the first row because of the derivatives
 
-		df = classification_column(df, 'dBHt', thresholds, forecast=forecast, window=window)		# calling the classification column function
+		df = classification_column(df, 'dBHt', threshold, forecast=forecast, window=window)		# calling the classification column function
 		datum = df.reset_index(drop=True)
 
 	if not do_calc:		# does not do the above calculations and instead just loads a csv file, then creates the cross column
@@ -167,7 +169,11 @@ def data_prep(name, station, thresholds, params, forecast, window, do_calc=True)
 		df.set_index('Date_UTC', inplace=True, drop=False)
 		df.index = pd.to_datetime(df.index)
 
-	return df
+		threshold = df['dBHt'].quantile(CONFIG['thresholds'])
+
+	print('Threshold value: '+str(threshold))
+
+	return df, threshold
 
 
 def split_sequences(sequences, n_steps=30, remove_nan=True):
@@ -359,7 +365,7 @@ def main():
 		file_names = ['_no_interp', '_5_interp', '_15_interp']
 		print('Entering main...')
 		for file, interp_len in zip(file_names, interp):
-			df = data_prep(file, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep
+			df, threhsold = data_prep(file, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep
 			Total, Nans = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'])
 			interp_len.append(100-((Nans/Total)*100))											# calling the training data prep function
 
