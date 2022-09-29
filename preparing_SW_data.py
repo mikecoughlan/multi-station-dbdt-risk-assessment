@@ -24,10 +24,10 @@ os.environ["CDF_LIB"] = "~/lib"
 
 import cdflib
 
-omni_dir = '../../../../data/omni/hro_1min/'
-plasmaDir = '../../../../data/ace/swepam/'
-magDir = '../../../../data/ace/mag'
-dataDump = '../data/SW/'
+omni_dir = '../../../../../data/omni/hro_1min/'
+plasmaDir = '../../../../../data/ace/swepam/'
+magDir = '../../../../../data/ace/mag/'
+dataDump = '../../data/SW/'
 
 method = 'linear'
 limit = 5
@@ -158,14 +158,13 @@ def ace_to_dataframe(file, dataType):
     """
 
     if dataType == 'swepam':
-        dType = 'SWEPAM_data_64sec'
+        dType = 'SWEPAM_ion'
     if dataType == 'mag':
         dType = 'MAG_data_16sec'
 
-	print(hdf.datasets())
     hdf = HDF(file)
-	print(hdf.datasets())
     vs = hdf.vstart()
+    vinfo = vs.vdatainfo()
     vd = vs.attach(dType)
 
     df = pd.DataFrame(vd[:], columns=vd._fields)
