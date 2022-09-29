@@ -35,7 +35,7 @@ except:
 
 
 CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'NGK', 'BFE'],
-			'thresholds': [7.15],	# list of thresholds to be examined.
+			'thresholds': 0.99,	# list of thresholds to be examined.
 			'params': ['Date_UTC', 'N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
 	   					'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T',
 	   					 'AE_INDEX', 'SZA', 'dBHt', 'B'],								# List of parameters that will be used for training.
@@ -70,7 +70,7 @@ MODEL_CONFIG = {'time_history': 30, 	# How much time history the model will use,
 random.seed(CONFIG['random_seed'])
 np.random.seed(CONFIG['random_seed'])
 
-def classification_column(df, param, thresholds, forecast, window):
+def classification_column(df, param, thresh, forecast, window):
 	'''creating a new column which labels whether there will be a dBT that crosses the threshold in the forecast window.
 		Inputs:
 		df: the dataframe containing all of the relevent data.
@@ -86,15 +86,15 @@ def classification_column(df, param, thresholds, forecast, window):
 	df['window_max'] = df.shifted_dBHt.rolling(indexer, min_periods=1).max()					# creates new coluimn in the df labeling the maximum parameter value in the forecast:forecast+window time frame
 	df.reset_index(drop=True, inplace=True)														# just resets the index
 
-	for thresh in thresholds:
-		'''This section creates a binary column for each of the thresholds. Binary will be one if the parameter
-			goes above the given threshold, and zero if it does not.'''
 
-		conditions = [(df['window_max'] < thresh), (df['window_max'] >= thresh)]			# defining the conditions
+	'''This section creates a binary column for each of the thresholds. Binary will be one if the parameter
+		goes above the given threshold, and zero if it does not.'''
 
-		binary = [0, 1] 																	# 0 if not cross 1 if cross
+	conditions = [(df['window_max'] < thresh), (df['window_max'] >= thresh)]			# defining the conditions
 
-		df['crossing'] = np.select(conditions, binary)						# new column created using the conditions and the binary
+	binary = [0, 1] 																	# 0 if not cross 1 if cross
+
+	df['crossing'] = np.select(conditions, binary)						# new column created using the conditions and the binary
 
 
 	df.drop(['window_max', 'shifted_dBHt'], axis=1, inplace=True)							# removes the two working columns for memory purposes
@@ -163,11 +163,13 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 		print('Concatinating dfs...')
 		df = pd.concat([df, acedf], axis=1, ignore_index=False)	# adding on the omni data
 
+		threshold = df['dBHt'].quantile(CONFIG['thresholds'])
+
 		print('Isolating selected Features...')	# defining the features to be kept
 		df = df[params][1:]	# drops all features not in the features list above and drops the first row because of the derivatives
 
 		print('Creating Classification column...')
-		df = classification_column(df, 'dBHt', thresholds, forecast=forecast, window=window)		# calling the classification column function
+		df = classification_column(df, 'dBHt', threshold, forecast=forecast, window=window)		# calling the classification column function
 		datum = df.reset_index(drop=True)
 		datum.to_feather('../data/ace_and_supermag/{0}_prepared.feather'.format(station))
 
@@ -177,8 +179,10 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 		df.reset_index(drop=True, inplace=True)
 		df.set_index('Date_UTC', inplace=True, drop=False)
 		df.index = pd.to_datetime(df.index)
+		threshold = df['dBHt'].quantile(0.99)
 
-	return df
+	print('Threshold value: '+str(threshold))
+	return df, threshold
 
 
 def split_sequences(sequences, result_y1=None, n_steps=30, include_target=True):
@@ -385,7 +389,7 @@ def main(path, station):
 	print('Entering main...')
 
 	splits = CONFIG['k_fold_splits']		# denines the number of splits
-	df = data_prep(path, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep function
+	df, threshold = data_prep(path, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep function
 	train_dict, scaler = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'],
 											MODEL_CONFIG['time_history'])  												# calling the training data prep function
 	if not os.path.exists('multi-station-dbdt-risk-assessment/models/scalers/'):
@@ -397,6 +401,7 @@ def main(path, station):
 	train_indicies = pd.DataFrame()
 	val_indicies = pd.DataFrame()
 
+	train_dict['threshold'] = threshold
 	test_dict = prep_test_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['params'],
 								scaler, MODEL_CONFIG['time_history'], prediction_length=CONFIG['forecast']+CONFIG['window'])						# processing the tesing data
 

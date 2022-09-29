@@ -24,13 +24,13 @@ os.environ["CDF_LIB"] = "~/lib"
 
 import cdflib
 
-omni_dir = '../../data/omni/'
-plasmaDir = '../../data/ace/'
-magDir = '../../data/ace/'
-dataDump = '../data/SW/'
+omni_dir = '../../../../../data/omni/hro_1min/'
+plasmaDir = '../../../../../data/ace/swepam/'
+magDir = '../../../../../data/ace/mag/'
+dataDump = '../../data/SW/'
 
 method = 'linear'
-limit = 0
+limit = 5
 
 if not os.path.exists(dataDump):
 	os.makedirs(dataDump)
@@ -157,13 +157,14 @@ def ace_to_dataframe(file, dataType):
     ** Will get only the 12 minutes data from file "SWESWI_data_12min"
     """
 
-    if dataType == 'sweswi':
-        dType = 'SWESWI_data_12min'
+    if dataType == 'swepam':
+        dType = 'SWEPAM_ion'
     if dataType == 'mag':
         dType = 'MAG_data_16sec'
 
     hdf = HDF(file)
     vs = hdf.vstart()
+    vinfo = vs.vdatainfo()
     vd = vs.attach(dType)
 
     df = pd.DataFrame(vd[:], columns=vd._fields)
@@ -175,7 +176,7 @@ def ace_to_dataframe(file, dataType):
     return df
 
 def bad_ace_to_nan(df, dataType):
-    if dataType == 'sweswi':
+    if dataType == 'swepam':
 
         if 'proton_speed' in df.columns: df.loc[df['proton_speed'] <= -9999, 'proton_speed'] = np.nan
         if 'y_dot_GSM' in df.columns: df.loc[df['y_dot_GSM'] <= -9999, 'y_dot_GSM'] = np.nan
@@ -219,14 +220,14 @@ def ace_as_omni(plasmaData, magData, delay=0):
 
 def processing_ACE():
 
-	plasmaFiles = glob.glob(plasmaDir+'sweswi_data_12min_year*.hdf', recursive=True)
+	plasmaFiles = glob.glob(plasmaDir+'swepam_data_64sec_year*.hdf', recursive=True)
 	magFiles = glob.glob(magDir+'mag_data_16sec_year*.hdf', recursive=True)
 
 	p, m = [], []
 	for fil in sorted(plasmaFiles):
-		acePlasma = ace_to_dataframe(fil, 'sweswi')
+		acePlasma = ace_to_dataframe(fil, 'swepam')
 		acePlasma.index = pd.to_datetime(acePlasma['ACEepoch'], unit='s', origin=pd.Timestamp('1996-01-01'))  # type: ignore
-		acePlasma = bad_ace_to_nan(acePlasma, 'sweswi')
+		acePlasma = bad_ace_to_nan(acePlasma, 'swepam')
 		p.append(acePlasma)
 
 	for fil in sorted(magFiles):
@@ -271,9 +272,9 @@ def main():
 	omniData.reset_index(drop=False, inplace=True)
 	aceData.reset_index(drop=False, inplace=True)
 
-	omniData.to_feather(dataDump+'indicies_data_no_interp.feather')
-	aceData.to_feather(dataDump+'ace_data_no_interp.feather')
-	df.to_feather(dataDump+'solarwind_and_indicies_no_interp.feather')
+	omniData.to_feather(dataDump+'indicies_data_5_interp.feather')
+	aceData.to_feather(dataDump+'ace_data_5_interp.feather')
+	df.to_feather(dataDump+'solarwind_and_indicies_5_interp.feather')
 
 
 

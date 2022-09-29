@@ -9,14 +9,17 @@
 #
 ##########################################################################################
 
+import os
+import pickle
 import random
 from datetime import datetime
-from typing import no_type_check
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import ShuffleSplit, cross_validate
+from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.utils import to_categorical
 
 # Data directories
@@ -31,8 +34,7 @@ except:
   # Invalid device or cannot modify virtual devices once initialized.
   pass
 
-
-CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'BFE'],
+CONFIG = {'stations': ['OTT'],
 			'thresholds': 0.99,	# list of thresholds to be examined.
 			'params': ['Date_UTC', 'N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
 	   					'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T',
@@ -44,12 +46,9 @@ CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'BFE'],
 			'test_storm_etime': ['2001-04-02 12:00:00', '2001-09-02 00:00:00', '2005-05-17 00:00:00',
 									'2005-09-02 12:00:00', '2006-12-17 00:00:00', '2010-04-07 00:00:00',
 									'2011-08-07 09:00:00', '2015-03-19 14:00:00'],	# end times for testing storms. This will remove them from training
-			'plot_stime': ['2011-08-05 16:00', '2006-12-14 12:00', '2001-03-30 21:00'],		# start times for the plotting widow. Focuses on the main sequence of the storm
-			'plot_etime': ['2011-08-06 18:00', '2006-12-15 20:00', '2001-04-01 02:00'],		# end plotting times
-			'plot_titles': ['2011_storm', '2006_storm', '2001_storm'],						# list used for plot titles so I don't have to do it manually
 			'forecast': 30,
 			'window': 30,																	# time window over which the metrics will be calculated
-			'k_fold_splits': 100,													# amount of k fold splits to be performed. Program will create this many models
+			'k_fold_splits': 1,													# amount of k fold splits to be performed. Program will create this many models
 			'lead': 12,																# lead time added to each storm minimum in SYM-H
 			'recovery':24,
 			'random_seed':42}															# recovery time added to each storm minimum in SYM-H
@@ -67,6 +66,7 @@ MODEL_CONFIG = {'time_history': 30, 	# How much time history the model will use,
 # setting the random seeds for reproducibility
 random.seed(CONFIG['random_seed'])
 np.random.seed(CONFIG['random_seed'])
+
 
 def classification_column(df, param, thresh, forecast, window):
 	'''creating a new column which labels whether there will be a dBT that crosses the threshold in the forecast window.
@@ -100,13 +100,13 @@ def classification_column(df, param, thresh, forecast, window):
 	return df
 
 
-def ace_prep(name):
+def ace_prep(path):
 
 	'''Preparing the omnidata for plotting.
 		Inputs:
 		path: path to project directory
 	'''
-	df = pd.read_feather('../data/SW/solarwind_and_indicies{0}.feather'.format(name)) 		# loading the omni data
+	df = pd.read_feather('../data/SW/solarwind_and_indicies.feather') 		# loading the omni data
 
 	df.reset_index(drop=True, inplace=True) 		# reseting the index so its easier to work with integer indexes
 
@@ -115,12 +115,12 @@ def ace_prep(name):
 	df.set_index('Date_UTC', inplace=True, drop=True)
 	df.index = pd.to_datetime(df.index)
 
-	# df = df.dropna() # shouldn't be any empty rows after that but in case there is we drop them here
-	print('Not dropping nan')
+	df = df.dropna() # shouldn't be any empty rows after that but in case there is we drop them here
+
 	return df
 
 
-def data_prep(name, station, thresholds, params, forecast, window, do_calc=True):
+def data_prep(path, station, thresholds, params, forecast, window, do_calc=True):
 	''' Preparing the magnetometer data for the other functions and concatinating with the other loaded dfs.
 		Inputs:
 		path: the file path to the project directory
@@ -135,8 +135,11 @@ def data_prep(name, station, thresholds, params, forecast, window, do_calc=True)
 				running this specific CONFIGuration and a csv has been saved. If this is the case the csv
 				file will be loaded.
 	'''
+	print('preparing data...')
 	if do_calc:
-		df = pd.read_feather('../data/supermag/{0}{1}.feather'.format(station, name)) # loading the station data.
+		print('Reading in CSV...')
+		df = pd.read_feather('../data/supermag/{0}.feather'.format(station)) # loading the station data.
+		print('Doing calculations...')
 		df['dN'] = df['N'].diff(1) # creates the dN column
 		df['dE'] = df['E'].diff(1) # creates the dE column
 		df['B'] = np.sqrt((df['N']**2)+((df['E']**2))) # creates the combined dB/dt column
@@ -145,22 +148,28 @@ def data_prep(name, station, thresholds, params, forecast, window, do_calc=True)
 		df['sinMLT'] = np.sin(df.MLT * 2 * np.pi * 15 / 360)
 		df['cosMLT'] = np.cos(df.MLT * 2 * np.pi * 15 / 360)
 
+		print('Setting Datetime...')
 		# setting datetime index
 		pd.to_datetime(df['Date_UTC'], format='%Y-%m-%d %H:%M:%S')
 		df.reset_index(drop=True, inplace=True)
 		df.set_index('Date_UTC', inplace=True, drop=False)
 		df.index = pd.to_datetime(df.index)
 
-		acedf = ace_prep(name)
+		print('Getting ACE data...')
+		acedf = ace_prep(path)
 
+		print('Concatinating dfs...')
 		df = pd.concat([df, acedf], axis=1, ignore_index=False)	# adding on the omni data
 
 		threshold = df['dBHt'].quantile(CONFIG['thresholds'])
 
+		print('Isolating selected Features...')	# defining the features to be kept
 		df = df[params][1:]	# drops all features not in the features list above and drops the first row because of the derivatives
 
+		print('Creating Classification column...')
 		df = classification_column(df, 'dBHt', threshold, forecast=forecast, window=window)		# calling the classification column function
 		datum = df.reset_index(drop=True)
+		datum.to_feather('../data/ace_and_supermag/{0}_prepared.feather'.format(station))
 
 	if not do_calc:		# does not do the above calculations and instead just loads a csv file, then creates the cross column
 		df = pd.read_feather('../data/{0}_prepared.feather'.format(station))
@@ -168,80 +177,10 @@ def data_prep(name, station, thresholds, params, forecast, window, do_calc=True)
 		df.reset_index(drop=True, inplace=True)
 		df.set_index('Date_UTC', inplace=True, drop=False)
 		df.index = pd.to_datetime(df.index)
-
-		threshold = df['dBHt'].quantile(CONFIG['thresholds'])
+		threshold = df['dBHt'].quantile(0.99)
 
 	print('Threshold value: '+str(threshold))
-
 	return df, threshold
-
-
-def split_sequences(sequences, n_steps=30, remove_nan=True):
-	'''takes input from the data frames and creates the input and target arrays that can go into the models.
-		Inputs:
-		sequences: dataframe of the input features.
-		results_y: series data of the targets for each threshold.
-		n_steps: the time history that will define the 2nd demension of the resulting array.
-		include_target: true if there will be a target output. False for the testing data.'''
-
-	X = list()		# creating lists for storing results
-	nans = 0
-	sequences = sequences.to_numpy()
-	for i in range(len(sequences)-n_steps):										# going to the end of the dataframes
-		end_ix = i + n_steps													# find the end of this pattern
-		if end_ix > len(sequences):												# check if we are beyond the dataset
-			break
-		seq_x = sequences[i:end_ix, :]
-		if remove_nan:										# grabs the appropriate chunk of the data
-			if np.isnan(seq_x).any():														# doesn't add arrays with nan values to the training set
-				nans = nans + 1
-		X.append(seq_x)
-
-	return len(X), nans
-
-
-def prep_test_data(df, stime, etime, params, time_history, prediction_length):
-	'''function that segments the selected storms for testing the models. Pulls the data out of the
-		dataframe, splits the sequences, and stores the model input arrays and the real results.
-		Inputs:
-		df: Dataframe containing all of the data.
-		stime: array of datetime strings that define the start of the testing storms.
-		etime: array of datetime strings that define the end of the testing storms.
-		thresholds: array on integers that define the crossing binary for each target array.
-		params: list of features to be included as inputs to the models.
-		scaler: pre-fit scaler that is uesd to scale teh model input data.
-		time_history: amount of time history used to define the 2nd dimension of the model input arrays.
-		prediction_length: forecast length+prediction window. Used to cut off the end of the df.'''
-
-	test_dict = {}
-	ratios=[]
-	total_ratio = pd.DataFrame()										# initalizing the dictonary for storing everything
-	for i, (start, end) in enumerate(zip(stime, etime)):		# looping through the different storms
-		test_dict['storm_{0}'.format(i)] = {}						# creating a sub-dict for this particular storm
-
-		storm_df = df[start:end]									# cutting out the storm from the greater dataframe
-		storm_df.reset_index(inplace=True, drop=False)
-		test_dict['storm_{0}'.format(i)]['date'] = storm_df['Date_UTC']		# storing the date series for later plotting
-		real_cols = ['Date_UTC', 'dBHt', 'crossing']						# defining real_cols and then adding in the real data to the columns. Used to segment the important data needed for comparison to model outputs
-
-		real_df = storm_df[real_cols][time_history:(len(storm_df)-prediction_length)]		# cutting out the relevent columns. trimmed at the edges to keep length consistent with model outputs
-		real_df.reset_index(inplace=True, drop=True)
-
-		storm_df = storm_df[params]												# cuts out the model input parameters
-		storm_df.drop(storm_df.tail(prediction_length).index,inplace=True)		# chopping off the prediction length. Cannot predict past the avalable data
-		storm_df.drop('Date_UTC', axis=1, inplace=True)							# don't want to train on datetime string
-		storm_df.reset_index(inplace=True, drop=True)
-
-		test_dict['storm_{0}'.format(i)]['Y'] = storm_df						# creating a dict element for the model input data
-		test_dict['storm_{0}'.format(i)]['real_df'] = real_df					# dict element for the real data for comparison
-		re = real_df['crossing']
-		total_ratio = pd.concat([total_ratio,re], axis=0)
-		ratio = re.sum(axis=0)/len(re)
-		ratios.append(ratio)
-
-	print('Storm rations: '+str(ratios))
-	print('total ratios for all storms: '+str(total_ratio.sum(axis=0)/len(total_ratio)))
-	return test_dict
 
 
 def storm_extract(data, storm_list, lead, recovery):
@@ -277,13 +216,13 @@ def storm_extract(data, storm_list, lead, recovery):
 
 	for storm in storms:
 		storm.reset_index(drop=True, inplace=True)		# resetting the storm index and simultaniously dropping the date so it doesn't get trained on
-		y_1.append(storm['crossing'])			# turns the one demensional resulting array for the storm into a
+		y_1.append(to_categorical(storm['crossing'].to_numpy(), num_classes=2))			# turns the one demensional resulting array for the storm into a
 		storm.drop('crossing', axis=1, inplace=True)  	# removing the target variable from the storm data so we don't train on it
 
 	return storms, y_1
 
 
-def prep_train_data(df, stime, etime, lead, recovery):
+def prep_train_data(df, stime, etime, lead, recovery, time_history):
 	''' function that prepares the training data.
 		Inputs:
 		df: the full, prepared dataframe.
@@ -315,42 +254,110 @@ def prep_train_data(df, stime, etime, lead, recovery):
 	for df in data:
 		df.reset_index(inplace=True, drop=False)
 
+	print('Loading storm list...')
 	storm_list = pd.read_csv('stormList.csv', header=None, names=['dates'])		# loading the list of storms as defined by SYM-H minimum
 	for i in range(len(storm_list)):						# cross checking it with testing storms, dropping storms if they're in the test storm list
 		d = datetime.strptime(storm_list['dates'][i], '%Y-%m-%d %H:%M:%S')		# converting list of dates to datetime
-		if (d < datetime.strptime('1998-02-05 00:00:00', '%Y-%m-%d %H:%M:%S')) or (d > datetime.strptime('2018-01-01 00:00:00', '%Y-%m-%d %H:%M:%S')):
-			storm_list.drop(i, inplace=True)
 		for s, e, in zip(start, end):									# drops any storms in the list that overlap with the testing storms
 			if (d >= s) & (d <= e):
 				storm_list.drop(i, inplace=True)
-	storm_list.reset_index(inplace=True, drop=True)
+				print('found one! Get outta here!')
+
 	dates = storm_list['dates']				# just saving it to a variable so I can work with it a bit easier
 
 	print('\nFinding storms...')
 	storms, y_1 = storm_extract(data, dates, lead=lead, recovery=recovery)		# extracting the storms using list method
 	print('Number of storms: '+str(len(storms)))
 
+	to_scale_with = pd.concat(storms, axis=0, ignore_index=True)			# finding the largest storm with which we can scale the data. Not sure this is the best way to do this
+	scaler = StandardScaler()									# defining the type of scaler to use
+	print('Fitting scaler')
+	scaler.fit(to_scale_with)									# fitting the scaler to the longest storm
+	print('Scaling storms train')
+	storms = [scaler.transform(storm) for storm in storms]		# doing a scaler transform to each storm individually
+	n_features = storms[1].shape[1]				# identifying how many features (columns) are in being used.
 
-	Total, Nans = 0, 0
-	Train, train1 = pd.DataFrame(), pd.Series()	# creating empty arrays for storing sequences
-	for storm, y1, i in zip(storms, y_1, range(len(storms))):		# looping through the storms
-		total, nans = split_sequences(storm)
-		Total = Total + total
-		Nans = Nans + nans
-		Train = pd.concat([Train, storm], axis=0, ignore_index=True)
-		train1 = pd.concat([train1, y1], axis=0)
+	train_dict = {}												# creatinga  training dictonary for storing everything
+	Train = np.concatenate(storms, axis=0)
+	train1 = np.concatenate(y_1, axis=0)
 
-	print('Train dBHt mean: '+str(Train['dBHt'].mean()))
-	ratio = train1.sum(axis=0)/len(train1)
-	print('Crossing ratio: '+str(ratio))
-	dropped_nans = Train.dropna()
-	print('Length of training df: '+str(len(Train)))
-	print('Length of Train with dropped Nan: '+str(len(dropped_nans)))
+	# adding all of the training arrays to the dict
+	train_dict['X'] = Train
+	train_dict['crossing'] = train1
+	n_features = train_dict['X'].shape[2]
 
-	return Total, Nans
+	print('Finished calculating percent')
+
+	return train_dict, scaler
+
+def define_model(n_estimators=1000, criterion='entropy'):
+	'''
+		Creating the model for training and predicting. See Scikit-Learn documentation
+		for more details on the input parameters to the model.
+
+		INPUTS:
+		n_estimators (int): num of trees that will be used in the forest.
+		criterion (str): The function to measure the quality of a split.
+
+		RETURNS:
+		model: defined model for fitting
+	'''
+
+	model = RandomForestClassifier(n_estimators=n_estimators, criterion=criterion)
+
+	return model
 
 
-def main():
+def fitting_and_predicting(X_train, X_test, y_train):
+	'''
+		Function that does the fitting of the defined model on the
+		training data, saves the fit model, and then makes a prediction
+		on the testing data.
+
+		INPUTS:
+		X_train (pd.DataFrame): prepared training input data
+		X_test (pd.DataFrame): prepared testing input data
+		y_train (pd.Series): prepared target data for fitting
+		predicting (str): either 'epc' or 'mainheat', used for file path for
+							saving the fit model.
+		to_fit (bool)
+		file_name (str): name of the file for saving the model.
+
+		RETURNS:
+		y_pred (np.array): array of predicted values from the model.
+	'''
+
+	model = define_model()		# getting the model
+	print('Fitting the classifier....')
+	model.fit(X_train, y_train)		# fitting the model
+
+	print('Predicting....')
+	y_pred = model.predict_proba(X_test)		# predicting the output value
+
+
+	return pd.DataFrame(y_pred), model
+
+
+# evaluate a give model using cross-validation
+def evaluate_model(model, X_train, y_train):
+	scores = cross_validate(model, X_train, y_train, cv=5, scoring={'f1':make_scorer(f1_score, average='macro'),
+																		'accuracy': make_scorer(accuracy_score)})
+	return scores
+
+def RandomForest_tuning(X_train, X_test, y_train, y_test, predicting):
+	# get the models to evaluate
+	models = get_models()
+	# evaluate the models and store results
+	results_f1, results_acc, names = list(), list(), list()
+	for name, model in tqdm(models.items()):
+		scores = evaluate_model(model, X_train, y_train)
+		results_f1.append(scores['test_f1'])
+		results_acc.append(scores['test_accuracy'])
+		names.append(name)
+		print('{0}, {1}, {2}, {3}, {4}'.format(name, np.mean(scores['test_f1']), np.std(scores['test_f1']), np.mean(scores['test_accuracy']), np.std(scores['test_accuracy'])))
+
+
+def main(path, station):
 	'''Here we go baby! bringing it all together.
 		Inputs:
 		path: path to the data.
@@ -359,38 +366,48 @@ def main():
 		station: the ground magnetometer station being examined.
 		first_time: if True the model will be training and the data prep perfromed. If False will skip these stpes and I probably messed up the plotting somehow.
 		'''
-	no_interp, interp5, interp15 = [], [], []
-	interp = [no_interp, interp5, interp15]
-	for station in CONFIG['stations']:
-		file_names = ['_no_interp', '_5_interp', '_15_interp']
-		print('Entering main...')
-		for file, interp_len in zip(file_names, interp):
-			df, threhsold = data_prep(file, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep
-			Total, Nans = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'])
-			interp_len.append(100-((Nans/Total)*100))											# calling the training data prep function
 
-		# test_dict = prep_test_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['params'],
-		# 						MODEL_CONFIG['time_history'], prediction_length=CONFIG['forecast']+CONFIG['window'])
+	print('Entering main...')
 
+	splits = CONFIG['k_fold_splits']		# denines the number of splits
+	df, threshold = data_prep(path, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep function
+	train_dict, scaler = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'],
+											MODEL_CONFIG['time_history'])  												# calling the training data prep function
 
-	fig = plt.figure(figsize=(30,25))
-	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)
+	train_dict['threshold'] = threshold
+	# test_dict = prep_test_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['params'],
+	# 							scaler, MODEL_CONFIG['time_history'], prediction_length=CONFIG['forecast']+CONFIG['window'])						# processing the tesing data
 
-	ax = fig.add_subplot(111)
-	plt.title('Percentage of Data Avalable Based on Limit of Interpolation ', fontsize='30')
-	x = [i for i in range(len(CONFIG['stations']))]
-	plt.scatter(x,interp[0], label='No interpolation')
-	plt.scatter(x,interp[1], label='5 minutes')
-	plt.scatter(x,interp[2], label='15 minutes')
-	plt.xlabel('Stations', fontsize='40')
-	plt.ylabel('Percentage of Avalable Data', fontsize='40')
-	plt.legend(fontsize='30', loc='lower right')
-	plt.xticks(ticks=x, labels=CONFIG['stations'], fontsize='28')
-	plt.yticks(fontsize='28')
-	plt.savefig('plots/avalable_data.png')
+	sss = ShuffleSplit(n_splits=splits, test_size=0.2, random_state=CONFIG['random_seed'])		# defines the lists of training and validation indicies to perform the k fold splitting
+	X = train_dict['X']		 # grabbing the training data for model input
+
+	y = train_dict['crossing']				# grabbing the target arrays for training
+
+	train_index, val_index = [], []				# initalizes lists for the indexes to be stored
+	for train_index, val_index in sss.split(y):			# looping through the lists, adding them to other differentiated lists
+
+		xtrain = X[train_index]
+
+		xval =  X[val_index]
+
+		ytrain = y[train_index]
+
+		yval = y[val_index]
+
+		y_pred, model = fitting_and_predicting(xtrain, xval, ytrain)
+
+	params = ['N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
+	   					'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T',
+	   					 'AE_INDEX', 'SZA', 'dBHt', 'B']
+
+	feat_importances = pd.Series(model.feature_importances_, index=params)
+	feat_importances.plot(kind='barh')
+
 
 if __name__ == '__main__':
 
-	main()
+	for station in CONFIG['stations']:
+		main(projectDir, station)
+		print('Finished {0}'.format(station))
 
 	print('It ran. Good job!')
