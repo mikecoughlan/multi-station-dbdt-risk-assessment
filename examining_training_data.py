@@ -115,8 +115,8 @@ def ace_prep(name):
 	df.set_index('Date_UTC', inplace=True, drop=True)
 	df.index = pd.to_datetime(df.index)
 
-	df = df.dropna() # shouldn't be any empty rows after that but in case there is we drop them here
-
+	# df = df.dropna() # shouldn't be any empty rows after that but in case there is we drop them here
+	print('Not dropping nan')
 	return df
 
 
@@ -381,7 +381,6 @@ def main():
 	plt.legend(fontsize='30', loc='lower right')
 	plt.xticks(ticks=x, labels=CONFIG['stations'], fontsize='28')
 	plt.yticks(fontsize='28')
-	plt.show()
 	plt.savefig('plots/avalable_data.png')
 
 if __name__ == '__main__':
