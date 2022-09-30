@@ -196,8 +196,7 @@ def bad_ace_to_nan(df, dataType):
 
 def ace_as_omni(plasmaData, magData, delay=0):
 
-	# plasmaData.drop_duplicates(subset='ACEepoch', inplace=True)
-	plasmaData.groupby('ACEepoch').mean()
+	plasmaData.drop_duplicates(subset='ACEepoch', inplace=True)
 	plasmaData = plasmaData.interpolate(method=method, limit=limit)
 	plasmaData = plasmaData.resample('1 min').bfill()
 

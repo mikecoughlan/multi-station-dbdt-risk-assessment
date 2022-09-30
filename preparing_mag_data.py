@@ -22,7 +22,7 @@ unix_time = dt.date(1971,1,1).toordinal()*24*60*60
 plt.rcParams['figure.figsize'] = [15, 5]
 
 #dataDir = 'D:/Data/supermag/'
-dataDir = '../../../../data/supermag/baseline/'
+dataDir = '../../../../../data/supermag/baseline/'
 
 syear = 1995
 eyear = 2019
@@ -37,9 +37,9 @@ stations = ['VIC', 'NEW', 'OTT', 'STJ',
 			'ESK', 'LER', 'WNG',
 			'BFE']
 method = 'linear'
-limit = 5
+limit = 15
 
-dataDump = '../data/supermag/'
+dataDump = '../../data/supermag/'
 
 if not os.path.exists(dataDump):
 	os.makedirs(dataDump)
@@ -91,7 +91,7 @@ for station in stations:
 	magData.reset_index(inplace=True, drop=True)
 
 	# saving as feather to conserve memory and imporve perfromance
-	magData.to_feather(dataDump+'{0}_5_interp.feather'.format(station))
+	magData.to_feather(dataDump+'{0}_15_interp.feather'.format(station))
 
 	print('{0} completed'.format(station))
 
