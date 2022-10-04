@@ -106,7 +106,7 @@ def ace_prep(name):
 		Inputs:
 		path: path to project directory
 	'''
-	df = pd.read_feather('../data/SW/solarwind_and_indicies{0}.feather'.format(name)) 		# loading the omni data
+	df = pd.read_feather('../../data/SW/solarwind_and_indicies{0}.feather'.format(name)) 		# loading the omni data
 
 	df.reset_index(drop=True, inplace=True) 		# reseting the index so its easier to work with integer indexes
 
@@ -136,7 +136,7 @@ def data_prep(name, station, thresholds, params, forecast, window, do_calc=True)
 				file will be loaded.
 	'''
 	if do_calc:
-		df = pd.read_feather('../data/supermag/{0}{1}.feather'.format(station, name)) # loading the station data.
+		df = pd.read_feather('../../data/supermag/{0}{1}.feather'.format(station, name)) # loading the station data.
 		df['dN'] = df['N'].diff(1) # creates the dN column
 		df['dE'] = df['E'].diff(1) # creates the dE column
 		df['B'] = np.sqrt((df['N']**2)+((df['E']**2))) # creates the combined dB/dt column
