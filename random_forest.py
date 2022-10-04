@@ -14,13 +14,22 @@ import pickle
 import random
 from datetime import datetime
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import ShuffleSplit, cross_validate
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.metrics import (accuracy_score, auc, confusion_matrix,
+                             explained_variance_score, f1_score, make_scorer,
+                             mean_absolute_error, mean_squared_error,
+                             precision_recall_curve, r2_score, roc_auc_score,
+                             roc_curve)
+from sklearn.model_selection import (ShuffleSplit, cross_val_score,
+                                     cross_validate, train_test_split)
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.utils import to_categorical
+from tqdm import tqdm
 
 # Data directories
 projectDir = '~/projects/ml_helio_paper/'
@@ -169,7 +178,7 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 		print('Creating Classification column...')
 		df = classification_column(df, 'dBHt', threshold, forecast=forecast, window=window)		# calling the classification column function
 		datum = df.reset_index(drop=True)
-		datum.to_feather('../data/ace_and_supermag/{0}_prepared.feather'.format(station))
+		# datum.to_feather('../data/ace_and_supermag/{0}_prepared.feather'.format(station))
 
 	if not do_calc:		# does not do the above calculations and instead just loads a csv file, then creates the cross column
 		df = pd.read_feather('../data/{0}_prepared.feather'.format(station))
@@ -210,14 +219,16 @@ def storm_extract(data, storm_list, lead, recovery):
 	storm_list['etime'] = etime
 	for start, end in zip(storm_list['stime'], storm_list['etime']):		# looping through the storms to remove the data from the larger df
 		storm = df[(df.index >= start) & (df.index <= end)]
-
+		storm.dropna(inplace=True)
 		if len(storm) != 0:
 			storms.append(storm)			# creates a list of smaller storm time dataframes
 
 	for storm in storms:
 		storm.reset_index(drop=True, inplace=True)		# resetting the storm index and simultaniously dropping the date so it doesn't get trained on
-		y_1.append(to_categorical(storm['crossing'].to_numpy(), num_classes=2))			# turns the one demensional resulting array for the storm into a
+		# y_1.append(to_categorical(storm['crossing'].to_numpy(), num_classes=2))			# turns the one demensional resulting array for the storm into a
+		y_1.append(storm['crossing'])			# turns the one demensional resulting array for the storm into a
 		storm.drop('crossing', axis=1, inplace=True)  	# removing the target variable from the storm data so we don't train on it
+
 
 	return storms, y_1
 
@@ -269,26 +280,27 @@ def prep_train_data(df, stime, etime, lead, recovery, time_history):
 	storms, y_1 = storm_extract(data, dates, lead=lead, recovery=recovery)		# extracting the storms using list method
 	print('Number of storms: '+str(len(storms)))
 
-	to_scale_with = pd.concat(storms, axis=0, ignore_index=True)			# finding the largest storm with which we can scale the data. Not sure this is the best way to do this
-	scaler = StandardScaler()									# defining the type of scaler to use
-	print('Fitting scaler')
-	scaler.fit(to_scale_with)									# fitting the scaler to the longest storm
-	print('Scaling storms train')
-	storms = [scaler.transform(storm) for storm in storms]		# doing a scaler transform to each storm individually
-	n_features = storms[1].shape[1]				# identifying how many features (columns) are in being used.
+	# to_scale_with = pd.concat(storms, axis=0, ignore_index=True)			# finding the largest storm with which we can scale the data. Not sure this is the best way to do this
+	# scaler = StandardScaler()									# defining the type of scaler to use
+	# print('Fitting scaler')
+	# scaler.fit(to_scale_with)									# fitting the scaler to the longest storm
+	# print('Scaling storms train')
+	# storms = [scaler.transform(storm) for storm in storms]		# doing a scaler transform to each storm individually
+	# n_features = storms[1].shape[1]				# identifying how many features (columns) are in being used.
 
 	train_dict = {}												# creatinga  training dictonary for storing everything
-	Train = np.concatenate(storms, axis=0)
+	# Train = np.concatenate(storms, axis=0)
 	train1 = np.concatenate(y_1, axis=0)
+
+	Train = pd.concat(storms, axis=0)
 
 	# adding all of the training arrays to the dict
 	train_dict['X'] = Train
 	train_dict['crossing'] = train1
-	n_features = train_dict['X'].shape[2]
 
 	print('Finished calculating percent')
 
-	return train_dict, scaler
+	return train_dict
 
 def define_model(n_estimators=1000, criterion='entropy'):
 	'''
@@ -335,26 +347,72 @@ def fitting_and_predicting(X_train, X_test, y_train):
 	y_pred = model.predict_proba(X_test)		# predicting the output value
 
 
-	return pd.DataFrame(y_pred), model
+	return y_pred, model
 
 
 # evaluate a give model using cross-validation
 def evaluate_model(model, X_train, y_train):
-	scores = cross_validate(model, X_train, y_train, cv=5, scoring={'f1':make_scorer(f1_score, average='macro'),
+	scores = cross_validate(model, X_train, y_train, cv=5, scoring={'f1':make_scorer(f1_score),
 																		'accuracy': make_scorer(accuracy_score)})
 	return scores
 
-def RandomForest_tuning(X_train, X_test, y_train, y_test, predicting):
-	# get the models to evaluate
-	models = get_models()
+def RandomForest_tuning(X_train, y_train, FI_df):
+	params = FI_df['features'].to_list()
 	# evaluate the models and store results
-	results_f1, results_acc, names = list(), list(), list()
-	for name, model in tqdm(models.items()):
-		scores = evaluate_model(model, X_train, y_train)
-		results_f1.append(scores['test_f1'])
-		results_acc.append(scores['test_accuracy'])
-		names.append(name)
-		print('{0}, {1}, {2}, {3}, {4}'.format(name, np.mean(scores['test_f1']), np.std(scores['test_f1']), np.mean(scores['test_accuracy']), np.std(scores['test_accuracy'])))
+	f1_mean, f1_std, acc_mean, acc_std = list(), list(), list(), list()
+	for i in tqdm(range(1,len(FI_df['features'])+1)):
+		model = define_model(n_estimators=1000, criterion='entropy')
+		param = params[:i]
+		xtrain = X_train[param]
+		scores = evaluate_model(model, xtrain, y_train)
+		f1_mean.append(np.mean(scores['test_f1']))
+		f1_std.append(np.std(scores['test_f1']))
+		acc_mean.append(np.mean(scores['test_accuracy']))
+		acc_std.append(np.std(scores['test_accuracy']))
+
+	results = pd.DataFrame({'f1_mean':f1_mean,
+								'f1_std':f1_std,
+								'acc_mean':acc_mean,
+								'acc_std':acc_std})
+
+	return results
+
+
+def plotting_most_important_features(model, feature_names):
+
+	feature_importance = model.feature_importances_						# getting the most important features from the model
+
+	FI_df = pd.DataFrame({'features':feature_names,
+							'importance':feature_importance})			# putting the most important features into a data frame
+
+	FI_df.sort_values(by=['importance'], ascending=False, axis=0, inplace=True)		# putting the features in order
+
+	fig = plt.figure(figsize=(20,10))			# plotting the most important features
+
+	plt.barh(FI_df['features'], FI_df['importance'])
+	plt.xlabel("Random Forest Feature Importance")
+
+	plt.savefig('random_forest_feature_importance_mainheat_target.png')
+
+	return FI_df
+
+
+def plotting_results(results):
+
+	x = [n+1 for n in range(len(results))]
+	fig = plt.figure(figsize=(30,25))
+
+	ax1 = fig.add_subplot(211)
+	plt.errorbar(x, results['f1_mean'].to_numpy(), yerr=results['f1_std'].to_numpy(), capsize=1)
+	plt.ylabel('F1 Score', fontsize=15)
+
+
+	ax2 = fig.add_subplot(212)
+	plt.errorbar(x, results['acc_mean'].to_numpy(), yerr=results['acc_std'].to_numpy(), capsize=1)
+	plt.ylabel('Accuracy Score', fontsize=15)
+
+	plt.savefig('forward_feature_importance_results.png')
+
 
 
 def main(path, station):
@@ -371,7 +429,7 @@ def main(path, station):
 
 	splits = CONFIG['k_fold_splits']		# denines the number of splits
 	df, threshold = data_prep(path, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep function
-	train_dict, scaler = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'],
+	train_dict = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'],
 											MODEL_CONFIG['time_history'])  												# calling the training data prep function
 
 	train_dict['threshold'] = threshold
@@ -386,9 +444,9 @@ def main(path, station):
 	train_index, val_index = [], []				# initalizes lists for the indexes to be stored
 	for train_index, val_index in sss.split(y):			# looping through the lists, adding them to other differentiated lists
 
-		xtrain = X[train_index]
+		xtrain = X.to_numpy()[train_index]
 
-		xval =  X[val_index]
+		xval =  X.to_numpy()[val_index]
 
 		ytrain = y[train_index]
 
@@ -400,8 +458,11 @@ def main(path, station):
 	   					'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T',
 	   					 'AE_INDEX', 'SZA', 'dBHt', 'B']
 
-	feat_importances = pd.Series(model.feature_importances_, index=params)
-	feat_importances.plot(kind='barh')
+	FI_df = plotting_most_important_features(model, params)
+
+	results = RandomForest_tuning(X, y, FI_df)
+
+	plotting_results(results)
 
 
 if __name__ == '__main__':
