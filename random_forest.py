@@ -460,6 +460,8 @@ def main(path, station):
 
 	FI_df = plotting_most_important_features(model, params)
 
+	FI_df
+
 	results = RandomForest_tuning(X, y, FI_df)
 
 	plotting_results(results)
