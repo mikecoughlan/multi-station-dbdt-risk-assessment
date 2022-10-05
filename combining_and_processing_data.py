@@ -369,7 +369,6 @@ def prep_train_data(df, stime, etime, lead, recovery, time_history):
 	# adding all of the training arrays to the dict
 	train_dict['X'] = Train
 	train_dict['crossing'] = train1
-	n_features = train_dict['X'].shape[2]
 
 	print('Finished calculating percent')
 
