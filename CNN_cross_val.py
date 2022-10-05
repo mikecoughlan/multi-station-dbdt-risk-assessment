@@ -66,7 +66,7 @@ MODEL_CONFIG = {'time_history': 30, 	# How much time history the model will use,
 					'filters': 128, 		# Number of filters in the first CNN layer. Will decrease by half for any subsequent layers if "layers">1
 					'dropout': 0.2, 		# Dropout rate for the layers
 					'loss':'mse',
-					'initial_learning_rate': 1e-5,		# Learning rate, used as the inital learning rate if a learning rate decay function is used
+					'learning_rate': 1e-6,		# Learning rate, used as the inital learning rate if a learning rate decay function is used
 					'lr_decay_steps':230,				# If a learning ray decay funtion is used, dictates the number of decay steps
 					'early_stop_patience':5}
 
@@ -316,12 +316,12 @@ def prep_train_data(df, stime, etime, lead, recovery, time_history, feature_impo
 
 	print('\nFinding storms...')
 	storms_initial, y_1 = storm_extract(data, dates, lead=lead, recovery=recovery)		# extracting the storms using list method
-	print('Number of storms: '+str(len(storms)))
-
-	for i in range(1, len(feature_importance)+1):
-		storms = storms_initial.copy()
-		for storm in storms:
-			storm = storm[feature_importance[:i]]
+	print('Number of storms: '+str(len(storms_initial)))
+	train_dict = {}
+	for j in range(1, len(feature_importance)+1):
+		storms = []
+		for storm in storms_initial:
+			storms.append(storm[feature_importance[:j]])
 		to_scale_with = pd.concat(storms, axis=0, ignore_index=True)			# finding the largest storm with which we can scale the data. Not sure this is the best way to do this
 		scaler = StandardScaler()									# defining the type of scaler to use
 		print('Fitting scaler')
@@ -330,7 +330,7 @@ def prep_train_data(df, stime, etime, lead, recovery, time_history, feature_impo
 		storms = [scaler.transform(storm) for storm in storms]		# doing a scaler transform to each storm individually
 		n_features = storms[1].shape[1]
 
-		train_dict = {}												# creating a training dictonary for storing everything
+													# creating a training dictonary for storing everything
 		Train, train1 = np.empty((1,time_history,n_features)), np.empty((1,2))	# creating empty arrays for storing sequences
 		for storm, y1, i in zip(storms, y_1, range(len(storms))):		# looping through the storms
 			X, x1 = split_sequences(storm, y1, n_steps=time_history)				# splitting the sequences for each storm individually
@@ -338,12 +338,12 @@ def prep_train_data(df, stime, etime, lead, recovery, time_history, feature_impo
 				continue
 			# concatiningting all of the results together into one array for training
 			Train = np.concatenate([Train, X])
-			if i == 0:
+			if j == 1:
 				train1 = np.concatenate([train1, x1])
 
 		# adding all of the training arrays to the dict
-		train_dict['X_{0}'.format(i)] = Train
-		if i == 0:
+		train_dict['X_{0}'.format(j)] = Train
+		if j == 1:
 			train_dict['crossing'] = train1
 
 	print('Finished calculating percent')
@@ -364,7 +364,8 @@ def define_model(n_features, loss='categorical_crossentropy', early_stop_patienc
 
 	model.add(Conv2D(MODEL_CONFIG['filters'], 2, padding='same',
 									activation='relu', input_shape=(MODEL_CONFIG['time_history'], n_features, 1)))			# adding the CNN layer
-	model.add(MaxPooling2D())
+	if n_features > 2:
+		model.add(MaxPooling2D())
 	model.add(Flatten())							# changes dimensions of model. Not sure exactly how this works yet but improves results
 	model.add(Dense(MODEL_CONFIG['filters'], activation='relu'))		# Adding dense layers with dropout in between
 	model.add(Dropout(0.2))
@@ -411,8 +412,10 @@ def fitting_and_predicting(xtrain, xval, xtest, ytrain, yval):
 	print('Predicting....')
 	y_pred = model.predict(Xtest)		# predicting the output value
 
+	y_pred = tf.gather(y_pred, [1], axis=1)					# grabbing the positive node
+	y_pred = y_pred.numpy()									# turning to a numpy array
 
-	return y_pred
+	return y_pred, model
 
 
 def getting_metrics(ytest, ypred):
@@ -473,7 +476,7 @@ def main(path, station):
 
 	auc_mean, auc_std, rmse_mean, rmse_std = list(), list(), list(), list()
 
-	for i in range(len(feature_importance)):
+	for i in range(1,len(feature_importance)+1):
 
 		X = train_dict['X_{0}'.format(i)]		 # grabbing the training data for model input
 		ytest, ypred = [], []				# initalizes lists for the indexes to be stored
@@ -483,17 +486,17 @@ def main(path, station):
 			if 'model' in locals():
 				reset_keras(model)			# clearing the information from any old models so we can run clean new ones.
 
-			xtrain = X.to_numpy()[train_index]
+			xtrain = X[train_index]
 
-			xtest =  X.to_numpy()[test_index]
+			xtest =  X[test_index]
 
 			ytrain = y[train_index]
 
-			ytest.append(y[test_index])
+			ytest.append(y[test_index][:,1])
 
 			xtrain, xval, ytrain, yval = train_test_split(xtrain, ytrain, test_size=0.2, shuffle=True, random_state=CONFIG['random_seed'])
 
-			y_pred = fitting_and_predicting(xtrain, xval, xtest, ytrain, yval)
+			y_pred, model = fitting_and_predicting(xtrain, xval, xtest, ytrain, yval)
 
 			ypred.append(y_pred)
 
