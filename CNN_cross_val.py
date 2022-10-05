@@ -17,9 +17,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from sklearn.metrics import (mean_squared_error,
-                             precision_recall_curve)
-from sklearn.model_selection import (ShuffleSplit, train_test_split)
+from sklearn.metrics import mean_squared_error, precision_recall_curve
+from sklearn.model_selection import ShuffleSplit, train_test_split
 from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.backend import clear_session
 from tensorflow.keras.callbacks import EarlyStopping
@@ -316,12 +315,13 @@ def prep_train_data(df, stime, etime, lead, recovery, time_history, feature_impo
 	dates = storm_list['dates']				# just saving it to a variable so I can work with it a bit easier
 
 	print('\nFinding storms...')
-	storms, y_1 = storm_extract(data, dates, lead=lead, recovery=recovery)		# extracting the storms using list method
+	storms_initial, y_1 = storm_extract(data, dates, lead=lead, recovery=recovery)		# extracting the storms using list method
 	print('Number of storms: '+str(len(storms)))
 
-	for i in range(len(feature_importance)):
+	for i in range(1, len(feature_importance)+1):
+		storms = storms_initial.copy()
 		for storm in storms:
-			storm = storm[feature_importance[-i:]]
+			storm = storm[feature_importance[:i]]
 		to_scale_with = pd.concat(storms, axis=0, ignore_index=True)			# finding the largest storm with which we can scale the data. Not sure this is the best way to do this
 		scaler = StandardScaler()									# defining the type of scaler to use
 		print('Fitting scaler')
@@ -457,7 +457,9 @@ def main(path, station):
 
 	print('Entering main...')
 
-	feature_importance = pd.read_csv('../outputs/RF_feature_importance.csv')
+	feature_importance = ['dBHt', 'Vx', 'proton_density', 'B', 'BZ_GSM', 'AE_INDEX',
+							'N', 'T', 'SZA', 'cosMLT', 'sinMLT', 'Vy', 'Vz',
+							'B_Total', 'E', 'BY_GSM']
 
 	df, threshold = data_prep(path, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep function
 	train_dict = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'],
