@@ -13,11 +13,12 @@ import gc
 import random
 from datetime import datetime
 
+import keras
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from sklearn.metrics import mean_squared_error, precision_recall_curve
+from sklearn.metrics import auc, mean_squared_error, precision_recall_curve
 from sklearn.model_selection import ShuffleSplit, train_test_split
 from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.backend import clear_session
@@ -26,7 +27,7 @@ from tensorflow.keras.layers import (Conv2D, Dense, Dropout, Flatten,
                                      MaxPooling2D)
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.utils import to_categorical
-from tensorflow.python.keras.backend import get_session
+from tensorflow.python.keras.backend import clear_session, get_session
 
 # Data directories
 projectDir = '~/projects/ml_helio_paper/'
@@ -74,19 +75,19 @@ MODEL_CONFIG = {'time_history': 30, 	# How much time history the model will use,
 random.seed(CONFIG['random_seed'])
 np.random.seed(CONFIG['random_seed'])
 
-# Reset Keras Session
-def reset_keras(model):
-    sess = get_session()
-    clear_session()
-    sess.close()
-    sess = get_session()
+# # Reset Keras Session
+# def reset_keras(model):
+#     sess = get_session()
+#     clear_session()
+#     sess.close()
+#     sess = get_session()
 
-    try:
-        del model # this is from global space - change this as you need
-    except:
-        pass
+#     try:
+#         del model # this is from global space - change this as you need
+#     except:
+#         pass
 
-    print(gc.collect()) # if it's done something you should see a number being outputted
+#     print(gc.collect()) # if it's done something you should see a number being outputted
 
 
 def classification_column(df, param, thresh, forecast, window):
@@ -318,7 +319,7 @@ def prep_train_data(df, stime, etime, lead, recovery, time_history, feature_impo
 	storms_initial, y_1 = storm_extract(data, dates, lead=lead, recovery=recovery)		# extracting the storms using list method
 	print('Number of storms: '+str(len(storms_initial)))
 	train_dict = {}
-	for j in range(1, len(feature_importance)+1):
+	for j in range(16, len(feature_importance)+1):
 		storms = []
 		for storm in storms_initial:
 			storms.append(storm[feature_importance[:j]])
@@ -338,12 +339,12 @@ def prep_train_data(df, stime, etime, lead, recovery, time_history, feature_impo
 				continue
 			# concatiningting all of the results together into one array for training
 			Train = np.concatenate([Train, X])
-			if j == 1:
+			if j == 16:
 				train1 = np.concatenate([train1, x1])
 
 		# adding all of the training arrays to the dict
 		train_dict['X_{0}'.format(j)] = Train
-		if j == 1:
+		if j == 16:
 			train_dict['crossing'] = train1
 
 	print('Finished calculating percent')
@@ -364,7 +365,7 @@ def define_model(n_features, loss='categorical_crossentropy', early_stop_patienc
 
 	model.add(Conv2D(MODEL_CONFIG['filters'], 2, padding='same',
 									activation='relu', input_shape=(MODEL_CONFIG['time_history'], n_features, 1)))			# adding the CNN layer
-	if n_features > 2:
+	if n_features > 3:
 		model.add(MaxPooling2D())
 	model.add(Flatten())							# changes dimensions of model. Not sure exactly how this works yet but improves results
 	model.add(Dense(MODEL_CONFIG['filters'], activation='relu'))		# Adding dense layers with dropout in between
@@ -399,12 +400,19 @@ def fitting_and_predicting(xtrain, xval, xtest, ytrain, yval):
 		y_pred (np.array): array of predicted values from the model.
 	'''
 
+	clear_session()
 	model, early_stop = define_model(xtrain.shape[2])		# getting the model
 	print('Fitting the classifier....')
-			# reshaping the model input vectors for a single channel
+	print(model.summary())
+	# reshaping the model input vectors for a single channel
 	Xtrain = xtrain.reshape((xtrain.shape[0], xtrain.shape[1], xtrain.shape[2], 1))
 	Xval = xval.reshape((xval.shape[0], xval.shape[1], xval.shape[2], 1))
 	Xtest = xtest.reshape((xtest.shape[0], xtest.shape[1], xtest.shape[2], 1))
+
+	print('XTrain null counts: '+str(np.isnan(Xtrain).sum()))
+	print('Xval null counts: '+str(np.isnan(Xval).sum()))
+	print('ytrain null counts: '+str(np.isnan(ytrain).sum()))
+	print('yval null counts: '+str(np.isnan(yval).sum()))
 
 	model.fit(Xtrain, ytrain, validation_data=(Xval, yval),
 				verbose=1, shuffle=True, epochs=MODEL_CONFIG['epochs'], callbacks=[early_stop])			# doing the training! Yay!
@@ -415,19 +423,19 @@ def fitting_and_predicting(xtrain, xval, xtest, ytrain, yval):
 	y_pred = tf.gather(y_pred, [1], axis=1)					# grabbing the positive node
 	y_pred = y_pred.numpy()									# turning to a numpy array
 
-	return y_pred, model
+	return y_pred
 
 
 def getting_metrics(ytest, ypred):
 
-	auc, rmse = [], []
+	AUC, rmse = [], []
 	for test, pred in zip(ytest, ypred):
 		prec, rec, ____ = precision_recall_curve(test, pred)
 		area = auc(rec, prec)
-		auc.append(area)
+		AUC.append(area)
 		rmse.append(np.sqrt(mean_squared_error(test,pred)))
 
-	return np.mean(auc), np.std(auc), np.mean(rmse), np.std(rmse)
+	return np.mean(AUC), np.std(AUC), np.mean(rmse), np.std(rmse)
 
 
 def plotting_results(results):
@@ -476,15 +484,16 @@ def main(path, station):
 
 	auc_mean, auc_std, rmse_mean, rmse_std = list(), list(), list(), list()
 
-	for i in range(1,len(feature_importance)+1):
+	for i in range(16,len(feature_importance)+1):
+
 
 		X = train_dict['X_{0}'.format(i)]		 # grabbing the training data for model input
 		ytest, ypred = [], []				# initalizes lists for the indexes to be stored
 
 		for train_index, test_index in sss.split(y):			# looping through the lists, adding them to other differentiated lists
 
-			if 'model' in locals():
-				reset_keras(model)			# clearing the information from any old models so we can run clean new ones.
+			# if 'model' in locals():
+			# 	reset_keras(model)			# clearing the information from any old models so we can run clean new ones.
 
 			xtrain = X[train_index]
 
@@ -496,7 +505,7 @@ def main(path, station):
 
 			xtrain, xval, ytrain, yval = train_test_split(xtrain, ytrain, test_size=0.2, shuffle=True, random_state=CONFIG['random_seed'])
 
-			y_pred, model = fitting_and_predicting(xtrain, xval, xtest, ytrain, yval)
+			y_pred = fitting_and_predicting(xtrain, xval, xtest, ytrain, yval)
 
 			ypred.append(y_pred)
 
@@ -507,10 +516,12 @@ def main(path, station):
 		rmse_mean.append(rmsemean)
 		rmse_std.append(rmsestd)
 
-	results = pd.DataFrame({'auc_mean':auc_mean,
+		results = pd.DataFrame({'auc_mean':auc_mean,
 								'auc_std':auc_std,
 								'rmse_mean':rmse_mean,
 								'rmse_std':rmse_std})
+		results.to_csv('forward_feature_addition_ver6.csv')
+
 
 	plotting_results(results)
 

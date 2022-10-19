@@ -238,11 +238,19 @@ def main(station):
 
 		# pulling the data and catagorizing it into the train-val pairs
 		xtrain = train_dict['X'][train_index]
+		array_sum = np.sum(xtrain)
+		print(np.isnan(array_sum))
 		xval =  train_dict['X'][val_index]
+		array_sum = np.sum(xval)
+		print(np.isnan(array_sum))
 		ytrain = train_dict['crossing'][train_index]
+		array_sum = np.sum(ytrain)
+		print(np.isnan(array_sum))
 		yval = train_dict['crossing'][val_index]
+		array_sum = np.sum(yval)
+		print(np.isnan(array_sum))
 
-		model = fit_CNN(MODEL, xtrain, xval, ytrain, yval, early_stop, split, station, first_time=False)			# does the model fit!
+		model = fit_CNN(MODEL, xtrain, xval, ytrain, yval, early_stop, split, station, first_time=True)			# does the model fit!
 
 		test_dict = making_predictions(model, test_dict, split)					# defines the test dictonary for storing results
 
