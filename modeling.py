@@ -250,7 +250,11 @@ def main(station):
 		array_sum = np.sum(yval)
 		print(np.isnan(array_sum))
 
-		model = fit_CNN(MODEL, xtrain, xval, ytrain, yval, early_stop, split, station, first_time=True)			# does the model fit!
+		if os.path.exists('models/{0}/CNN_version_{1}_split_{2}.h5'.format(station, MODEL_CONFIG['version'], split)):
+			model = fit_CNN(MODEL, xtrain, xval, ytrain, yval, early_stop, split, station, first_time=False)			# does the model fit!
+
+		else:
+			model = fit_CNN(MODEL, xtrain, xval, ytrain, yval, early_stop, split, station, first_time=True)			# does the model fit!
 
 		test_dict = making_predictions(model, test_dict, split)					# defines the test dictonary for storing results
 
