@@ -373,7 +373,7 @@ def main():
 		# 						MODEL_CONFIG['time_history'], prediction_length=CONFIG['forecast']+CONFIG['window'])
 
 
-	fig = plt.figure(figsize=(30,25))
+	fig = plt.figure(figsize=(20,15))
 	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)
 
 	ax = fig.add_subplot(111)
@@ -384,7 +384,7 @@ def main():
 	plt.scatter(x,interp[2], label='15 minutes')
 	plt.xlabel('Stations', fontsize='40')
 	plt.ylabel('Percentage of Avalable Data', fontsize='40')
-	plt.legend(fontsize='30', loc='lower right')
+	plt.legend(fontsize='30', loc='center right')
 	plt.xticks(ticks=x, labels=CONFIG['stations'], fontsize='28')
 	plt.yticks(fontsize='28')
 	plt.savefig('plots/avalable_data.png')

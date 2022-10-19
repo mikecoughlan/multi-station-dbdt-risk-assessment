@@ -30,7 +30,7 @@ magDir = '../../../../../data/ace/mag/'
 dataDump = '../../data/SW/'
 
 method = 'linear'
-limit = 15
+limit = 5
 
 if not os.path.exists(dataDump):
 	os.makedirs(dataDump)
@@ -107,7 +107,7 @@ def get_indicies_from_omni():
 		pd.Dataframe: pd.dataframe with the indicies and a column labeled Epoch containing teh datatime stamp
 	'''
 
-	syear = 1995
+	syear = 1998
 	eyear = 2019
 
 	start_time = str(pd.Timestamp(syear,1,1))
@@ -197,12 +197,12 @@ def bad_ace_to_nan(df, dataType):
 def ace_as_omni(plasmaData, magData, delay=0):
 
 	plasmaData.drop_duplicates(subset='ACEepoch', inplace=True)
-	plasmaData = plasmaData.interpolate(method=method, limit=limit)
 	plasmaData = plasmaData.resample('1 min').bfill()
+	# plasmaData = plasmaData.interpolate(method=method, limit=limit)
 
 	# magData = magData[sdate:edate]
-	magData = magData.interpolate(method=method, limit=limit)
 	magData = magData.resample('1 min').mean()
+	# magData = magData.interpolate(method=method, limit=limit)
 
 
 	aceData = pd.DataFrame()
