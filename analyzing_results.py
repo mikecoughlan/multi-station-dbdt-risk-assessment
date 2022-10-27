@@ -29,6 +29,8 @@ except:
   # Invalid device or cannot modify virtual devices once initialized.
   pass
 
+pd.options.mode.chained_assignment = None  # default='warn'
+
 # Data directories
 projectDir = '~/projects/risk_classification/'
 
@@ -48,7 +50,7 @@ CONFIG = {'thresholds': [7.15], # list of thresholds to be examined.
       'window': 30,                                 # time window over which the metrics will be calculated
       'splits': 100,                         # amount of k fold splits to be performed. Program will create this many models
       # 'stations':['OTT', 'STJ', 'VIC', 'NEW', 'ESK', 'WNG', 'LER', 'BFE', 'NGK'],
-      'stations': ['BFE'],
+      'stations': ['OTT', 'STJ', 'WNG', 'BFE', 'NEW', 'VIC'],
 	    'version':5}    # list of stations being examined
 
 
@@ -63,10 +65,10 @@ def load_feather(station, i):
   df.set_index('Date_UTC', inplace=True, drop=True)
   df.index = pd.to_datetime(df.index)
 
-  try:
-    df.drop('Unnamed: 0', inplace=True, axis=1)
-  except KeyError:
-    print('No Unnamed column.')
+  # try:
+  #   df.drop('Unnamed: 0', inplace=True, axis=1)
+  # except KeyError:
+  #   print('No Unnamed column.')
 
   return df
 
@@ -87,18 +89,21 @@ def calculating_scores(df, splits):
   bias, std_pred, rmse, area_uc, precision, recall, hss = [], [], [], [], [], [], []      # initalizing the lists for storing the individual scores
 
   for split in range(splits):
-    pred = df['predicted_split_{0}'.format(split)]        # Grabbing the specific predicted data
-    re = df['crossing']                   # and the real data for comparison
+    temp_df = df[['crossing', 'predicted_split_{0}'.format(split)]]
+    temp_df.dropna(inplace=True)
+
+    pred = temp_df['predicted_split_{0}'.format(split)]        # Grabbing the specific predicted data
+    re = temp_df['crossing']                   # and the real data for comparison
 
 
     prec, rec, ____ = precision_recall_curve(re, pred)
     area = auc(rec, prec)
 
     # segmenting the pd.series into the confusion matrix indicies
-    A = df[(df['predicted_split_{0}'.format(split)] >= 0.5) & (df['crossing'] == 1)]
-    B = df[(df['predicted_split_{0}'.format(split)] >= 0.5) & (df['crossing'] == 0)]
-    C = df[(df['predicted_split_{0}'.format(split)] < 0.5) & (df['crossing'] == 1)]
-    D = df[(df['predicted_split_{0}'.format(split)] < 0.5) & (df['crossing'] == 0)]
+    A = temp_df[(temp_df['predicted_split_{0}'.format(split)] >= 0.5) & (temp_df['crossing'] == 1)]
+    B = temp_df[(temp_df['predicted_split_{0}'.format(split)] >= 0.5) & (temp_df['crossing'] == 0)]
+    C = temp_df[(temp_df['predicted_split_{0}'.format(split)] < 0.5) & (temp_df['crossing'] == 1)]
+    D = temp_df[(temp_df['predicted_split_{0}'.format(split)] < 0.5) & (temp_df['crossing'] == 0)]
 
     a, b, c, d = len(A), len(B), len(C), len(D)           # getting the values from the length of each df
 
@@ -117,6 +122,9 @@ def calculating_scores(df, splits):
       hs_score = (2*((a*d)-(b*c)))/((a+c)*(c+d)+(a+b)*(b+d))
     else:
       hs_score = 'NaN'
+
+    if ((a>0)or(d>0)) and ((b==0)and(c==0)):
+      hs_score = 1
 
     hss.append(hs_score)
 

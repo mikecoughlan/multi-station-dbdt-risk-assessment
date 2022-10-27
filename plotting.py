@@ -1,6 +1,8 @@
 import pickle
 
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import tensorflow as tf
 from sklearn.calibration import calibration_curve
@@ -31,7 +33,7 @@ CONFIG = {'version':0,
 			'forecast': 30,
 			'window': 30,																	# time window over which the metrics will be calculated
 			'splits': 100,															# amount of k fold splits to be performed. Program will create this many models
-			'stations': ['OTT', 'VIC', 'NEW', 'WNG', 'ESK', 'STJ'],
+			'stations': ['OTT', 'STJ', 'WNG', 'BFE', 'NEW', 'VIC'],
 			'metrics': ['HSS', 'BIAS', 'STD_PRED', 'RMSE', 'AUC']}
 
 
@@ -139,7 +141,7 @@ def plot_metrics(metrics_dict, stations, metrics):
 		ymax7 = ymax7 - y7
 		ymin7 = y7 - ymin7
 
-		plt.title('HSS', fontsize='100')		# titling the plot
+		plt.title(metric, fontsize='100')		# titling the plot
 		ax.errorbar(x0, y0, yerr=[ymin0, ymax0], fmt='.k', color='blue', label='Mar 2001', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
 		ax.errorbar(x1, y1, yerr=[ymin1, ymax1], fmt='.k', color='orange', label='Sep 2001', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
 		ax.errorbar(x2, y2, yerr=[ymin2, ymax2], fmt='.k', color='green', label='May 2005', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
@@ -247,22 +249,146 @@ def reliability_plots(results_dict, station, splits, plot_titles):
 
 	newdfs = [storm0, storm1, storm2, storm3, storm4, storm5, storm6, storm7]
 
+	newdf = pd.concat(newdfs, axis=0)
+
 	fig = plt.figure(figsize=(20,18))
 	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)
 
 	ax = fig.add_subplot(111)
 	ax.set_title('{0} Reliability Plot'.format(station), fontsize=30)
 	plt.plot([0, 1], [0, 1], 'xkcd:black')
-	for df, title in zip(newdfs, plot_titles):
-		true, pred = calibration_curve(df['cross'], df['mean'], n_bins=10)
-		plt.plot(pred, true, marker='.', label='{0}'.format(title))
-		ax.set_xlabel('Predicted Probability', fontsize=20)
-		ax.set_ylabel('Observed Probability', fontsize=20)
-	plt.legend(fontsize=15)
+	# for df, title in zip(newdfs, plot_titles):
+	# 	true, pred = calibration_curve(df['cross'], df['mean'], n_bins=10)
+	# 	plt.plot(pred, true, marker='.', label='{0}'.format(title))
+	# 	ax.set_xlabel('Predicted Probability', fontsize=20)
+	# 	ax.set_ylabel('Observed Probability', fontsize=20)
+	true, pred = calibration_curve(newdf['cross'], newdf['mean'], n_bins=10)
+	plt.plot(pred, true, marker='.')
+	ax.set_xlabel('Predicted Probability', fontsize=20)
+	ax.set_ylabel('Observed Probability', fontsize=20)
 	plt.yticks(fontsize=15)
 	plt.xticks(fontsize=15)
 	ax.margins(x=0, y=0)
-	plt.savefig('plots/{0}_reliability_plot.png'.format(station))
+	plt.savefig('plots/{0}_reliability_plot_ver2.png'.format(station))
+
+
+def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
+	'''plots all of the model output results with confidence intervals.
+		Inputs:
+		df: dataframe for a particular storm
+		stime: datetime string for starting time of the plot.
+		etime: datetime string for ending time of the plot.
+		splits: integer number of splits used for model training
+	'''
+
+	# calling the prep_k_fold function for each threshold. Should probably find a better way to do this.
+	OTT = prep_k_fold_results(results_dict['OTT']['storm_{0}'.format(storm)]['raw_results'], splits)
+	BFE = prep_k_fold_results(results_dict['BFE']['storm_{0}'.format(storm)]['raw_results'], splits)
+	WNG = prep_k_fold_results(results_dict['WNG']['storm_{0}'.format(storm)]['raw_results'], splits)
+	STJ = prep_k_fold_results(results_dict['STJ']['storm_{0}'.format(storm)]['raw_results'], splits)
+	NEW = prep_k_fold_results(results_dict['NEW']['storm_{0}'.format(storm)]['raw_results'], splits)
+	VIC = prep_k_fold_results(results_dict['VIC']['storm_{0}'.format(storm)]['raw_results'], splits)
+
+	# this creats a new dataframe that will allow me to create a bar at the top of the plot to define the periods where the real, binary values have value 1.
+	OTT_bar = pd.DataFrame({'OTT_bottom':OTT['cross']*1.01,
+							'OTT_top':OTT['cross']*1.06},
+							index=OTT.index)
+	BFE_bar = pd.DataFrame({'BFE_bottom':BFE['cross']*1.01,
+							'BFE_top':BFE['cross']*1.06},
+							index=BFE.index)
+	WNG_bar = pd.DataFrame({'WNG_bottom':WNG['cross']*1.01,
+							'WNG_top':WNG['cross']*1.06},
+							index=WNG.index)
+	STJ_bar = pd.DataFrame({'STJ_bottom':STJ['cross']*1.01,
+							'STJ_top':STJ['cross']*1.06},
+							index=STJ.index)
+	NEW_bar = pd.DataFrame({'NEW_bottom':NEW['cross']*1.01,
+							'NEW_top':NEW['cross']*1.06},
+							index=NEW.index)
+	VIC_bar = pd.DataFrame({'VIC_bottom':VIC['cross']*1.01,
+							'VIC_top':VIC['cross']*1.06},
+							index=VIC.index)
+
+	OTT_bar.index=pd.to_datetime(OTT_bar.index)					# adds datetime index
+	BFE_bar.index=pd.to_datetime(BFE_bar.index)					# adds datetime index
+	WNG_bar.index=pd.to_datetime(WNG_bar.index)					# adds datetime index
+	STJ_bar.index=pd.to_datetime(STJ_bar.index)					# adds datetime index
+	NEW_bar.index=pd.to_datetime(NEW_bar.index)					# adds datetime index
+	VIC_bar.index=pd.to_datetime(VIC_bar.index)					# adds datetime index
+
+
+	fig = plt.figure(figsize=(60,55))				# establishing the larger plot
+	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)		# triming the whitespace in between the subplots
+	plt.title(title, fontsize=130)
+
+	ax = fig.add_subplot(611)			# initalizing the subplot
+	z1=np.array(OTT_bar['OTT_bottom'])		# creates an array from the y_bar dataframe
+	z2=np.array(OTT_bar['OTT_top'])			# creates another array. These two arrays are compared to create the bar at the top of the plots.
+	ax.plot(OTT['mean'])								# plots the mean columns of the dataframe.
+	ax.fill_between(OTT.index, OTT['bottom_perc'], OTT['top_perc'], alpha=0.2)	# fills the area between the confidence interval with a lighter shade
+	ax.fill_between(OTT_bar.index, OTT_bar['OTT_bottom'], OTT_bar['OTT_top'], where=z2>z1, alpha=1)												# creates a bar at the top of the plot indicating the positve part of the binary real data
+	ax.margins(x=0)							# tightning the plot margins
+	ax.set_ylabel('OTT', fontsize='45')
+	plt.yticks(fontsize='45')
+	ax.set_xticklabels('')
+
+	ax = fig.add_subplot(612)
+	z1=np.array(STJ_bar['STJ_bottom'])
+	z2=np.array(STJ_bar['STJ_top'])
+	ax.plot(STJ['mean'])
+	ax.fill_between(STJ.index, STJ['bottom_perc'], STJ['top_perc'], alpha=0.2)
+	ax.fill_between(STJ_bar.index, STJ_bar['STJ_bottom'], STJ_bar['STJ_top'], where=z2>z1, alpha=1)
+	ax.margins(x=0)
+	ax.set_ylabel('STJ', fontsize='45')
+	plt.yticks(fontsize='45')
+	ax.set_xticklabels('')
+
+	ax = fig.add_subplot(613)			# initalizing the subplot
+	z1=np.array(NEW_bar['NEW_bottom'])		# creates an array from the y_bar dataframe
+	z2=np.array(NEW_bar['NEW_top'])			# creates another array. These two arrays are compared to create the bar at the top of the plots.
+	ax.plot(NEW['mean'])								# plots the mean columns of the dataframe.
+	ax.fill_between(NEW.index, NEW['bottom_perc'], NEW['top_perc'], alpha=0.2)	# fills the area between the confidence interval with a lighter shade
+	ax.fill_between(NEW_bar.index, NEW_bar['NEW_bottom'], NEW_bar['NEW_top'], where=z2>z1, alpha=1)												# creates a bar at the top of the plot indicating the positve part of the binary real data
+	ax.margins(x=0)							# tightning the plot margins
+	ax.set_ylabel('NEW', fontsize='45')
+	plt.yticks(fontsize='45')
+	ax.set_xticklabels('')
+
+	ax = fig.add_subplot(614)
+	z1=np.array(VIC_bar['VIC_bottom'])
+	z2=np.array(VIC_bar['VIC_top'])
+	ax.plot(VIC['mean'])
+	ax.fill_between(VIC.index, VIC['bottom_perc'], VIC['top_perc'], alpha=0.2)
+	ax.fill_between(VIC_bar.index, VIC_bar['VIC_bottom'], VIC_bar['VIC_top'], where=z2>z1, alpha=1)
+	ax.margins(x=0)
+	ax.set_ylabel('VIC', fontsize='45')
+	plt.yticks(fontsize='45')
+	ax.set_xticklabels('')
+
+	ax = fig.add_subplot(615)			# initalizing the subplot
+	z1=np.array(BFE_bar['BFE_bottom'])		# creates an array from the y_bar dataframe
+	z2=np.array(BFE_bar['BFE_top'])			# creates another array. These two arrays are compared to create the bar at the top of the plots.
+	ax.plot(BFE['mean'])								# plots the mean columns of the dataframe.
+	ax.fill_between(BFE.index, BFE['bottom_perc'], BFE['top_perc'], alpha=0.2)	# fills the area between the confidence interval with a lighter shade
+	ax.fill_between(BFE_bar.index, BFE_bar['BFE_bottom'], BFE_bar['BFE_top'], where=z2>z1, alpha=1)												# creates a bar at the top of the plot indicating the positve part of the binary real data
+	ax.margins(x=0)							# tightning the plot margins
+	ax.set_ylabel('BFE', fontsize='45')
+	plt.yticks(fontsize='45')
+	ax.set_xticklabels('')
+
+	ax = fig.add_subplot(616)
+	z1=np.array(WNG_bar['WNG_bottom'])
+	z2=np.array(WNG_bar['WNG_top'])
+	ax.plot(WNG['mean'])
+	ax.fill_between(WNG.index, WNG['bottom_perc'], WNG['top_perc'], alpha=0.2)
+	ax.fill_between(WNG_bar.index, WNG_bar['WNG_bottom'], WNG_bar['WNG_top'], where=z2>z1, alpha=1)
+	ax.margins(x=0)
+	ax.set_ylabel('WNG', fontsize='45')
+	plt.yticks(fontsize='45')
+	plt.xticks(fontsize=30)
+	ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %d\n %H:%M'))			# adds the date to the bottom of the plot
+
+	plt.savefig('plots/k_fold_{0}_storm.png'.format(storm))		# saves the plot
 
 
 def main():
@@ -277,6 +403,9 @@ def main():
 	for station in CONFIG['stations']:
 		plot_precision_recall(results_dict, station, CONFIG['plot_titles'])
 		reliability_plots(results_dict, station, CONFIG['splits'], CONFIG['plot_titles'])
+
+	for i, title, stime, etime in zip(range(len(CONFIG['test_storm_stime'])), CONFIG['plot_titles'], CONFIG['test_storm_stime'], CONFIG['test_storm_etime']):		# looping through all of the relevent lists to plots the model outputs
+		plot_model_outputs(results_dict, i, CONFIG['splits'], title, stime, etime)
 
 
 if __name__ == '__main__':
