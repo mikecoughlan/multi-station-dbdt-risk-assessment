@@ -13,13 +13,13 @@ import random
 from pickle import load as pkload
 from statistics import mean
 
+import matplotlib as mpl
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from sklearn.metrics import auc, mean_squared_error, precision_recall_curve
-from tensorflow.keras.models import load_model
 
 # stops this program from hogging the GPU
 physical_devices = tf.config.list_physical_devices('GPU')
@@ -36,9 +36,9 @@ projectDir = '~/projects/risk_classification/'
 
 
 CONFIG = {'thresholds': [7.15], # list of thresholds to be examined.
-      'params': ['Date_UTC', 'N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
-              'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T',
-               'AE_INDEX', 'SZA', 'dBHt', 'B', 'MLT'],                  # List of parameters that will be used for training.
+      'params': ['N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
+	   					'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T',
+	   					 'AE_INDEX', 'SZA', 'dBHt', 'B'],                  # List of parameters that will be used for training.
                                                   # Date_UTC will be removed, kept here for resons that will be evident below
       'test_storm_stime': ['2001-03-29 09:59:00', '2001-08-29 21:59:00', '2005-05-13 21:59:00',
                  '2005-08-30 07:59:00', '2006-12-13 09:59:00', '2010-04-03 21:59:00',
@@ -50,7 +50,7 @@ CONFIG = {'thresholds': [7.15], # list of thresholds to be examined.
       'window': 30,                                 # time window over which the metrics will be calculated
       'splits': 100,                         # amount of k fold splits to be performed. Program will create this many models
       # 'stations':['OTT', 'STJ', 'VIC', 'NEW', 'ESK', 'WNG', 'LER', 'BFE', 'NGK'],
-      'stations': ['OTT', 'STJ', 'WNG', 'BFE', 'NEW', 'VIC'],
+      'stations': ['OTT', 'STJ', 'WNG', 'BFE', 'NEW', 'VIC', 'ESK', 'LER'],
 	    'version':5}    # list of stations being examined
 
 
@@ -73,7 +73,38 @@ def load_feather(station, i):
   return df
 
 
-def calculating_scores(df, splits):
+def getting_model_input_data():
+
+  mean_df, std_df, max_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+  for station in CONFIG['stations']:
+
+    with open('../data/prepared_data/{0}_test_dict.pkl'.format(station), 'rb') as f:
+      test_dict = pickle.load(f)
+
+    X = [test_dict['storm_{0}'.format(i)]['Y'] for i in range(len(test_dict))] 		# loading the omni data
+    X = np.concatenate(X, axis=0)
+    X_mean = np.mean(X, axis=1)
+    X_std = np.std(X, axis=1)
+    X_max = np.amax(np.absolute(X), axis=1)
+
+    sw_feats = ['B_Total', 'BY_GSM', 'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T','AE_INDEX', 'SZA']
+
+    for col, feat in zip(range(X.shape[2]), CONFIG['params']):
+      if (station != CONFIG['stations'][0]) and (feat in sw_feats):
+        continue
+      if feat in sw_feats:
+        mean_df['{0}'.format(feat)] = X_mean[:,col]
+        std_df['{0}'.format(feat)] = X_std[:,col]
+        max_df['{0}'.format(feat)] = X_max[:,col]
+      else:
+        mean_df['{0}_{1}'.format(station, feat)] = X_mean[:,col]
+        std_df['{0}_{1}'.format(station, feat)] = X_std[:,col]
+        max_df['{0}_{1}'.format(station, feat)] = X_max[:,col]
+
+  return mean_df, std_df, max_df
+
+
+def calculating_scores(df, splits, station):
   '''calculating the hss and rmse scores and then putting them in a list. Then getting a 95 percent confidence level for each metric.
     Inputs:
     df: results df from the testing predictions
@@ -87,6 +118,16 @@ def calculating_scores(df, splits):
   metrics = pd.DataFrame({'ind':index_column})
 
   bias, std_pred, rmse, area_uc, precision, recall, hss = [], [], [], [], [], [], []      # initalizing the lists for storing the individual scores
+  diff_df, spread_df = pd.DataFrame(), pd.DataFrame()
+  diff_df['Date_UTC'] = df.index
+  spread_df['Date_UTC'] = df.index
+  diff_df.set_index('Date_UTC', inplace=True)
+  spread_df.set_index('Date_UTC', inplace=True)
+
+  newdf = df[['predicted_split_{0}'.format(split) for split in range(splits)]]
+  top_perc = newdf.quantile(0.975, axis=1)
+  bottom_perc = newdf.quantile(0.025, axis=1)
+  spread_df[station] = top_perc - bottom_perc
 
   for split in range(splits):
     temp_df = df[['crossing', 'predicted_split_{0}'.format(split)]]
@@ -95,6 +136,7 @@ def calculating_scores(df, splits):
     pred = temp_df['predicted_split_{0}'.format(split)]        # Grabbing the specific predicted data
     re = temp_df['crossing']                   # and the real data for comparison
 
+    diff_df['{0}_split_{1}'.format(station, split)] = abs(re-pred)
 
     prec, rec, ____ = precision_recall_curve(re, pred)
     area = auc(rec, prec)
@@ -164,7 +206,7 @@ def calculating_scores(df, splits):
   metrics.set_index('ind', drop=True, inplace=True)
   print(metrics['AUC'])
 
-  return prec_recall, metrics
+  return prec_recall, metrics, diff_df, spread_df
 
 
 
@@ -174,12 +216,55 @@ def aggregate_results(length, splits, station):
   for i in range(length):
     results_dict['storm_{0}'.format(i)] = {}
     results_dict['storm_{0}'.format(i)]['raw_results'] = load_feather(station, i)
-    prec_recall, metrics = calculating_scores(results_dict['storm_{0}'.format(i)]['raw_results'], splits)
+    prec_recall, metrics, diff_df, spread_df = calculating_scores(results_dict['storm_{0}'.format(i)]['raw_results'], splits, station)
+    results_dict['storm_{0}'.format(i)]['diff_df'] = diff_df
+    results_dict['storm_{0}'.format(i)]['spread_df'] = spread_df
     results_dict['storm_{0}'.format(i)]['precision_recall'] = prec_recall
     results_dict['storm_{0}'.format(i)]['metrics'] = metrics
     results_dict['storm_{0}'.format(i)]['STD_real'] = results_dict['storm_{0}'.format(i)]['raw_results']['crossing'].std()
 
   return results_dict
+
+
+def plotting_corrs(diff_df, spread_df, params, name):
+
+  sw_feats = ['B_Total', 'BY_GSM', 'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T','AE_INDEX', 'SZA']
+  for param in params:
+    x, y = pd.Series(), pd.Series()
+    fig = plt.figure()
+    plt.title('{0} {1} vs. Difference'.format(param, name))
+    for station in CONFIG['stations']:
+      for i in range(CONFIG['splits']):
+        x = pd.concat([x,diff_df['{0}_split_{1}'.format(station, i)]])
+        if param in sw_feats:
+          y = pd.concat([y,diff_df[param]])
+        else:
+          y = pd.concat([y,diff_df['{0}_{1}'.format(station, param)]])
+    temp_df = pd.DataFrame({'x':x,
+                            'y':y})
+    temp_df.dropna(inplace=True)
+    x = np.array(temp_df['x'])
+    y = np.array(temp_df['y'])
+    plt.hist2d(x,y, bins=(100,100), norm=mpl.colors.LogNorm(), range=((0.01,1), (y.min(),y.max())))
+    plt.savefig('plots/{0}_{1}_vs_difference.png'.format(param, name))
+
+    fig = plt.figure()
+    x, y = pd.Series(), pd.Series()
+    plt.title('{0} {1} vs. Spread'.format(param, name))
+    for station in CONFIG['stations']:
+      x = pd.concat([x,spread_df['{0}'.format(station)]])
+      if param in sw_feats:
+        y = pd.concat([y,spread_df[param]])
+      else:
+        y = pd.concat([y,spread_df['{0}_{1}'.format(station, param)]])
+
+    temp_df = pd.DataFrame({'x':x,
+                            'y':y})
+    temp_df.dropna(inplace=True)
+    x = np.array(temp_df['x'])
+    y = np.array(temp_df['y'])
+    plt.hist2d(x,y, bins=(100,100), norm=mpl.colors.LogNorm(), range=((0.01,1), (y.min(),y.max())))
+    plt.savefig('plots/{0}_{1}_vs_spread.png'.format(param, name))
 
 
 def main():
@@ -188,7 +273,31 @@ def main():
   for station in CONFIG['stations']:
     results_dict = aggregate_results(len(CONFIG['test_storm_stime']), CONFIG['splits'], station)
     stations_dict[station] = results_dict
+  diff_df, spread_df = pd.DataFrame(), pd.DataFrame()
+  for i in range(len(CONFIG['test_storm_stime'])):
+    temp_diff, temp_spread = pd.DataFrame(), pd.DataFrame()
+    for station in CONFIG['stations']:
+      temp_diff = pd.concat([temp_diff, stations_dict[station]['storm_{0}'.format(i)]['diff_df']], axis=1, ignore_index=False)
+      temp_spread = pd.concat([temp_spread, stations_dict[station]['storm_{0}'.format(i)]['spread_df']], axis=1, ignore_index=False)
 
+    diff_df = pd.concat([diff_df, temp_diff], axis=0)
+    spread_df = pd.concat([spread_df, temp_spread], axis=0)
+
+  mean_df, std_df, max_df = getting_model_input_data()
+  diff_df.reset_index(inplace=True, drop=True)
+  spread_df.reset_index(inplace=True, drop=True)
+
+  mean_diff_df = pd.concat([diff_df, mean_df], axis=1, ignore_index=False)
+  std_diff_df = pd.concat([diff_df, std_df], axis=1, ignore_index=False)
+  max_diff_df = pd.concat([diff_df, max_df], axis=1, ignore_index=False)
+
+  mean_spread_df = pd.concat([spread_df, mean_df], axis=1, ignore_index=False)
+  std_spread_df = pd.concat([spread_df, std_df], axis=1, ignore_index=False)
+  max_spread_df = pd.concat([spread_df, max_df], axis=1, ignore_index=False)
+
+  plotting_corrs(mean_diff_df, mean_spread_df, CONFIG['params'], 'mean')
+  plotting_corrs(std_diff_df, std_spread_df, CONFIG['params'], 'std')
+  plotting_corrs(max_diff_df, max_spread_df, CONFIG['params'], 'max')
 
   with open('outputs/stations_results_dict.pkl', 'wb') as f:
     pickle.dump(stations_dict, f)
