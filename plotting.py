@@ -334,92 +334,92 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	plt.title(title, fontsize=130)
 
 	ax1 = fig.add_subplot(811)			# initalizing the subplot
-	z1=np.array(OTT_bar['OTT_bottom'])		# creates an array from the y_bar dataframe
-	z2=np.array(OTT_bar['OTT_top'])			# creates another array. These two arrays are compared to create the bar at the top of the plots.
-	ax1.plot(OTT['mean'])								# plots the mean columns of the dataframe.
-	ax1.fill_between(OTT.index, OTT['bottom_perc'], OTT['top_perc'], alpha=0.2)	# type: ignore # fills the area between the confidence interval with a lighter shade
-	ax1.fill_between(OTT_bar.index, OTT_bar['OTT_bottom'], OTT_bar['OTT_top'], where=z2>z1, alpha=1)												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
+	z1=np.array(BFE_bar['BFE_bottom'])		# creates an array from the y_bar dataframe
+	z2=np.array(BFE_bar['BFE_top'])			# creates another array. These two arrays are compared to create the bar at the top of the plots.
+	ax1.plot(BFE['mean'])								# plots the mean columns of the dataframe.
+	ax1.fill_between(BFE.index, BFE['bottom_perc'], BFE['top_perc'], alpha=0.2)	# type: ignore # fills the area between the confidence interval with a lighter shade
+	ax1.fill_between(BFE_bar.index, BFE_bar['BFE_bottom'], BFE_bar['BFE_top'], where=z2>z1, alpha=1)												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
 	ax1.margins(x=0)							# tightning the plot margins
-	ax1.set_ylabel('OTT', fontsize='45')
+	ax1.set_ylabel('BFE', fontsize='45')
 	plt.yticks(fontsize='45')
 	ax1.set_xticklabels('')
 
 	ax2 = fig.add_subplot(812, sharex=ax1)
-	z1=np.array(STJ_bar['STJ_bottom'])
-	z2=np.array(STJ_bar['STJ_top'])
-	ax2.plot(STJ.index, STJ['mean'])
-	ax2.fill_between(STJ.index, STJ['bottom_perc'], STJ['top_perc'], alpha=0.2)  # type: ignore
-	ax2.fill_between(STJ_bar.index, STJ_bar['STJ_bottom'], STJ_bar['STJ_top'], where=z2>z1, alpha=1)  # type: ignore
+	z1=np.array(WNG_bar['WNG_bottom'])
+	z2=np.array(WNG_bar['WNG_top'])
+	ax2.plot(WNG.index, WNG['mean'])
+	ax2.fill_between(WNG.index, WNG['bottom_perc'], WNG['top_perc'], alpha=0.2)  # type: ignore
+	ax2.fill_between(WNG_bar.index, WNG_bar['WNG_bottom'], WNG_bar['WNG_top'], where=z2>z1, alpha=1)  # type: ignore
 	ax2.margins(x=0)
-	ax2.set_ylabel('STJ', fontsize='45')
+	ax2.set_ylabel('WNG', fontsize='45')
 	plt.yticks(fontsize='45')
-	ax2.xaxis.set_major_formatter(mdates.DateFormatter('%b %d\n %H:%M'))			# adds the date to the bottom of the plot
+	ax2.set_xticklabels('')			# adds the date to the bottom of the plot
 
 	ax3 = fig.add_subplot(813, sharex=ax1)			# initalizing the subplot
-	z1=np.array(NEW_bar['NEW_bottom'])		# creates an array from the y_bar dataframe
-	z2=np.array(NEW_bar['NEW_top'])			# creates another array. These two arrays are compared to create the bar at the top of the plots.
-	ax3.plot(NEW['mean'])								# plots the mean columns of the dataframe.
-	ax3.fill_between(NEW.index, NEW['bottom_perc'], NEW['top_perc'], alpha=0.2)	# type: ignore # fills the area between the confidence interval with a lighter shade
-	ax3.fill_between(NEW_bar.index, NEW_bar['NEW_bottom'], NEW_bar['NEW_top'], where=z2>z1, alpha=1)												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
+	z1=np.array(LER_bar['LER_bottom'])		# creates an array from the y_bar dataframe
+	z2=np.array(LER_bar['LER_top'])			# creates another array. These two arrays are compared to create the bar at the top of the plots.
+	ax3.plot(LER['mean'])								# plots the mean columns of the dataframe.
+	ax3.fill_between(LER.index, LER['bottom_perc'], LER['top_perc'], alpha=0.2)	# type: ignore # fills the area between the confidence interval with a lighter shade
+	ax3.fill_between(LER_bar.index, LER_bar['LER_bottom'], LER_bar['LER_top'], where=z2>z1, alpha=1)												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
 	ax3.margins(x=0)							# tightning the plot margins
-	ax3.set_ylabel('NEW', fontsize='45')
+	ax3.set_ylabel('LER', fontsize='45')
 	plt.yticks(fontsize='45')
 	ax3.set_xticklabels('')
 
 	ax4 = fig.add_subplot(814, sharex=ax1)
-	z1=np.array(VIC_bar['VIC_bottom'])
-	z2=np.array(VIC_bar['VIC_top'])
-	ax4.plot(VIC.index, VIC['mean'])
-	ax4.fill_between(VIC.index, VIC['bottom_perc'], VIC['top_perc'], alpha=0.2)  # type: ignore
-	ax4.fill_between(VIC_bar.index, VIC_bar['VIC_bottom'], VIC_bar['VIC_top'], where=z2>z1, alpha=1)  # type: ignore
+	z1=np.array(ESK_bar['ESK_bottom'])
+	z2=np.array(ESK_bar['ESK_top'])
+	ax4.plot(ESK.index, ESK['mean'])
+	ax4.fill_between(ESK.index, ESK['bottom_perc'], ESK['top_perc'], alpha=0.2)  # type: ignore
+	ax4.fill_between(ESK_bar.index, ESK_bar['ESK_bottom'], ESK_bar['ESK_top'], where=z2>z1, alpha=1)  # type: ignore
 	ax4.margins(x=0)
-	ax4.set_ylabel('VIC', fontsize='45')
+	ax4.set_ylabel('ESK', fontsize='45')
 	plt.yticks(fontsize='45')
-	ax4.xaxis.set_major_formatter(mdates.DateFormatter('%b %d\n %H:%M'))			# adds the date to the bottom of the plot
+	ax4.set_xticklabels('')			# adds the date to the bottom of the plot
 
 	ax5 = fig.add_subplot(815, sharex=ax1)			# initalizing the subplot
-	z1=np.array(BFE_bar['BFE_bottom'])		# creates an array from the y_bar dataframe
-	z2=np.array(BFE_bar['BFE_top'])			# creates another array. These two arrays are compared to create the bar at the top of the plots.
-	ax5.plot(BFE['mean'])								# plots the mean columns of the dataframe.
-	ax5.fill_between(BFE.index, BFE['bottom_perc'], BFE['top_perc'], alpha=0.2)	# type: ignore # fills the area between the confidence interval with a lighter shade
-	ax5.fill_between(BFE_bar.index, BFE_bar['BFE_bottom'], BFE_bar['BFE_top'], where=z2>z1, alpha=1)												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
+	z1=np.array(STJ_bar['STJ_bottom'])		# creates an array from the y_bar dataframe
+	z2=np.array(STJ_bar['STJ_top'])			# creates another array. These two arrays are compared to create the bar at the top of the plots.
+	ax5.plot(STJ['mean'])								# plots the mean columns of the dataframe.
+	ax5.fill_between(STJ.index, STJ['bottom_perc'], STJ['top_perc'], alpha=0.2)	# type: ignore # fills the area between the confidence interval with a lighter shade
+	ax5.fill_between(STJ_bar.index, STJ_bar['STJ_bottom'], STJ_bar['STJ_top'], where=z2>z1, alpha=1)												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
 	ax5.margins(x=0)							# tightning the plot margins
-	ax5.set_ylabel('BFE', fontsize='45')
+	ax5.set_ylabel('STJ', fontsize='45')
 	plt.yticks(fontsize='45')
 	ax5.set_xticklabels('')
 
 	ax6 = fig.add_subplot(816, sharex=ax1)
-	z1=np.array(WNG_bar['WNG_bottom'])
-	z2=np.array(WNG_bar['WNG_top'])
-	ax6.plot(WNG['mean'])
-	ax6.fill_between(WNG.index, WNG['bottom_perc'], WNG['top_perc'], alpha=0.2)  # type: ignore
-	ax6.fill_between(WNG_bar.index, WNG_bar['WNG_bottom'], WNG_bar['WNG_top'], where=z2>z1, alpha=1)  # type: ignore
+	z1=np.array(OTT_bar['OTT_bottom'])
+	z2=np.array(OTT_bar['OTT_top'])
+	ax6.plot(OTT['mean'])
+	ax6.fill_between(OTT.index, OTT['bottom_perc'], OTT['top_perc'], alpha=0.2)  # type: ignore
+	ax6.fill_between(OTT_bar.index, OTT_bar['OTT_bottom'], OTT_bar['OTT_top'], where=z2>z1, alpha=1)  # type: ignore
 	ax6.margins(x=0)
-	ax6.set_ylabel('WNG', fontsize='45')
+	ax6.set_ylabel('OTT', fontsize='45')
 	plt.yticks(fontsize='45')
 	plt.xticks(fontsize=30)
 	ax6.set_xticklabels('')
 
 	ax7 = fig.add_subplot(817, sharex=ax1)
-	z1=np.array(ESK_bar['ESK_bottom'])
-	z2=np.array(ESK_bar['ESK_top'])
-	ax7.plot(ESK['mean'])
-	ax7.fill_between(ESK.index, ESK['bottom_perc'], ESK['top_perc'], alpha=0.2)  # type: ignore
-	ax7.fill_between(ESK_bar.index, ESK_bar['ESK_bottom'], ESK_bar['ESK_top'], where=z2>z1, alpha=1)  # type: ignore
+	z1=np.array(NEW_bar['NEW_bottom'])
+	z2=np.array(NEW_bar['NEW_top'])
+	ax7.plot(NEW['mean'])
+	ax7.fill_between(NEW.index, NEW['bottom_perc'], NEW['top_perc'], alpha=0.2)  # type: ignore
+	ax7.fill_between(NEW_bar.index, NEW_bar['NEW_bottom'], NEW_bar['NEW_top'], where=z2>z1, alpha=1)  # type: ignore
 	ax7.margins(x=0)
-	ax7.set_ylabel('ESK', fontsize='45')
+	ax7.set_ylabel('NEW', fontsize='45')
 	plt.yticks(fontsize='45')
 	plt.xticks(fontsize=30)
 	ax7.set_xticklabels('')
 
 	ax8 = fig.add_subplot(818, sharex=ax1)
-	z1=np.array(LER_bar['LER_bottom'])
-	z2=np.array(LER_bar['LER_top'])
-	ax8.plot(LER['mean'])
-	ax8.fill_between(LER.index, LER['bottom_perc'], LER['top_perc'], alpha=0.2)  # type: ignore
-	ax8.fill_between(LER_bar.index, LER_bar['LER_bottom'], LER_bar['LER_top'], where=z2>z1, alpha=1)  # type: ignore
+	z1=np.array(VIC_bar['VIC_bottom'])
+	z2=np.array(VIC_bar['VIC_top'])
+	ax8.plot(VIC['mean'])
+	ax8.fill_between(VIC.index, VIC['bottom_perc'], VIC['top_perc'], alpha=0.2)  # type: ignore
+	ax8.fill_between(VIC_bar.index, VIC_bar['VIC_bottom'], VIC_bar['VIC_top'], where=z2>z1, alpha=1)  # type: ignore
 	ax8.margins(x=0)
-	ax8.set_ylabel('LER', fontsize='45')
+	ax8.set_ylabel('VIC', fontsize='45')
 	plt.yticks(fontsize='45')
 	plt.xticks(fontsize=30)
 	ax8.xaxis.set_major_formatter(mdates.DateFormatter('%b %d\n %H:%M'))			# adds the date to the bottom of the plot
