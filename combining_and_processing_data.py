@@ -84,6 +84,7 @@ def classification_column(df, param, thresh, forecast, window):
 																									## index, the shift time is the negative of the forecast instead of positive.
 	indexer = pd.api.indexers.FixedForwardWindowIndexer(window_size=window)						# Yeah this is annoying, have to create a forward rolling indexer because it won't do it automatically.
 	df['window_max'] = df.shifted_dBHt.rolling(indexer, min_periods=1).max()					# creates new coluimn in the df labeling the maximum parameter value in the forecast:forecast+window time frame
+	df['pers_max'] = df.dBHt.rolling(30, min_periods=1).max()
 	df.reset_index(drop=True, inplace=True)														# just resets the index
 
 
@@ -91,13 +92,14 @@ def classification_column(df, param, thresh, forecast, window):
 		goes above the given threshold, and zero if it does not.'''
 
 	conditions = [(df['window_max'] < thresh), (df['window_max'] >= thresh)]			# defining the conditions
+	pers_conditions = [(df['pres_max'] < thresh), (df['pers_max'] >= thresh)]			# defining the conditions
 
 	binary = [0, 1] 																	# 0 if not cross 1 if cross
 
 	df['crossing'] = np.select(conditions, binary)						# new column created using the conditions and the binary
+	df['persistance'] = np.select(pers_conditions, binary)
 
-
-	df.drop(['window_max', 'shifted_dBHt'], axis=1, inplace=True)							# removes the two working columns for memory purposes
+	df.drop(['pers_max', 'window_max', 'shifted_dBHt'], axis=1, inplace=True)							# removes the two working columns for memory purposes
 
 	return df
 
@@ -235,7 +237,7 @@ def prep_test_data(df, stime, etime, params, scaler, time_history, prediction_le
 		storm_df = df[start:end]									# cutting out the storm from the greater dataframe
 		storm_df.reset_index(inplace=True, drop=False)
 		test_dict['storm_{0}'.format(i)]['date'] = storm_df['Date_UTC']		# storing the date series for later plotting
-		real_cols = ['Date_UTC', 'dBHt', 'crossing']						# defining real_cols and then adding in the real data to the columns. Used to segment the important data needed for comparison to model outputs
+		real_cols = ['Date_UTC', 'dBHt', 'crossing', 'persistance']						# defining real_cols and then adding in the real data to the columns. Used to segment the important data needed for comparison to model outputs
 
 		real_df = storm_df[real_cols][time_history:(len(storm_df)-prediction_length)]		# cutting out the relevent columns. trimmed at the edges to keep length consistent with model outputs
 		real_df.reset_index(inplace=True, drop=True)
