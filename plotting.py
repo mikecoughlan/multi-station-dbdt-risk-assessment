@@ -172,7 +172,7 @@ def plot_metrics(metrics_dict, stations, metrics):
 		plt.yticks(fontsize='58')						# making the y ticks a bit bigger. They're a bit more important
 		plt.legend(fontsize='65')
 
-		plt.savefig('plots/{0}_version_{1}.png'.format(metric, CONFIG['version']))
+		plt.savefig('plots/{0}_version_{1}.png'.format(metric, CONFIG['version']), bbox_inches='tight')
 
 
 def plot_total_metrics(metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE']):
@@ -212,7 +212,7 @@ def plot_total_metrics(metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE']):
 		plt.yticks(fontsize='58')						# making the y ticks a bit bigger. They're a bit more important
 		plt.legend(fontsize='65')
 
-		plt.savefig('plots/{0}_total.png'.format(metric, CONFIG['version']))
+		plt.savefig('plots/{0}_total.png'.format(metric, CONFIG['version']), bbox_inches='tight')
 
 def prep_k_fold_results(df, splits):
 	'''prepares the data from the k-folds for plotting and examination. Creates a dataframe that stores the upper and lower calculated bounds for the plotting.
