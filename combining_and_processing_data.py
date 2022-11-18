@@ -87,12 +87,11 @@ def classification_column(df, param, thresh, forecast, window):
 	df['pers_max'] = df.dBHt.rolling(30, min_periods=1).max()
 	df.reset_index(drop=True, inplace=True)														# just resets the index
 
-
 	'''This section creates a binary column for each of the thresholds. Binary will be one if the parameter
 		goes above the given threshold, and zero if it does not.'''
 
 	conditions = [(df['window_max'] < thresh), (df['window_max'] >= thresh)]			# defining the conditions
-	pers_conditions = [(df['pres_max'] < thresh), (df['pers_max'] >= thresh)]			# defining the conditions
+	pers_conditions = [(df['pers_max'] < thresh), (df['pers_max'] >= thresh)]			# defining the conditions
 
 	binary = [0, 1] 																	# 0 if not cross 1 if cross
 
@@ -297,7 +296,7 @@ def storm_extract(data, storm_list, lead, recovery):
 	for storm in storms:
 		storm.reset_index(drop=True, inplace=True)		# resetting the storm index and simultaniously dropping the date so it doesn't get trained on
 		y_1.append(to_categorical(storm['crossing'].to_numpy(), num_classes=2))			# turns the one demensional resulting array for the storm into a
-		storm.drop('crossing', axis=1, inplace=True)  	# removing the target variable from the storm data so we don't train on it
+		storm.drop(['persistance', 'crossing'], axis=1, inplace=True)  	# removing the target variable from the storm data so we don't train on it
 
 	return storms, y_1
 

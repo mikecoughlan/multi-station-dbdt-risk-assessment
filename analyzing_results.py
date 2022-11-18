@@ -50,7 +50,7 @@ CONFIG = {'thresholds': [7.15], # list of thresholds to be examined.
       'window': 30,                                 # time window over which the metrics will be calculated
       'splits': 100,                         # amount of k fold splits to be performed. Program will create this many models
       # 'stations':['OTT', 'STJ', 'VIC', 'NEW', 'ESK', 'WNG', 'LER', 'BFE', 'NGK'],
-      'stations': ['OTT', 'STJ', 'WNG', 'BFE', 'NEW', 'VIC', 'ESK', 'LER'],
+      'stations': ['BFE', 'WNG', 'LER', 'ESK', 'STJ', 'OTT', 'NEW', 'VIC'],
 	    'version':5}    # list of stations being examined
 
 
@@ -204,7 +204,6 @@ def calculating_scores(df, splits, station):
   metrics['AUC'] = [np.mean(area_uc), np.percentile(area_uc, max_perc), np.percentile(area_uc, min_perc)]
 
   metrics.set_index('ind', drop=True, inplace=True)
-  print(metrics['AUC'])
 
   return prec_recall, metrics, diff_df, spread_df
 
@@ -223,7 +222,72 @@ def aggregate_results(length, splits, station):
     results_dict['storm_{0}'.format(i)]['metrics'] = metrics
     results_dict['storm_{0}'.format(i)]['STD_real'] = results_dict['storm_{0}'.format(i)]['raw_results']['crossing'].std()
 
+  results_dict['all_storms_df'] = pd.concat([results_dict['storm_{0}'.format(i)]['raw_results'] for i in range(length)], axis=0, ignore_index=True)
+  prec_recall, metrics, ___, ___ = calculating_scores(results_dict['all_storms_df'], splits, station)
+  results_dict['total_metrics'] = metrics
+  results_dict['total_precision_recall'] = prec_recall
+  hss, auc, rmse = getting_persistance_results(results_dict['all_storms_df'])
+  results_dict['pers_HSS'] = hss
+  results_dict['pers_AUC'] = auc
+  results_dict['pers_RMSE'] = rmse
+
+  print('Stations: '+str(station) +' metrics:')
+  print(metrics)
+  print('Pers HSS: '+str(hss))
+  print('Pers AUC: '+str(auc))
+  print('Pers RMSE: '+str(rmse))
+
   return results_dict
+
+
+
+def getting_persistance_results(df):
+
+  rmse, area_uc, hss = [], [], []      # initalizing the lists for storing the individual scores
+
+  temp_df = df[['crossing', 'persistance']]
+  temp_df.dropna(inplace=True)
+
+  pred = temp_df['persistance']        # Grabbing the specific predicted data
+  re = temp_df['crossing']                   # and the real data for comparison
+
+  prec, rec, ____ = precision_recall_curve(re, pred)
+  area = auc(rec, prec)
+
+  # segmenting the pd.series into the confusion matrix indicies
+  A = temp_df[(temp_df['persistance'] >= 0.5) & (temp_df['crossing'] == 1)]
+  B = temp_df[(temp_df['persistance'] >= 0.5) & (temp_df['crossing'] == 0)]
+  C = temp_df[(temp_df['persistance'] < 0.5) & (temp_df['crossing'] == 1)]
+  D = temp_df[(temp_df['persistance'] < 0.5) & (temp_df['crossing'] == 0)]
+
+  a, b, c, d = len(A), len(B), len(C), len(D)           # getting the values from the length of each df
+
+  # doing the calculations. Nan segments are just to avoid 1/0 errors
+  if (a+c) > 0:
+    prob_det = a/(a+c)
+    freq_bias = (a+b)/(a+c)
+  else:
+    prob_det = 'NaN'
+    freq_bias = 'NaN'
+  if (b+d) > 0:
+    prob_false = b/(b+d)
+  else:
+    prob_false = 'NaN'
+  if ((a+c)*(c+d)+(a+b)*(b+d)) > 0:
+    hs_score = (2*((a*d)-(b*c)))/((a+c)*(c+d)+(a+b)*(b+d))
+  else:
+    hs_score = 'NaN'
+
+  if ((a>0)or(d>0)) and ((b==0)and(c==0)):
+    hs_score = 1
+
+  hss.append(hs_score)
+
+  # adding the data to lists
+  area_uc.append(area.round(decimals=3))
+  rmse.append(np.sqrt(mean_squared_error(re,pred)))             # calculating the root mean square error
+
+  return hss, area_uc, rmse
 
 
 def plotting_corrs(diff_df, spread_df, params, name):
@@ -276,28 +340,28 @@ def main():
   diff_df, spread_df = pd.DataFrame(), pd.DataFrame()
   for i in range(len(CONFIG['test_storm_stime'])):
     temp_diff, temp_spread = pd.DataFrame(), pd.DataFrame()
-    for station in CONFIG['stations']:
-      temp_diff = pd.concat([temp_diff, stations_dict[station]['storm_{0}'.format(i)]['diff_df']], axis=1, ignore_index=False)
-      temp_spread = pd.concat([temp_spread, stations_dict[station]['storm_{0}'.format(i)]['spread_df']], axis=1, ignore_index=False)
+    # for station in CONFIG['stations']:
+    #   temp_diff = pd.concat([temp_diff, stations_dict[station]['storm_{0}'.format(i)]['diff_df']], axis=1, ignore_index=False)
+    #   temp_spread = pd.concat([temp_spread, stations_dict[station]['storm_{0}'.format(i)]['spread_df']], axis=1, ignore_index=False)
 
-    diff_df = pd.concat([diff_df, temp_diff], axis=0)
-    spread_df = pd.concat([spread_df, temp_spread], axis=0)
+    # diff_df = pd.concat([diff_df, temp_diff], axis=0)
+  #   spread_df = pd.concat([spread_df, temp_spread], axis=0)
 
-  mean_df, std_df, max_df = getting_model_input_data()
-  diff_df.reset_index(inplace=True, drop=True)
-  spread_df.reset_index(inplace=True, drop=True)
+  # mean_df, std_df, max_df = getting_model_input_data()
+  # diff_df.reset_index(inplace=True, drop=True)
+  # spread_df.reset_index(inplace=True, drop=True)
 
-  mean_diff_df = pd.concat([diff_df, mean_df], axis=1, ignore_index=False)
-  std_diff_df = pd.concat([diff_df, std_df], axis=1, ignore_index=False)
-  max_diff_df = pd.concat([diff_df, max_df], axis=1, ignore_index=False)
+  # mean_diff_df = pd.concat([diff_df, mean_df], axis=1, ignore_index=False)
+  # std_diff_df = pd.concat([diff_df, std_df], axis=1, ignore_index=False)
+  # max_diff_df = pd.concat([diff_df, max_df], axis=1, ignore_index=False)
 
-  mean_spread_df = pd.concat([spread_df, mean_df], axis=1, ignore_index=False)
-  std_spread_df = pd.concat([spread_df, std_df], axis=1, ignore_index=False)
-  max_spread_df = pd.concat([spread_df, max_df], axis=1, ignore_index=False)
+  # mean_spread_df = pd.concat([spread_df, mean_df], axis=1, ignore_index=False)
+  # std_spread_df = pd.concat([spread_df, std_df], axis=1, ignore_index=False)
+  # max_spread_df = pd.concat([spread_df, max_df], axis=1, ignore_index=False)
 
-  plotting_corrs(mean_diff_df, mean_spread_df, CONFIG['params'], 'mean')
-  plotting_corrs(std_diff_df, std_spread_df, CONFIG['params'], 'std')
-  plotting_corrs(max_diff_df, max_spread_df, CONFIG['params'], 'max')
+  # plotting_corrs(mean_diff_df, mean_spread_df, CONFIG['params'], 'mean')
+  # plotting_corrs(std_diff_df, std_spread_df, CONFIG['params'], 'std')
+  # plotting_corrs(max_diff_df, max_spread_df, CONFIG['params'], 'max')
 
   with open('outputs/stations_results_dict.pkl', 'wb') as f:
     pickle.dump(stations_dict, f)

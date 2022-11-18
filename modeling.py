@@ -267,6 +267,7 @@ def main(station):
 
 		if not os.path.exists('outputs/{0}'.format(station)):
 			os.makedirs('outputs/{0}'.format(station))
+
 		real_df.to_feather('outputs/{0}/version_{1}_storm_{2}.feather'.format(station, MODEL_CONFIG['version'], i))
 
 

@@ -2,6 +2,7 @@ import pickle
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -29,11 +30,11 @@ CONFIG = {'version':0,
       		'test_storm_etime': ['2001-04-02 12:00:00', '2001-09-02 00:00:00', '2005-05-17 00:00:00',
                   '2005-09-02 12:00:00', '2006-12-17 00:00:00', '2010-04-07 00:00:00',
                   '2011-08-07 09:00:00', '2015-03-19 14:00:00'],  # end times for testing storms. This will remove them from training
-			'plot_titles': ['Mar 2001', 'Sep 2001', 'May 2005', 'Sep 2005', 'Dec 2006', 'Apr 2010', 'Aug 2011', 'Mar 2015'],						# list used for plot titles so I don't have to do it manually
+			'plot_titles': ['March 2001', 'September 2001', 'May 2005', 'September 2005', 'December 2006', 'April 2010', 'August 2011', 'March 2015'],						# list used for plot titles so I don't have to do it manually
 			'forecast': 30,
 			'window': 30,																	# time window over which the metrics will be calculated
 			'splits': 100,															# amount of k fold splits to be performed. Program will create this many models
-			'stations': ['OTT', 'STJ', 'WNG', 'BFE', 'NEW', 'VIC', 'ESK', 'LER'],
+			'stations': ['BFE', 'WNG', 'LER', 'ESK', 'STJ', 'OTT', 'NEW', 'VIC'],
 			'metrics': ['HSS', 'BIAS', 'STD_PRED', 'RMSE', 'AUC']}
 
 
@@ -57,6 +58,18 @@ def sorting_metrics(results_dict, stations, metrics, length):
 				df[station] = results_dict[station]['storm_{0}'.format(i)]['metrics'][metric]
 			metric_dict['storm_{0}'.format(i)] = df.T
 		metrics_dict[metric] = metric_dict
+		total_df = pd.DataFrame()
+		for station in stations:
+			total_df[station] = results_dict[station]['total_metrics'][metric]
+		metrics_dict['total_{0}'.format(metric)] = total_df.T
+	hss, auc, rmse = [], [], []
+	for station in stations:
+		hss.append(results_dict[station]['pers_HSS'][0])
+		auc.append(results_dict[station]['pers_AUC'][0])
+		rmse.append(results_dict[station]['pers_RMSE'][0])
+	metrics_dict['pers_HSS'] = hss
+	metrics_dict['pers_AUC'] = auc
+	metrics_dict['pers_RMSE'] = rmse
 
 	return metrics_dict
 
@@ -162,6 +175,45 @@ def plot_metrics(metrics_dict, stations, metrics):
 		plt.savefig('plots/{0}_version_{1}.png'.format(metric, CONFIG['version']))
 
 
+def plot_total_metrics(metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE']):
+	'''plotting function for the metrics. Not a lot of comments in this one.
+		Inputs:
+		metrics: dataframe of the saved metrics from the classification function.
+		thresholds: list of thresholds. There will be one plot for each threshold.
+		'''
+	for metric in metrics:
+
+
+		fig = plt.figure(figsize=(60,55))													# establishing the figure
+		plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)			# trimming the whitespace in the subplots
+
+		X = [5, 35, 65, 95, 125, 155, 185, 215]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+
+		x0 = [(num-1.5) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+		x1 = [(num+1.5) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+
+
+		ax = fig.add_subplot(111)					# adding the subplot
+		y0 = metrics_dict['total_{0}'.format(metric)]['mean'].to_numpy()		# defining the y center point
+		ymax0 = metrics_dict['total_{0}'.format(metric)]['max'].to_numpy()	# defining the y upper bound
+		ymin0 = metrics_dict['total_{0}'.format(metric)]['min'].to_numpy()	# defining the y lower bound
+
+		ymax0 = ymax0 - y0
+		ymin0 = y0 - ymin0
+
+		plt.title(metric, fontsize='100')		# titling the plot
+		ax.errorbar(X, y0, yerr=[ymin0, ymax0], fmt='.k', color='blue', label='total', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		ax.scatter(X, metrics_dict['pers_{0}'.format(metric)], c='red', label='persistance', s=1000)
+		# plt.ylim(0,1)																# keeping the plot within limits to eliminate as much white space as possible.
+		# plt.xlim(0,70)
+		plt.xlabel('Stations', fontsize='70')			# adding the label on the x axis label
+		plt.ylabel(metric, fontsize='70')				# adding teh y axis label
+		plt.xticks(X, stations, fontsize='70')		# adding ticks to the points on the x axis
+		plt.yticks(fontsize='58')						# making the y ticks a bit bigger. They're a bit more important
+		plt.legend(fontsize='65')
+
+		plt.savefig('plots/{0}_total.png'.format(metric, CONFIG['version']))
+
 def prep_k_fold_results(df, splits):
 	'''prepares the data from the k-folds for plotting and examination. Creates a dataframe that stores the upper and lower calculated bounds for the plotting.
 		Inputs:
@@ -178,6 +230,7 @@ def prep_k_fold_results(df, splits):
 	top_perc = newdf.quantile(0.975, axis=1)
 	bottom_perc = newdf.quantile(0.025, axis=1)
 	newdf['cross'] = df['crossing']
+	newdf['persistance'] = df['persistance']
 	newdf['mean'] = mean			# calculated the mean for each row and creates a new collumn
 	newdf['top_perc'] = top_perc	# creates a new column and populates it with the 97.5th percentile data from each row
 	newdf['bottom_perc'] = bottom_perc		# creates a new column and populates it with the 2.5th percentile data from each row
@@ -196,7 +249,7 @@ def prep_k_fold_results(df, splits):
 def sorting_PR(results_dict, station):
 
 	PR_dict = {}
-	for i in range(len(results_dict[station])):
+	for i in range(8):
 		PR_dict['storm_{0}'.format(i)] = {}
 		df = results_dict[station]['storm_{0}'.format(i)]['precision_recall']
 		try:
@@ -232,7 +285,6 @@ def plot_precision_recall(results_dict, station, plot_titles):
 	plt.xticks(fontsize='58')
 	plt.yticks(fontsize='58')
 	plt.savefig('plots/precision_recall_{0}.png'.format(station))
-
 
 
 def reliability_plots(results_dict, station, splits, plot_titles):
@@ -294,28 +346,44 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 
 	# this creats a new dataframe that will allow me to create a bar at the top of the plot to define the periods where the real, binary values have value 1.
 	OTT_bar = pd.DataFrame({'OTT_bottom':OTT['cross']*1.01,
-							'OTT_top':OTT['cross']*1.06},
+							'OTT_top':OTT['cross']*1.06,
+							'pers_bottom':OTT['persistance']*1.07,
+							'pers_top':OTT['persistance']*1.12},
 							index=OTT.index)
 	BFE_bar = pd.DataFrame({'BFE_bottom':BFE['cross']*1.01,
-							'BFE_top':BFE['cross']*1.06},
+							'BFE_top':BFE['cross']*1.06,
+							'pers_bottom':BFE['persistance']*1.07,
+							'pers_top':BFE['persistance']*1.12},
 							index=BFE.index)
 	WNG_bar = pd.DataFrame({'WNG_bottom':WNG['cross']*1.01,
-							'WNG_top':WNG['cross']*1.06},
+							'WNG_top':WNG['cross']*1.06,
+							'pers_bottom':WNG['persistance']*1.07,
+							'pers_top':WNG['persistance']*1.12},
 							index=WNG.index)
 	STJ_bar = pd.DataFrame({'STJ_bottom':STJ['cross']*1.01,
-							'STJ_top':STJ['cross']*1.06},
+							'STJ_top':STJ['cross']*1.06,
+							'pers_bottom':STJ['persistance']*1.07,
+							'pers_top':STJ['persistance']*1.12},
 							index=STJ.index)
 	NEW_bar = pd.DataFrame({'NEW_bottom':NEW['cross']*1.01,
-							'NEW_top':NEW['cross']*1.06},
+							'NEW_top':NEW['cross']*1.06,
+							'pers_bottom':NEW['persistance']*1.07,
+							'pers_top':NEW['persistance']*1.12},
 							index=NEW.index)
 	VIC_bar = pd.DataFrame({'VIC_bottom':VIC['cross']*1.01,
-							'VIC_top':VIC['cross']*1.06},
+							'VIC_top':VIC['cross']*1.06,
+							'pers_bottom':VIC['persistance']*1.07,
+							'pers_top':VIC['persistance']*1.12},
 							index=VIC.index)
 	ESK_bar = pd.DataFrame({'ESK_bottom':ESK['cross']*1.01,
-							'ESK_top':ESK['cross']*1.06},
+							'ESK_top':ESK['cross']*1.06,
+							'pers_bottom':ESK['persistance']*1.07,
+							'pers_top':ESK['persistance']*1.12},
 							index=ESK.index)
 	LER_bar = pd.DataFrame({'LER_bottom':LER['cross']*1.01,
-							'LER_top':LER['cross']*1.06},
+							'LER_top':LER['cross']*1.06,
+							'pers_bottom':LER['persistance']*1.07,
+							'pers_top':LER['persistance']*1.12},
 							index=LER.index)
 
 	OTT_bar.index=pd.to_datetime(OTT_bar.index)					# adds datetime index
@@ -328,96 +396,122 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	LER_bar.index=pd.to_datetime(LER_bar.index)					# adds datetime index
 
 
-
 	fig = plt.figure(figsize=(60,55))				# establishing the larger plot
 	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)		# triming the whitespace in between the subplots
+	plt.xticks([])
+	plt.yticks([])
 	plt.title(title, fontsize=130)
 
 	ax1 = fig.add_subplot(811)			# initalizing the subplot
 	z1=np.array(BFE_bar['BFE_bottom'])		# creates an array from the y_bar dataframe
 	z2=np.array(BFE_bar['BFE_top'])			# creates another array. These two arrays are compared to create the bar at the top of the plots.
+	w1=np.array(BFE_bar['pers_bottom'])
+	w2=np.array(BFE_bar['pers_top'])
 	ax1.plot(BFE['mean'])								# plots the mean columns of the dataframe.
 	ax1.fill_between(BFE.index, BFE['bottom_perc'], BFE['top_perc'], alpha=0.2)	# type: ignore # fills the area between the confidence interval with a lighter shade
 	ax1.fill_between(BFE_bar.index, BFE_bar['BFE_bottom'], BFE_bar['BFE_top'], where=z2>z1, alpha=1)												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
+	ax1.fill_between(BFE_bar.index, BFE_bar['pers_bottom'], BFE_bar['pers_top'], where=w2>w1, alpha=1, color='black')												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
 	ax1.margins(x=0)							# tightning the plot margins
 	ax1.set_ylabel('BFE', fontsize='45')
 	plt.yticks(fontsize='45')
-	ax1.set_xticklabels('')
+	# ax1.xaxis.set_major_locator(ticker.NullLocator())
+	ax1.set_xticklabels([], fontsize=0)
 
 	ax2 = fig.add_subplot(812, sharex=ax1)
 	z1=np.array(WNG_bar['WNG_bottom'])
 	z2=np.array(WNG_bar['WNG_top'])
+	w1=np.array(WNG_bar['pers_bottom'])
+	w2=np.array(WNG_bar['pers_top'])
 	ax2.plot(WNG.index, WNG['mean'])
 	ax2.fill_between(WNG.index, WNG['bottom_perc'], WNG['top_perc'], alpha=0.2)  # type: ignore
 	ax2.fill_between(WNG_bar.index, WNG_bar['WNG_bottom'], WNG_bar['WNG_top'], where=z2>z1, alpha=1)  # type: ignore
+	ax2.fill_between(WNG_bar.index, WNG_bar['pers_bottom'], WNG_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax2.margins(x=0)
 	ax2.set_ylabel('WNG', fontsize='45')
 	plt.yticks(fontsize='45')
-	ax2.set_xticklabels('')			# adds the date to the bottom of the plot
+	ax2.set_xticklabels([], fontsize=0)			# adds the date to the bottom of the plot
 
 	ax3 = fig.add_subplot(813, sharex=ax1)			# initalizing the subplot
 	z1=np.array(LER_bar['LER_bottom'])		# creates an array from the y_bar dataframe
 	z2=np.array(LER_bar['LER_top'])			# creates another array. These two arrays are compared to create the bar at the top of the plots.
+	w1=np.array(LER_bar['pers_bottom'])
+	w2=np.array(LER_bar['pers_top'])
 	ax3.plot(LER['mean'])								# plots the mean columns of the dataframe.
 	ax3.fill_between(LER.index, LER['bottom_perc'], LER['top_perc'], alpha=0.2)	# type: ignore # fills the area between the confidence interval with a lighter shade
 	ax3.fill_between(LER_bar.index, LER_bar['LER_bottom'], LER_bar['LER_top'], where=z2>z1, alpha=1)												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
+	ax3.fill_between(LER_bar.index, LER_bar['pers_bottom'], LER_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax3.margins(x=0)							# tightning the plot margins
 	ax3.set_ylabel('LER', fontsize='45')
 	plt.yticks(fontsize='45')
-	ax3.set_xticklabels('')
+	ax3.set_xticklabels([], fontsize=0)
 
 	ax4 = fig.add_subplot(814, sharex=ax1)
 	z1=np.array(ESK_bar['ESK_bottom'])
 	z2=np.array(ESK_bar['ESK_top'])
+	w1=np.array(ESK_bar['pers_bottom'])
+	w2=np.array(ESK_bar['pers_top'])
 	ax4.plot(ESK.index, ESK['mean'])
 	ax4.fill_between(ESK.index, ESK['bottom_perc'], ESK['top_perc'], alpha=0.2)  # type: ignore
 	ax4.fill_between(ESK_bar.index, ESK_bar['ESK_bottom'], ESK_bar['ESK_top'], where=z2>z1, alpha=1)  # type: ignore
+	ax4.fill_between(ESK_bar.index, ESK_bar['pers_bottom'], ESK_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax4.margins(x=0)
 	ax4.set_ylabel('ESK', fontsize='45')
 	plt.yticks(fontsize='45')
-	ax4.set_xticklabels('')			# adds the date to the bottom of the plot
+	ax4.set_xticklabels([], fontsize=0)			# adds the date to the bottom of the plot
 
 	ax5 = fig.add_subplot(815, sharex=ax1)			# initalizing the subplot
 	z1=np.array(STJ_bar['STJ_bottom'])		# creates an array from the y_bar dataframe
 	z2=np.array(STJ_bar['STJ_top'])			# creates another array. These two arrays are compared to create the bar at the top of the plots.
+	w1=np.array(STJ_bar['pers_bottom'])
+	w2=np.array(STJ_bar['pers_top'])
 	ax5.plot(STJ['mean'])								# plots the mean columns of the dataframe.
 	ax5.fill_between(STJ.index, STJ['bottom_perc'], STJ['top_perc'], alpha=0.2)	# type: ignore # fills the area between the confidence interval with a lighter shade
 	ax5.fill_between(STJ_bar.index, STJ_bar['STJ_bottom'], STJ_bar['STJ_top'], where=z2>z1, alpha=1)												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
+	ax5.fill_between(STJ_bar.index, STJ_bar['pers_bottom'], STJ_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax5.margins(x=0)							# tightning the plot margins
 	ax5.set_ylabel('STJ', fontsize='45')
 	plt.yticks(fontsize='45')
-	ax5.set_xticklabels('')
+	ax5.set_xticklabels([], fontsize=0)
 
 	ax6 = fig.add_subplot(816, sharex=ax1)
 	z1=np.array(OTT_bar['OTT_bottom'])
 	z2=np.array(OTT_bar['OTT_top'])
+	w1=np.array(OTT_bar['pers_bottom'])
+	w2=np.array(OTT_bar['pers_top'])
 	ax6.plot(OTT['mean'])
 	ax6.fill_between(OTT.index, OTT['bottom_perc'], OTT['top_perc'], alpha=0.2)  # type: ignore
 	ax6.fill_between(OTT_bar.index, OTT_bar['OTT_bottom'], OTT_bar['OTT_top'], where=z2>z1, alpha=1)  # type: ignore
+	ax6.fill_between(OTT_bar.index, OTT_bar['pers_bottom'], OTT_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax6.margins(x=0)
 	ax6.set_ylabel('OTT', fontsize='45')
 	plt.yticks(fontsize='45')
 	plt.xticks(fontsize=30)
-	ax6.set_xticklabels('')
+	ax6.set_xticklabels([], fontsize=0)
 
 	ax7 = fig.add_subplot(817, sharex=ax1)
 	z1=np.array(NEW_bar['NEW_bottom'])
 	z2=np.array(NEW_bar['NEW_top'])
+	w1=np.array(NEW_bar['pers_bottom'])
+	w2=np.array(NEW_bar['pers_top'])
 	ax7.plot(NEW['mean'])
 	ax7.fill_between(NEW.index, NEW['bottom_perc'], NEW['top_perc'], alpha=0.2)  # type: ignore
 	ax7.fill_between(NEW_bar.index, NEW_bar['NEW_bottom'], NEW_bar['NEW_top'], where=z2>z1, alpha=1)  # type: ignore
+	ax7.fill_between(NEW_bar.index, NEW_bar['pers_bottom'], NEW_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax7.margins(x=0)
 	ax7.set_ylabel('NEW', fontsize='45')
 	plt.yticks(fontsize='45')
 	plt.xticks(fontsize=30)
-	ax7.set_xticklabels('')
+	ax7.set_xticklabels([], fontsize=0)
 
 	ax8 = fig.add_subplot(818, sharex=ax1)
 	z1=np.array(VIC_bar['VIC_bottom'])
 	z2=np.array(VIC_bar['VIC_top'])
+	w1=np.array(VIC_bar['pers_bottom'])
+	w2=np.array(VIC_bar['pers_top'])
 	ax8.plot(VIC['mean'])
 	ax8.fill_between(VIC.index, VIC['bottom_perc'], VIC['top_perc'], alpha=0.2)  # type: ignore
 	ax8.fill_between(VIC_bar.index, VIC_bar['VIC_bottom'], VIC_bar['VIC_top'], where=z2>z1, alpha=1)  # type: ignore
+	ax8.fill_between(VIC_bar.index, VIC_bar['pers_bottom'], VIC_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax8.margins(x=0)
 	ax8.set_ylabel('VIC', fontsize='45')
 	plt.yticks(fontsize='45')
@@ -435,6 +529,7 @@ def main():
 	metrics_dict = sorting_metrics(results_dict, CONFIG['stations'], CONFIG['metrics'], len(CONFIG['test_storm_stime']))
 
 	plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'])
+	plot_total_metrics(metrics_dict, CONFIG['stations'])
 
 	for station in CONFIG['stations']:
 		plot_precision_recall(results_dict, station, CONFIG['plot_titles'])
