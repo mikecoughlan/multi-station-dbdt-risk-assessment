@@ -14,6 +14,7 @@ import pickle
 import random
 from datetime import datetime
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -34,7 +35,7 @@ except:
   pass
 
 
-CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'NGK', 'BFE'],
+CONFIG = {'stations': ['BFE', 'WNG', 'LER', 'ESK', 'STJ', 'OTT', 'NEW', 'VIC'],
 			'thresholds': 0.99,	# list of thresholds to be examined.
 			'params': ['Date_UTC', 'N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
 	   					'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T',
@@ -167,6 +168,9 @@ def data_prep(station, params, forecast, window, do_calc=True):
 
 		threshold = df['dBHt'].quantile(CONFIG['thresholds'])
 
+		if 'crossing' in params:
+			params.remove('crossing')
+
 		print('Isolating selected Features...')	# defining the features to be kept
 		df = df[params][1:]	# drops all features not in the features list above and drops the first row because of the derivatives
 
@@ -203,6 +207,8 @@ def prep_test_data(df, stime, etime, params, time_history, prediction_length):
 	test_df = pd.DataFrame()
 	ratios=[]
 	total_ratio = pd.DataFrame()										# initalizing the dictonary for storing everything
+	cols = params
+	cols.append('crossing')
 	for i, (start, end) in enumerate(zip(stime, etime)):		# looping through the different storms
 
 		storm_df = df[start:end]									# cutting out the storm from the greater dataframe
@@ -212,8 +218,6 @@ def prep_test_data(df, stime, etime, params, time_history, prediction_length):
 		real_df = storm_df[real_cols][time_history:(len(storm_df)-prediction_length)]		# cutting out the relevent columns. trimmed at the edges to keep length consistent with model outputs
 		real_df.reset_index(inplace=True, drop=True)
 
-		cols = params
-		cols.append('crossing')
 		storm_df = storm_df[cols]												# cuts out the model input parameters
 		storm_df.drop(storm_df.tail(prediction_length).index,inplace=True)		# chopping off the prediction length. Cannot predict past the avalable data
 		storm_df.drop('Date_UTC', axis=1, inplace=True)							# don't want to train on datetime string
@@ -221,7 +225,7 @@ def prep_test_data(df, stime, etime, params, time_history, prediction_length):
 
 		print('Length of testing inputs: '+str(len(storm_df)))
 		print('Length of real storm: '+str(len(real_df)))
-		test_dict = pd.concat([test_df, storm_df], axis=0, ignore_index=True)						# creating a dict element for the model input data
+		test_df = pd.concat([test_df, storm_df], axis=0, ignore_index=True)						# creating a dict element for the model input data
 		re = real_df['crossing']
 		total_ratio = pd.concat([total_ratio,re], axis=0)
 		ratio = re.sum(axis=0)/len(re)
@@ -314,7 +318,7 @@ def prep_train_data(df, stime, etime, lead, recovery):
 	dates = storm_list['dates']				# just saving it to a variable so I can work with it a bit easier
 
 	print('\nFinding storms...')
-	storms, ___ = storm_extract(data, dates, lead=lead, recovery=recovery)		# extracting the storms using list method
+	storms = storm_extract(data, dates, lead=lead, recovery=recovery)		# extracting the storms using list method
 	print('Number of storms: '+str(len(storms)))
 
 	Train = pd.concat(storms, axis=0)
@@ -324,6 +328,69 @@ def prep_train_data(df, stime, etime, lead, recovery):
 	print('Finished calculating percent')
 
 	return Train
+
+
+def getting_distributions(all_dfs):
+
+	all_mean, all_std = [], []
+	train_mean, train_std = [], []
+	test_mean, test_std = [], []
+
+	for station in all_dfs.keys():
+		all_mean.append(all_dfs[station]['all']['dBHt'].mean())
+		all_std.append(all_dfs[station]['all']['dBHt'].std())
+		train_mean.append(all_dfs[station]['train']['dBHt'].mean())
+		train_std.append(all_dfs[station]['train']['dBHt'].std())
+		test_mean.append(all_dfs[station]['test']['dBHt'].mean())
+		test_std.append(all_dfs[station]['test']['dBHt'].std())
+
+	all_data = pd.DataFrame({'mean':all_mean,
+								'std':all_std},
+								index=CONFIG['stations'])
+	train_data = pd.DataFrame({'mean':train_mean,
+								'std':train_std},
+								index=CONFIG['stations'])
+	test_data = pd.DataFrame({'mean':test_mean,
+								'std':test_std},
+								index=CONFIG['stations'])
+
+	return all_data, train_data, test_data
+
+
+def plotting_data_distributions(all_data, train_data, test_data):
+
+	fig = plt.figure(figsize=(40,35))													# establishing the figure
+	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)			# trimming the whitespace in the subplots
+
+	X = [5, 35, 65, 95, 125, 155, 185, 215]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+
+	x0 = [(num-4) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+	x1 = [(num-0) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+	x2 = [(num+4) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+
+	ax = fig.add_subplot(111)					# adding the subplot
+	y0 = all_data['mean'].to_numpy()			# defining the y center point
+	ystd0 = all_data['std'].to_numpy()			# defining the y upper bound
+
+	y1 = train_data['mean'].to_numpy()			# defining the y center point
+	ystd1 = train_data['std'].to_numpy()			# defining the y upper bound
+
+	y2 = test_data['mean'].to_numpy()			# defining the y center point
+	ystd2 = test_data['std'].to_numpy()			# defining the y upper bound
+
+
+	plt.title('All-Train-Test dB/dt Distributions', fontsize='100')		# titling the plot
+	ax.errorbar(x0, y0, yerr=ystd0, fmt='.k', color='blue', label='All Data', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+	ax.errorbar(x1, y1, yerr=ystd1, fmt='.k', color='orange', label='Train Data', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+	ax.errorbar(x2, y2, yerr=ystd2, fmt='.k', color='green', label='Test Data', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+	plt.xlabel('Stations', fontsize='70')			# adding the label on the x axis label
+	plt.ylabel('dB/dt', fontsize='70')				# adding teh y axis label
+	plt.xticks(X, CONFIG['stations'], fontsize='70')		# adding ticks to the points on the x axis
+	plt.yticks(fontsize='58')						# making the y ticks a bit bigger. They're a bit more important
+	plt.legend(fontsize='65')
+
+	plt.savefig('plots/data_distribution.png')
+
 
 
 def main():
@@ -343,13 +410,16 @@ def main():
 		df = data_prep(station, CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep function
 		all_dfs[station]['all'] = df
 		train_df = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'])  												# calling the training data prep function
-		all_dfs[station]['train'] = df
+		all_dfs[station]['train'] = train_df
 
 		test_df = prep_test_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['params'],
 								MODEL_CONFIG['time_history'], prediction_length=CONFIG['forecast']+CONFIG['window'])						# processing the tesing data
 
-		all_dfs[station]['test'] = df
+		all_dfs[station]['test'] = test_df
 
+	all_dfs, train_df, test_df = getting_distributions(all_dfs)
+
+	plotting_data_distributions(all_dfs, train_df, test_df)
 
 
 if __name__ == '__main__':
