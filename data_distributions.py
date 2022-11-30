@@ -232,9 +232,10 @@ def prep_test_data(df, stime, etime, params, time_history, prediction_length):
 		ratios.append(ratio)
 
 	print(ratios)
+	ratio = total_ratio.sum(axis=0)/len(total_ratio)
 	print(total_ratio.sum(axis=0)/len(total_ratio))
 
-	return test_df
+	return test_df, ratio
 
 
 def storm_extract(data, storm_list, lead, recovery):
@@ -335,6 +336,7 @@ def getting_distributions(all_dfs):
 	all_mean, all_std = [], []
 	train_mean, train_std = [], []
 	test_mean, test_std = [], []
+	ratios = []
 
 	for station in all_dfs.keys():
 		all_mean.append(all_dfs[station]['all']['dBHt'].mean())
@@ -343,6 +345,7 @@ def getting_distributions(all_dfs):
 		train_std.append(all_dfs[station]['train']['dBHt'].std())
 		test_mean.append(all_dfs[station]['test']['dBHt'].mean())
 		test_std.append(all_dfs[station]['test']['dBHt'].std())
+		ratios.append(all_dfs[station]['ratio'])
 
 	all_data = pd.DataFrame({'mean':all_mean,
 								'std':all_std},
@@ -353,8 +356,10 @@ def getting_distributions(all_dfs):
 	test_data = pd.DataFrame({'mean':test_mean,
 								'std':test_std},
 								index=CONFIG['stations'])
+	ratio_data = pd.DataFrame({'ratio':ratios},
+								index=CONFIG['stations'])
 
-	return all_data, train_data, test_data
+	return all_data, train_data, test_data, ratio_data
 
 
 def plotting_data_distributions(all_data, train_data, test_data):
@@ -412,12 +417,15 @@ def main():
 		train_df = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'])  												# calling the training data prep function
 		all_dfs[station]['train'] = train_df
 
-		test_df = prep_test_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['params'],
+		test_df, ratio = prep_test_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['params'],
 								MODEL_CONFIG['time_history'], prediction_length=CONFIG['forecast']+CONFIG['window'])						# processing the tesing data
 
 		all_dfs[station]['test'] = test_df
+		all_dfs[station]['ratio'] = ratio
 
-	all_dfs, train_df, test_df = getting_distributions(all_dfs)
+	all_dfs, train_df, test_df, ratio_df = getting_distributions(all_dfs)
+
+	ratio_df.to_csv('outputs/total_storm_positive_ratios.csv')
 
 	plotting_data_distributions(all_dfs, train_df, test_df)
 
