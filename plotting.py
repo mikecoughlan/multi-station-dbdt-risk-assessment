@@ -187,7 +187,7 @@ def plot_total_metrics(metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE']):
 		fig = plt.figure(figsize=(60,55))													# establishing the figure
 		plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)			# trimming the whitespace in the subplots
 
-		X = [5, 35, 65, 95, 125, 155, 185, 215]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+		X = [5, 25, 45, 65, 85, 105, 125, 145]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
 
 		x0 = [(num-1.5) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
 		x1 = [(num+1.5) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
