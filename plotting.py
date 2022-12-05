@@ -401,7 +401,7 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 
 
 	fig = plt.figure(figsize=(25,10))				# establishing the larger plot
-	plt.subplots_adjust(bottom=0.5, top=0.99, left=0.4, right=0.9, hspace=0.0.02)		# triming the whitespace in between the subplots
+	plt.subplots_adjust(bottom=0.05, top=0.99, left=0.4, right=0.9, hspace=0.02)		# triming the whitespace in between the subplots
 	plt.tick_params(left = False, right = False, labelleft = False, labelbottom = False, bottom = False)
 	plt.xticks([])
 	plt.yticks([])
