@@ -521,7 +521,7 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	ax8.margins(x=0)
 	ax8.set_ylabel('VIC', fontsize='15')
 	plt.yticks(fontsize='10')
-	plt.xticks(fontsize=15)
+	plt.xticks(fontsize=10)
 	ax8.xaxis.set_major_formatter(mdates.DateFormatter('%b %d\n %H:%M'))			# adds the date to the bottom of the plot
 
 	plt.savefig('plots/k_fold_{0}_storm.png'.format(storm), bbox_inches='tight')		# saves the plot
