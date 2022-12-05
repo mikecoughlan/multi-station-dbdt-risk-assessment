@@ -425,7 +425,7 @@ def main():
 
 	all_dfs, train_df, test_df, ratio_df = getting_distributions(all_dfs)
 
-	ratio_df.to_csv('outputs/total_storm_positive_ratios.csv')
+	ratio_df.to_csv('outputs/total_storm_positive_ratios.csv', index=False)
 
 	plotting_data_distributions(all_dfs, train_df, test_df)
 
