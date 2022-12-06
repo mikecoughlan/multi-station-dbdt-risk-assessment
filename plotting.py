@@ -206,15 +206,15 @@ def plot_total_metrics(metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE']):
 		ymin0 = y0 - ymin0
 
 
-		ax.errorbar(X, y0, yerr=[ymin0, ymax0], fmt='.', color=color0, label='{0}'.format(metric), elinewidth=2, markersize=10, capsize=4, capthick=2)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
-		ax.scatter(X, metrics_dict['pers_{0}'.format(metric)], marker='^', color=color1, label='persistance_{0}'.format(metric), s=70)
+		ax.errorbar(X, y0, yerr=[ymin0, ymax0], fmt='.', color=color0, label='{0}'.format(metric), elinewidth=3, markersize=15, capsize=4, capthick=3)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		ax.scatter(X, metrics_dict['pers_{0}'.format(metric)], marker='^', color=color1, label='persistance_{0}'.format(metric), s=150)
 	# plt.ylim(0,1)																# keeping the plot within limits to eliminate as much white space as possible.
 	# plt.xlim(0,70)
-	plt.xlabel('Stations', fontsize='10')			# adding the label on the x axis label
-	plt.ylabel('Score', fontsize='10')				# adding teh y axis label
-	plt.xticks(X, stations, fontsize='10')		# adding ticks to the points on the x axis
-	plt.yticks(fontsize='10')						# making the y ticks a bit bigger. They're a bit more important
-	plt.legend(fontsize='10')
+	plt.xlabel('Stations', fontsize='15')			# adding the label on the x axis label
+	plt.ylabel('Score', fontsize='15')				# adding teh y axis label
+	plt.xticks(X, stations, fontsize='15')		# adding ticks to the points on the x axis
+	plt.yticks(fontsize='15')						# making the y ticks a bit bigger. They're a bit more important
+	plt.legend(fontsize='10', loc='lower left')
 
 	plt.savefig('plots/metrics_total.png', bbox_inches='tight')
 
