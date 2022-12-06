@@ -388,12 +388,12 @@ def plotting_data_distributions(all_data, train_data, test_data):
 	# ax.errorbar(x0, y0, yerr=[0,ystd0], fmt='.k', color='blue', label='All Data', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
 	# ax.errorbar(x1, y1, yerr=[0,ystd1], fmt='.k', color='orange', label='Train Data', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
 	# ax.errorbar(x2, y2, yerr=[0,ystd2], fmt='.k', color='green', label='Test Data', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
-	ax.scatter(x0, y0, marker='.', color='blue', label='All Data Mean', s=90)
-	ax.scatter(x0, ystd0, marker='^', color='blue', label='All Data std', s=50)
-	ax.scatter(x0, y1, marker='.', color='orange', label='Train Data Mean', s=90)
-	ax.scatter(x0, ystd1, marker='^', color='orange', label='Train Data std', s=50)
-	ax.scatter(x0, y2, marker='.', color='green', label='Test Data Mean', s=90)
-	ax.scatter(x0, ystd2, marker='^', color='green', label='Test Data std', s=50)
+	ax.scatter(x1, y0, marker='.', color='blue', label='All Data Mean', s=200)
+	ax.scatter(x1, ystd0, marker='^', color='blue', label='All Data std', s=90)
+	ax.scatter(x1, y1, marker='.', color='orange', label='Train Data Mean', s=200)
+	ax.scatter(x1, ystd1, marker='^', color='orange', label='Train Data std', s=90)
+	ax.scatter(x1, y2, marker='.', color='green', label='Test Data Mean', s=200)
+	ax.scatter(x1, ystd2, marker='^', color='green', label='Test Data std', s=90)
 	plt.xlabel('Stations', fontsize='15')			# adding the label on the x axis label
 	plt.ylabel('dB/dt (nT/min)', fontsize='15')				# adding teh y axis label
 	plt.xticks(X, CONFIG['stations'], fontsize='15')		# adding ticks to the points on the x axis
