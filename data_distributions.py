@@ -364,10 +364,10 @@ def getting_distributions(all_dfs):
 
 def plotting_data_distributions(all_data, train_data, test_data):
 
-	fig = plt.figure(figsize=(40,35))													# establishing the figure
+	fig = plt.figure(figsize=(10,5))													# establishing the figure
 	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)			# trimming the whitespace in the subplots
 
-	X = [5, 35, 65, 95, 125, 155, 185, 215]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+	X = [5, 25, 45, 65, 85, 105, 125, 145]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
 
 	x0 = [(num-4) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
 	x1 = [(num-0) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
@@ -384,15 +384,21 @@ def plotting_data_distributions(all_data, train_data, test_data):
 	ystd2 = test_data['std'].to_numpy()			# defining the y upper bound
 
 
-	plt.title('All-Train-Test dB/dt Distributions', fontsize='100')		# titling the plot
-	ax.errorbar(x0, y0, yerr=ystd0, fmt='.k', color='blue', label='All Data', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
-	ax.errorbar(x1, y1, yerr=ystd1, fmt='.k', color='orange', label='Train Data', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
-	ax.errorbar(x2, y2, yerr=ystd2, fmt='.k', color='green', label='Test Data', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
-	plt.xlabel('Stations', fontsize='70')			# adding the label on the x axis label
-	plt.ylabel('dB/dt', fontsize='70')				# adding teh y axis label
-	plt.xticks(X, CONFIG['stations'], fontsize='70')		# adding ticks to the points on the x axis
-	plt.yticks(fontsize='58')						# making the y ticks a bit bigger. They're a bit more important
-	plt.legend(fontsize='65')
+	plt.title('All-Train-Test dB/dt Distributions', fontsize='25')		# titling the plot
+	# ax.errorbar(x0, y0, yerr=[0,ystd0], fmt='.k', color='blue', label='All Data', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+	# ax.errorbar(x1, y1, yerr=[0,ystd1], fmt='.k', color='orange', label='Train Data', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+	# ax.errorbar(x2, y2, yerr=[0,ystd2], fmt='.k', color='green', label='Test Data', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+	ax.scatter(x0, y0, marker='.', color='blue', label='All Data Mean', s=90)
+	ax.scatter(x0, ystd0, marker='^', color='blue', label='All Data std', s=50)
+	ax.scatter(x0, y1, marker='.', color='orange', label='Train Data Mean', s=90)
+	ax.scatter(x0, ystd1, marker='^', color='orange', label='Train Data std', s=50)
+	ax.scatter(x0, y2, marker='.', color='green', label='Test Data Mean', s=90)
+	ax.scatter(x0, ystd2, marker='^', color='green', label='Test Data std', s=50)
+	plt.xlabel('Stations', fontsize='15')			# adding the label on the x axis label
+	plt.ylabel('dB/dt (nT/min)', fontsize='15')				# adding teh y axis label
+	plt.xticks(X, CONFIG['stations'], fontsize='15')		# adding ticks to the points on the x axis
+	plt.yticks(fontsize='10')						# making the y ticks a bit bigger. They're a bit more important
+	plt.legend(fontsize='10', loc='upper left')
 
 	plt.savefig('plots/data_distribution.png')
 
