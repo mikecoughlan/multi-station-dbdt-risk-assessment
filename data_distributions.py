@@ -400,7 +400,7 @@ def plotting_data_distributions(all_data, train_data, test_data):
 	plt.yticks(fontsize='10')						# making the y ticks a bit bigger. They're a bit more important
 	plt.legend(fontsize='10', loc='upper left')
 
-	plt.savefig('plots/data_distribution.png')
+	plt.savefig('plots/data_distribution.png', bbox_inches='tight')
 
 
 
