@@ -419,7 +419,7 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	ax1.margins(x=0)							# tightning the plot margins
 	ax1.set_ylabel('BFE', fontsize='20')
 	# plt.legend()
-	plt.yticks(fontsize='10')
+	plt.yticks(fontsize='13')
 	# ax1.xaxis.set_major_locator(ticker.NullLocator())
 	ax1.set_xticklabels([], fontsize=0)
 
@@ -434,7 +434,7 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	ax2.fill_between(WNG_bar.index, WNG_bar['pers_bottom'], WNG_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax2.margins(x=0)
 	ax2.set_ylabel('WNG', fontsize='20')
-	plt.yticks(fontsize='10')
+	plt.yticks(fontsize='13')
 	ax2.set_xticklabels([], fontsize=0)			# adds the date to the bottom of the plot
 
 	ax3 = fig.add_subplot(425, sharex=ax1)			# initalizing the subplot
@@ -448,7 +448,7 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	ax3.fill_between(LER_bar.index, LER_bar['pers_bottom'], LER_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax3.margins(x=0)							# tightning the plot margins
 	ax3.set_ylabel('LER', fontsize='20')
-	plt.yticks(fontsize='10')
+	plt.yticks(fontsize='13')
 	ax3.set_xticklabels([], fontsize=0)
 
 	ax4 = fig.add_subplot(427, sharex=ax1)
@@ -462,7 +462,7 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	ax4.fill_between(ESK_bar.index, ESK_bar['pers_bottom'], ESK_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax4.margins(x=0)
 	ax4.set_ylabel('ESK', fontsize='20')
-	plt.yticks(fontsize='10')
+	plt.yticks(fontsize='13')
 	plt.xticks(fontsize=15)
 	ax4.xaxis.set_major_formatter(mdates.DateFormatter('%b %d\n %H:%M'))			# adds the date to the bottom of the plot
 
@@ -478,7 +478,7 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	plt.legend(loc='upper left', fontsize='15')
 	ax5.margins(x=0)							# tightning the plot margins
 	ax5.set_ylabel('STJ', fontsize='20')
-	plt.yticks(fontsize='10')
+	plt.yticks(fontsize='13')
 	ax5.set_xticklabels([], fontsize=0)
 
 	ax6 = fig.add_subplot(424, sharex=ax1)
@@ -492,7 +492,7 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	ax6.fill_between(OTT_bar.index, OTT_bar['pers_bottom'], OTT_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax6.margins(x=0)
 	ax6.set_ylabel('OTT', fontsize='20')
-	plt.yticks(fontsize='10')
+	plt.yticks(fontsize='13')
 	plt.xticks(fontsize=5)
 	ax6.set_xticklabels([], fontsize=0)
 
@@ -507,7 +507,7 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	ax7.fill_between(NEW_bar.index, NEW_bar['pers_bottom'], NEW_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax7.margins(x=0)
 	ax7.set_ylabel('NEW', fontsize='20')
-	plt.yticks(fontsize='10')
+	plt.yticks(fontsize='13')
 	plt.xticks(fontsize=5)
 	ax7.set_xticklabels([], fontsize=0)
 
@@ -522,7 +522,7 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	ax8.fill_between(VIC_bar.index, VIC_bar['pers_bottom'], VIC_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax8.margins(x=0)
 	ax8.set_ylabel('VIC', fontsize='20')
-	plt.yticks(fontsize='10')
+	plt.yticks(fontsize='13')
 	plt.xticks(fontsize=15)
 	ax8.xaxis.set_major_formatter(mdates.DateFormatter('%b %d\n %H:%M'))			# adds the date to the bottom of the plot
 
