@@ -105,12 +105,12 @@ def loading_data_and_indicies(station):
 		train_indicies, val_indicies: dataframes containing the indicies for doing the boothstrapping
 	'''
 
-	with open('../data/prepared_data/{0}_train_dict.pkl'.format(station), 'rb') as train:
+	with open('../data/prepared_data/SW_only_{0}_train_dict.pkl'.format(station), 'rb') as train:
 		train_dict = pickle.load(train)
-	with open('../data/prepared_data/{0}_test_dict.pkl'.format(station), 'rb') as test:
+	with open('../data/prepared_data/SW_only_{0}_test_dict.pkl'.format(station), 'rb') as test:
 		test_dict = pickle.load(test)
-	train_indicies = pd.read_feather('../data/prepared_data/{0}_train_indicies.feather'.format(station))
-	val_indicies = pd.read_feather('../data/prepared_data/{0}_val_indicies.feather'.format(station))
+	train_indicies = pd.read_feather('../data/prepared_data/SW_only_{0}_train_indicies.feather'.format(station))
+	val_indicies = pd.read_feather('../data/prepared_data/SW_only_{0}_val_indicies.feather'.format(station))
 
 	return train_dict, test_dict, train_indicies, val_indicies
 
@@ -180,11 +180,11 @@ def fit_CNN(model, xtrain, xval, ytrain, yval, early_stop, split, station, first
 		if not os.path.exists('models/{0}'.format(station)):
 			os.makedirs('models/{0}'.format(station))
 
-		model.save('models/{0}/CNN_version_{1}_split_{2}.h5'.format(station, MODEL_CONFIG['version'], split))
+		model.save('models/{0}/CNN_SW_only_split_{2}.h5'.format(station, split))
 
 	if not first_time:
 
-		model = load_model('models/{0}/CNN_version_{1}_split_{2}.h5'.format(station, MODEL_CONFIG['version'], split))						# loading the models if already trained
+		model = load_model('models/{0}/CNN_SW_only_split_{2}.h5'.format(station, split))				# loading the models if already trained
 
 	return model
 
@@ -250,7 +250,7 @@ def main(station):
 		array_sum = np.sum(yval)
 		print(np.isnan(array_sum))
 
-		if os.path.exists('models/{0}/CNN_version_{1}_split_{2}.h5'.format(station, MODEL_CONFIG['version'], split)):
+		if os.path.exists('models/{0}/CNN_SW_only_split_{2}.h5'.format(station, MODEL_CONFIG['version'], split)):
 			model = fit_CNN(MODEL, xtrain, xval, ytrain, yval, early_stop, split, station, first_time=False)			# does the model fit!
 
 		else:
@@ -268,7 +268,7 @@ def main(station):
 		if not os.path.exists('outputs/{0}'.format(station)):
 			os.makedirs('outputs/{0}'.format(station))
 
-		real_df.to_feather('outputs/{0}/version_{1}_storm_{2}.feather'.format(station, MODEL_CONFIG['version'], i))
+		real_df.to_feather('outputs/{0}/SW_only_storm_{2}.feather'.format(station, MODEL_CONFIG['version'], i))
 
 
 if __name__ == '__main__':
