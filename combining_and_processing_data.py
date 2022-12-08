@@ -36,9 +36,11 @@ except:
 
 CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'NGK', 'BFE'],
 			'thresholds': 0.99,	# list of thresholds to be examined.
-			'params': ['Date_UTC', 'N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
-	   					'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T',
-	   					 'AE_INDEX', 'SZA', 'dBHt', 'B'],								# List of parameters that will be used for training.
+			# 'params': ['Date_UTC', 'N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
+	   		# 			'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T',
+	   		# 			 'AE_INDEX', 'SZA', 'dBHt', 'B'],								# List of parameters that will be used for training.
+			'params': ['Date_UTC', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
+	   					'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T', 'dBHt'],
 	   																							# Date_UTC will be removed, kept here for resons that will be evident below
 			'test_storm_stime': ['2001-03-29 09:59:00', '2001-08-29 21:59:00', '2005-05-13 21:59:00',
 								 '2005-08-30 07:59:00', '2006-12-13 09:59:00', '2010-04-03 21:59:00',
@@ -172,7 +174,7 @@ def data_prep(path, station, thresholds, params, forecast, window, do_calc=True)
 		print('Creating Classification column...')
 		df = classification_column(df, 'dBHt', threshold, forecast=forecast, window=window)		# calling the classification column function
 		datum = df.reset_index(drop=True)
-		datum.to_feather('../data/ace_and_supermag/{0}_prepared.feather'.format(station))
+		datum.to_feather('../data/ace_and_supermag/SW_only_{0}_prepared.feather'.format(station))
 
 	if not do_calc:		# does not do the above calculations and instead just loads a csv file, then creates the cross column
 		df = pd.read_feather('../data/{0}_prepared.feather'.format(station))
@@ -243,7 +245,7 @@ def prep_test_data(df, stime, etime, params, scaler, time_history, prediction_le
 
 		storm_df = storm_df[params]												# cuts out the model input parameters
 		storm_df.drop(storm_df.tail(prediction_length).index,inplace=True)		# chopping off the prediction length. Cannot predict past the avalable data
-		storm_df.drop('Date_UTC', axis=1, inplace=True)							# don't want to train on datetime string
+		storm_df.drop(['Date_UTC', 'dBHt'], axis=1, inplace=True)							# don't want to train on datetime string
 		storm_df.reset_index(inplace=True, drop=True)
 		storm_df = scaler.transform(storm_df)									# scaling the model input data
 		storm_df = split_sequences(storm_df, n_steps=time_history, include_target=False)	# calling the split sequences function to create the additional demension
@@ -296,7 +298,7 @@ def storm_extract(data, storm_list, lead, recovery):
 	for storm in storms:
 		storm.reset_index(drop=True, inplace=True)		# resetting the storm index and simultaniously dropping the date so it doesn't get trained on
 		y_1.append(to_categorical(storm['crossing'].to_numpy(), num_classes=2))			# turns the one demensional resulting array for the storm into a
-		storm.drop(['persistance', 'crossing'], axis=1, inplace=True)  	# removing the target variable from the storm data so we don't train on it
+		storm.drop(['persistance', 'crossing', 'dBHt'], axis=1, inplace=True)  	# removing the target variable from the storm data so we don't train on it
 
 	return storms, y_1
 
@@ -348,7 +350,7 @@ def prep_train_data(df, stime, etime, lead, recovery, time_history):
 	storms, y_1 = storm_extract(data, dates, lead=lead, recovery=recovery)		# extracting the storms using list method
 	print('Number of storms: '+str(len(storms)))
 
-	to_scale_with = pd.concat(storms, axis=0, ignore_index=True)			# finding the largest storm with which we can scale the data. Not sure this is the best way to do this
+	to_scale_with = pd.concat(storms, axis=0, ignore_index=True)	# finding the largest storm with which we can scale the data. Not sure this is the best way to do this
 	scaler = StandardScaler()									# defining the type of scaler to use
 	print('Fitting scaler')
 	scaler.fit(to_scale_with)									# fitting the scaler to the longest storm
@@ -395,7 +397,7 @@ def main(path, station):
 	if not os.path.exists('multi-station-dbdt-risk-assessment/models/scalers/'):
 		os.makedirs('multi-station-dbdt-risk-assessment/models/scalers/')
 
-	with open('multi-station-dbdt-risk-assessment/models/scalers/{0}_standardscaler.pkl'.format(station), 'wb') as f:					# saving the scaler in case I have to run this again
+	with open('multi-station-dbdt-risk-assessment/models/scalers/_SW_only_{0}_standardscaler.pkl'.format(station), 'wb') as f:					# saving the scaler in case I have to run this again
 		pickle.dump(scaler, f)			# Goes through all the model training processes if first time going through model
 
 	train_indicies = pd.DataFrame()
@@ -420,12 +422,12 @@ def main(path, station):
 		val_indicies['split_{0}'.format(split)] = val_i
 
 
-	train_indicies.to_feather('../data/prepared_data/{0}_train_indicies.feather'.format(station))
-	val_indicies.to_feather('../data/prepared_data/{0}_val_indicies.feather'.format(station))
+	train_indicies.to_feather('../data/prepared_data/SW_only_{0}_train_indicies.feather'.format(station))
+	val_indicies.to_feather('../data/prepared_data/SW_only_{0}_val_indicies.feather'.format(station))
 
-	with open('../data/prepared_data/{0}_train_dict.pkl'.format(station), 'wb') as train:
+	with open('../data/prepared_data/SW_only_{0}_train_dict.pkl'.format(station), 'wb') as train:
 		pickle.dump(train_dict, train)
-	with open('../data/prepared_data/{0}_test_dict.pkl'.format(station), 'wb') as test:
+	with open('../data/prepared_data/SW_only_{0}_test_dict.pkl'.format(station), 'wb') as test:
 		pickle.dump(test_dict, test)
 
 
