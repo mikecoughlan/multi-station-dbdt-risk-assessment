@@ -177,11 +177,17 @@ def get_indicies_from_omni():
 
 
 def ace_to_dataframe(file, dataType):
-	"""
+	'''
 	Load ACE HDF4 SWESWI file and convert it to Pandas DataFrame
 
-	** Will get only the 12 minutes data from file "SWESWI_data_12min"
-	"""
+	Args:
+		file (cdf file): cdf file for conversion to dataframe and resampling
+		dataType (str): 'swepam' if converting plasma parameters,
+						'mag' if converting magnetometer parameters.
+
+	Returns:
+		pd.dataframe: converted dataframe.
+	'''
 
 	if dataType == 'swepam':
 		dType = 'SWEPAM_ion'
@@ -190,9 +196,9 @@ def ace_to_dataframe(file, dataType):
 
 	hdf = HDF(file)
 	vs = hdf.vstart()
-	vinfo = vs.vdatainfo()
 	vd = vs.attach(dType)
 
+	# converting to pd.dataframe
 	df = pd.DataFrame(vd[:], columns=vd._fields)
 
 	vd.detach()
@@ -202,6 +208,19 @@ def ace_to_dataframe(file, dataType):
 	return df
 
 def bad_ace_to_nan(df, dataType):
+	'''
+	Remove filling numbers for missing data in ACE data and replace
+	them with np.nan values.
+
+	Args:
+		df (pd.dataframe): ACE data that needs cleaning
+		dataType (str): 'swepam' if converting plasma parameters,
+						'mag' if converting magnetometer parameters.
+
+	Returns:
+		pd.dataframe: cleaned ACE data
+	'''
+
 	if dataType == 'swepam':
 
 		if 'proton_speed' in df.columns: df.loc[df['proton_speed'] <= -9999, 'proton_speed'] = np.nan
@@ -218,18 +237,29 @@ def bad_ace_to_nan(df, dataType):
 		if 'Bgsm_y' in df.columns: df.loc[df['Bgsm_y'] <= -999, 'Bgsm_y'] = np.nan
 		if 'Bgsm_z' in df.columns: df.loc[df['Bgsm_z'] <= -999, 'Bgsm_z'] = np.nan
 
-	return(df)
+	return df
 
-def ace_as_omni(plasmaData, magData, delay=0):
 
+def ace_as_omni(plasmaData, magData):
+	'''
+	Resampling the ACE data to 1 minute resolution, interploates to the defined limit,
+	and converting column names so they match the column names from the OMNI database.
+
+	Args:
+		plasmaData (pd.dataframe): ACE plasma data
+		magData (pd.dataframe): ACE magnetometer data
+
+	Returns:
+		pd.dataframe: combined dataframe of ACE plasma and mag data
+	'''
+
+	# dropping duplicate plasma dates caused by upsampling
 	plasmaData.drop_duplicates(subset='ACEepoch', inplace=True)
 	plasmaData = plasmaData.resample('1 min').bfill()
-	# plasmaData = plasmaData.interpolate(method=method, limit=limit)
+	plasmaData = plasmaData.interpolate(method=method, limit=limit)
 
-	# magData = magData[sdate:edate]
 	magData = magData.resample('1 min').mean()
-	# magData = magData.interpolate(method=method, limit=limit)
-
+	magData = magData.interpolate(method=method, limit=limit)
 
 	aceData = pd.DataFrame()
 
@@ -241,35 +271,48 @@ def ace_as_omni(plasmaData, magData, delay=0):
 	aceData['Vz'] = plasmaData['z_dot_GSM']
 	aceData['proton_density'] = plasmaData['proton_density']
 	aceData['T'] = plasmaData['proton_temp']
+
+	# creating derived data
 	aceData['Pressure'] = (2*1e-6)*aceData['proton_density']*aceData['Vx']**2
 	aceData['E_Field'] = -aceData['Vx'] * aceData['BZ_GSM'] * 1e-3
 
 	return aceData
 
-def processing_ACE():
 
+def processing_ACE():
+	'''
+	loads the ACE data and puts it through all of the preprocessing functions.
+
+	Returns:
+		pd.dataframe: processed, resampled, and interpolated ACE data
+	'''
+
+	# Getting the yearly files
 	plasmaFiles = glob.glob(plasmaDir+'swepam_data_64sec_year*.hdf', recursive=True)
 	magFiles = glob.glob(magDir+'mag_data_16sec_year*.hdf', recursive=True)
 
-	p, m = [], []
+	p, m = [], []	# p and m lists for the resulting plasma and mag data
+
 	for fil in sorted(plasmaFiles):
 		acePlasma = ace_to_dataframe(fil, 'swepam')
-		acePlasma.index = pd.to_datetime(acePlasma['ACEepoch'], unit='s', origin=pd.Timestamp('1996-01-01'))  # type: ignore
+		acePlasma.index = pd.to_datetime(acePlasma['ACEepoch'], unit='s', origin=pd.Timestamp('1996-01-01'))  # assigning the index to datatime
 		acePlasma = bad_ace_to_nan(acePlasma, 'swepam')
 		p.append(acePlasma)
 
 	for fil in sorted(magFiles):
 		aceMag = ace_to_dataframe(fil, 'mag')
-		aceMag.index = pd.to_datetime(aceMag['ACEepoch'], unit='s', origin=pd.Timestamp('1996-01-01'))  # type: ignore
+		aceMag.index = pd.to_datetime(aceMag['ACEepoch'], unit='s', origin=pd.Timestamp('1996-01-01'))  # assigning the index to datatime
 		aceMag = bad_ace_to_nan(aceMag, 'mag')
 		m.append(aceMag)
 
+	# concatinating the yearly data together
 	acePlasma = pd.concat(p, axis = 0, ignore_index = False)
 	aceMag = pd.concat(m, axis = 0, ignore_index = False)
 
 	aceData = ace_as_omni(acePlasma, aceMag)
 
 	return aceData
+
 
 def combining_dfs(omniData, aceData):
 	'''
@@ -291,6 +334,7 @@ def combining_dfs(omniData, aceData):
 def main():
 	'''
 	Main function calling both the indicies and the ACE data processing functions.
+	Saves the individual ACE and OMNI data as well as the combined dataset.
 	'''
 	print('Entering main of preparing SW')
 
@@ -301,9 +345,9 @@ def main():
 	omniData.reset_index(drop=False, inplace=True)
 	aceData.reset_index(drop=False, inplace=True)
 
-	omniData.to_feather(dataDump+'indicies_data_no_interp.feather')
-	aceData.to_feather(dataDump+'ace_data_no_interp.feather')
-	df.to_feather(dataDump+'solarwind_and_indicies_no_interp.feather')
+	omniData.to_feather(dataDump+'indicies_data_{0}_interp.feather'.format(limit))
+	aceData.to_feather(dataDump+'ace_data_{0}_interp.feather'.format(limit))
+	df.to_feather(dataDump+'solarwind_and_indicies_{0}_interp.feather'.format(limit))
 
 
 
