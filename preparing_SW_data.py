@@ -1,14 +1,16 @@
-##########################################################################################
+############################################################################################
 #
+#	multi-station-dbdt-risk-assessment/preparing_SW_data.py
 #
+#	File for preparing the raw solar wind data from both ACE and OMNI. Takes the source
+# 	files, up or down samples the ACE data as necessary to the 1-minute resoultion. Changes
+# 	missing data format from eg. 999.999 to np.nan. Interpolates up to 15 minutes of missing
+# 	data. Saves the data as an external file for use in later scripts.
 #
-#
-#
-#
-#
-#
-##########################################################################################
+#	SCRIPT ADAPTED FROM SIMILAR SCRIPT WRITTEN BY VICTOR A. PINTO
+############################################################################################
 
+# importing relevent packages
 import datetime as dt
 import glob
 import os
@@ -24,30 +26,38 @@ os.environ["CDF_LIB"] = "~/lib"
 
 import cdflib
 
+# defining reletive file paths
 omni_dir = '../../../../../data/omni/hro_1min/'
 plasmaDir = '../../../../../data/ace/swepam/'
 magDir = '../../../../../data/ace/mag/'
 dataDump = '../../data/SW/'
 
-method = 'linear'
-limit = 5
+method = 'linear'	# defining the interpolation method
+limit = 15			# defining the limit of interploation
 
+# checking to see if the final data folder exists. If not, creates it.
 if not os.path.exists(dataDump):
 	os.makedirs(dataDump)
 
 
 def break_dates(df, dateField, drop=False, errors="raise"):
-	"""break_dates expands a column of df from a datetime64 to many columns containing
+	'''
+	Break_dates expands a column of df from a datetime64 to many columns containing
 	the information from the date. This applies changes inplace.
-	Parameters:
-	-----------
-	df: A pandas data frame. df gain several new columns.
-	dateField: A string that is the name of the date column you wish to expand.
-		If it is not a datetime64 series, it will be converted to one with pd.to_datetime.
-	drop: If true then the original date column will be removed.
+
+	Args:
+		df (pd.dataframe): df gain several new columns.
+		dateField (string): A string that is the name of the date column you wish to
+							expand. If it is not a datetime64 series, it will be converted
+							to one with pd.to_datetime.
+		drop (bool, optional): If true then the original date column will be removed.
+								Defaults to False.
+		errors (str, optional): if raise, will raise an error if present during datatime
+								conversion. Defaults to "raise".
 
 	Modified from FastAI software by Victor Pinto.
-	"""
+	'''
+
 	field = df[dateField]
 	field_dtype = field.dtype
 	if isinstance(field_dtype, pd.core.dtypes.dtypes.DatetimeTZDtype):
@@ -62,12 +72,20 @@ def break_dates(df, dateField, drop=False, errors="raise"):
 	if drop: df.drop(dateField, axis=1, inplace=True)
 
 def omnicdf2dataframe(file):
-	"""
+	'''
 	Load a CDF File and convert it in a Pandas DataFrame.
 
 	WARNING: This will not return the CDF Attributes, just the variables.
-	WARNING: Only works for CDFs of the same array lenght (OMNI)
-	"""
+	WARNING: Only works for CDFs of the same array length (OMNI)
+
+	Args:
+		file (cdf file): file input for conversion to a pd.dataframe
+
+	Returns:
+		pd.dataframe: cdf file converted to a pd.dataframe. Contains
+						a datetime column named "Epoch".
+	'''
+
 	cdf = cdflib.CDF(file)
 	cdfdict = {}
 
@@ -82,13 +100,18 @@ def omnicdf2dataframe(file):
 	return cdfdf
 
 def clean_omni(df):
-	"""
+	'''
 	Remove filling numbers for missing data in OMNI data (1 min) and replace
-	them with np.nan values
+	them with np.nan values.
 
-	"""
+	Args:
+		df (pd.dataframe): dataframe containing OMNI data to be cleaned.
 
-	# Indices
+	Returns:
+		pd.dataframe: cleaned dataframe.
+	'''
+
+	# Changing placeholder for missing data to np.nan
 	df.loc[df['AE_INDEX'] >= 99999, 'AE_INDEX'] = np.nan
 	df.loc[df['AL_INDEX'] >= 99999, 'AL_INDEX'] = np.nan
 	df.loc[df['AU_INDEX'] >= 99999, 'AU_INDEX'] = np.nan
@@ -97,7 +120,7 @@ def clean_omni(df):
 	df.loc[df['ASY_H'] >= 99999, 'ASY_H'] = np.nan
 	df.loc[df['PC_N_INDEX'] >= 999, 'PC_N_INDEX'] = np.nan
 
-	return(df)
+	return df
 
 def get_indicies_from_omni():
 	'''
@@ -107,20 +130,17 @@ def get_indicies_from_omni():
 		pd.Dataframe: pd.dataframe with the indicies and a column labeled Epoch containing teh datatime stamp
 	'''
 
+	# defining the beginning and ending years. Defined by the data available from ACE.
 	syear = 1998
-	eyear = 2019
-
-	start_time = str(pd.Timestamp(syear,1,1))
-	start_time = start_time.replace(' ', '').replace('-', '').replace(':', '')
-	end_time = str(pd.Timestamp(eyear,12,31,23,59,59))
-	end_time = end_time.replace(' ', '').replace('-', '').replace(':', '')
+	eyear = 2017
 
 	############################################################################################
 	####### Load and pre-process solar wind data
 	############################################################################################
 
-	omniFiles = glob.glob(omni_dir+'*/*.cdf', recursive=True)
+	omniFiles = glob.glob(omni_dir+'*/*.cdf', recursive=True) # getting file names
 
+	# creating list of dataframes
 	o = []
 	for fil in sorted(omniFiles):
 		cdf = omnicdf2dataframe(fil)
@@ -131,8 +151,11 @@ def get_indicies_from_omni():
 	omni_end_time = str(pd.Timestamp(eyear,12,31,23,59,59))
 	omni_end_time = omni_end_time.replace(' ', '').replace('-', '').replace(':', '')
 
+	# combining the yearly dataframes into one large dataframe
 	omniData = pd.concat(o, axis = 0, ignore_index = True)
+	# setting the index to a datetime index
 	omniData.index = omniData.Epoch
+	# trimming the dataframe to be in the time frame of interest
 	omniData = omniData[omni_start_time:omni_end_time]
 
 	to_drop = ['PLS', 'IMF_PTS', 'PLS_PTS', 'percent_interp',
@@ -142,8 +165,11 @@ def get_indicies_from_omni():
 			'flow_speed', 'T', 'Pressure', 'E', 'Beta', 'Mach_num',
 			'Mgs_mach_num', 'Epoch', 'YR', 'Day', 'HR', 'Minute']
 
+	# dropping unnecessary columns
 	omniData = omniData.drop(to_drop, axis=1)
 	clean_omni(omniData)
+
+	# interpolating the columns relevent to this work
 	omniData['AE_INDEX'].interpolate(method=method, limit=limit)
 	omniData['SYM_H'].interpolate(method=method, limit=limit)
 
