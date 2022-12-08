@@ -181,19 +181,23 @@ def plot_total_metrics(metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE']):
 		metrics: dataframe of the saved metrics from the classification function.
 		thresholds: list of thresholds. There will be one plot for each threshold.
 		'''
-	for metric in metrics:
 
 
-		fig = plt.figure(figsize=(60,55))													# establishing the figure
-		plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)			# trimming the whitespace in the subplots
 
-		X = [5, 25, 45, 65, 85, 105, 125, 145]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+	fig = plt.figure(figsize=(10,7))													# establishing the figure
+	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)			# trimming the whitespace in the subplots
 
-		x0 = [(num-1.5) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
-		x1 = [(num+1.5) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+	X = [5, 15, 25, 35, 45, 55, 65, 75]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+
+	x0 = [(num-1.5) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
+	x1 = [(num+1.5) for num in X]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
 
 
-		ax = fig.add_subplot(111)					# adding the subplot
+	ax = fig.add_subplot(111)					# adding the subplot
+	plt.title('Metric Scores', fontsize='20')		# titling the plot
+	bar_colors = ['blue', 'tomato']
+	persistance_colors = ['deepskyblue', 'orange']
+	for metric, color0, color1 in zip(metrics, bar_colors, persistance_colors):
 		y0 = metrics_dict['total_{0}'.format(metric)]['mean'].to_numpy()		# defining the y center point
 		ymax0 = metrics_dict['total_{0}'.format(metric)]['max'].to_numpy()	# defining the y upper bound
 		ymin0 = metrics_dict['total_{0}'.format(metric)]['min'].to_numpy()	# defining the y lower bound
@@ -201,18 +205,18 @@ def plot_total_metrics(metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE']):
 		ymax0 = ymax0 - y0
 		ymin0 = y0 - ymin0
 
-		plt.title(metric, fontsize='100')		# titling the plot
-		ax.errorbar(X, y0, yerr=[ymin0, ymax0], fmt='.k', color='blue', label='total', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
-		ax.scatter(X, metrics_dict['pers_{0}'.format(metric)], c='red', label='persistance', s=1000)
-		# plt.ylim(0,1)																# keeping the plot within limits to eliminate as much white space as possible.
-		# plt.xlim(0,70)
-		plt.xlabel('Stations', fontsize='70')			# adding the label on the x axis label
-		plt.ylabel(metric, fontsize='70')				# adding the y axis label
-		plt.xticks(X, stations, fontsize='70')		# adding ticks to the points on the x axis
-		plt.yticks(fontsize='58')						# making the y ticks a bit bigger. They're a bit more important
-		plt.legend(fontsize='65')
 
-		plt.savefig('plots/{0}_total.png'.format(metric, CONFIG['version']), bbox_inches='tight')
+		ax.errorbar(X, y0, yerr=[ymin0, ymax0], fmt='.', color=color0, label='{0}'.format(metric), elinewidth=3, markersize=15, capsize=4, capthick=3)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		ax.scatter(X, metrics_dict['pers_{0}'.format(metric)], marker='^', color=color1, label='pers.{0}'.format(metric), s=150)
+	# plt.ylim(0,1)																# keeping the plot within limits to eliminate as much white space as possible.
+	# plt.xlim(0,70)
+	plt.xlabel('Stations', fontsize='15')			# adding the label on the x axis label
+	plt.ylabel('Score', fontsize='15')				# adding teh y axis label
+	plt.xticks(X, stations, fontsize='15')		# adding ticks to the points on the x axis
+	plt.yticks(fontsize='15')						# making the y ticks a bit bigger. They're a bit more important
+	plt.legend(fontsize='10', loc='lower left')
+
+	plt.savefig('plots/metrics_total.png', bbox_inches='tight')
 
 def prep_k_fold_results(df, splits):
 	'''prepares the data from the k-folds for plotting and examination. Creates a dataframe that stores the upper and lower calculated bounds for the plotting.
@@ -396,126 +400,130 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	LER_bar.index=pd.to_datetime(LER_bar.index)					# adds datetime index
 
 
-	fig = plt.figure(figsize=(60,55))				# establishing the larger plot
-	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)		# triming the whitespace in between the subplots
+	fig = plt.figure(figsize=(25,10))				# establishing the larger plot
+	plt.subplots_adjust(bottom=0.05, top=0.99, left=0.4, right=0.9, hspace=0.02)		# triming the whitespace in between the subplots
+	plt.tick_params(left = False, right = False, labelleft = False, labelbottom = False, bottom = False)
 	plt.xticks([])
 	plt.yticks([])
-	plt.title(title, fontsize=130)
+	plt.title(title, fontsize=30)
 
-	ax1 = fig.add_subplot(811)			# initalizing the subplot
+	ax1 = fig.add_subplot(421)			# initalizing the subplot
 	z1=np.array(BFE_bar['BFE_bottom'])		# creates an array from the y_bar dataframe
 	z2=np.array(BFE_bar['BFE_top'])			# creates another array. These two arrays are compared to create the bar at the top of the plots.
 	w1=np.array(BFE_bar['pers_bottom'])
 	w2=np.array(BFE_bar['pers_top'])
-	ax1.plot(BFE['mean'])								# plots the mean columns of the dataframe.
-	ax1.fill_between(BFE.index, BFE['bottom_perc'], BFE['top_perc'], alpha=0.2)	# type: ignore # fills the area between the confidence interval with a lighter shade
-	ax1.fill_between(BFE_bar.index, BFE_bar['BFE_bottom'], BFE_bar['BFE_top'], where=z2>z1, alpha=1)												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
-	ax1.fill_between(BFE_bar.index, BFE_bar['pers_bottom'], BFE_bar['pers_top'], where=w2>w1, alpha=1, color='black')												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
+	ax1.plot(BFE['mean'], label='mean')								# plots the mean columns of the dataframe.
+	ax1.fill_between(BFE.index, BFE['bottom_perc'], BFE['top_perc'], alpha=0.2, label='$95^{th}$ percentile', color='indigo')	# type: ignore # fills the area between the confidence interval with a lighter shade
+	ax1.fill_between(BFE_bar.index, BFE_bar['BFE_bottom'], BFE_bar['BFE_top'], where=z2>z1, alpha=1, label='ground truth', color='orange')												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
+	ax1.fill_between(BFE_bar.index, BFE_bar['pers_bottom'], BFE_bar['pers_top'], where=w2>w1, alpha=1, color='black', label='persistance')												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
 	ax1.margins(x=0)							# tightning the plot margins
-	ax1.set_ylabel('BFE', fontsize='45')
-	plt.yticks(fontsize='45')
+	ax1.set_ylabel('BFE', fontsize='20')
+	# plt.legend()
+	plt.yticks(fontsize='13')
 	# ax1.xaxis.set_major_locator(ticker.NullLocator())
 	ax1.set_xticklabels([], fontsize=0)
 
-	ax2 = fig.add_subplot(812, sharex=ax1)
+	ax2 = fig.add_subplot(423, sharex=ax1)
 	z1=np.array(WNG_bar['WNG_bottom'])
 	z2=np.array(WNG_bar['WNG_top'])
 	w1=np.array(WNG_bar['pers_bottom'])
 	w2=np.array(WNG_bar['pers_top'])
 	ax2.plot(WNG.index, WNG['mean'])
-	ax2.fill_between(WNG.index, WNG['bottom_perc'], WNG['top_perc'], alpha=0.2)  # type: ignore
-	ax2.fill_between(WNG_bar.index, WNG_bar['WNG_bottom'], WNG_bar['WNG_top'], where=z2>z1, alpha=1)  # type: ignore
+	ax2.fill_between(WNG.index, WNG['bottom_perc'], WNG['top_perc'], alpha=0.2, color='indigo')  # type: ignore
+	ax2.fill_between(WNG_bar.index, WNG_bar['WNG_bottom'], WNG_bar['WNG_top'], where=z2>z1, alpha=1, color='orange')  # type: ignore
 	ax2.fill_between(WNG_bar.index, WNG_bar['pers_bottom'], WNG_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax2.margins(x=0)
-	ax2.set_ylabel('WNG', fontsize='45')
-	plt.yticks(fontsize='45')
+	ax2.set_ylabel('WNG', fontsize='20')
+	plt.yticks(fontsize='13')
 	ax2.set_xticklabels([], fontsize=0)			# adds the date to the bottom of the plot
 
-	ax3 = fig.add_subplot(813, sharex=ax1)			# initalizing the subplot
+	ax3 = fig.add_subplot(425, sharex=ax1)			# initalizing the subplot
 	z1=np.array(LER_bar['LER_bottom'])		# creates an array from the y_bar dataframe
 	z2=np.array(LER_bar['LER_top'])			# creates another array. These two arrays are compared to create the bar at the top of the plots.
 	w1=np.array(LER_bar['pers_bottom'])
 	w2=np.array(LER_bar['pers_top'])
 	ax3.plot(LER['mean'])								# plots the mean columns of the dataframe.
-	ax3.fill_between(LER.index, LER['bottom_perc'], LER['top_perc'], alpha=0.2)	# type: ignore # fills the area between the confidence interval with a lighter shade
-	ax3.fill_between(LER_bar.index, LER_bar['LER_bottom'], LER_bar['LER_top'], where=z2>z1, alpha=1)												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
+	ax3.fill_between(LER.index, LER['bottom_perc'], LER['top_perc'], alpha=0.2, color='indigo')	# type: ignore # fills the area between the confidence interval with a lighter shade
+	ax3.fill_between(LER_bar.index, LER_bar['LER_bottom'], LER_bar['LER_top'], where=z2>z1, alpha=1, color='orange')												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
 	ax3.fill_between(LER_bar.index, LER_bar['pers_bottom'], LER_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax3.margins(x=0)							# tightning the plot margins
-	ax3.set_ylabel('LER', fontsize='45')
-	plt.yticks(fontsize='45')
+	ax3.set_ylabel('LER', fontsize='20')
+	plt.yticks(fontsize='13')
 	ax3.set_xticklabels([], fontsize=0)
 
-	ax4 = fig.add_subplot(814, sharex=ax1)
+	ax4 = fig.add_subplot(427, sharex=ax1)
 	z1=np.array(ESK_bar['ESK_bottom'])
 	z2=np.array(ESK_bar['ESK_top'])
 	w1=np.array(ESK_bar['pers_bottom'])
 	w2=np.array(ESK_bar['pers_top'])
 	ax4.plot(ESK.index, ESK['mean'])
-	ax4.fill_between(ESK.index, ESK['bottom_perc'], ESK['top_perc'], alpha=0.2)  # type: ignore
-	ax4.fill_between(ESK_bar.index, ESK_bar['ESK_bottom'], ESK_bar['ESK_top'], where=z2>z1, alpha=1)  # type: ignore
+	ax4.fill_between(ESK.index, ESK['bottom_perc'], ESK['top_perc'], alpha=0.2, color='indigo')  # type: ignore
+	ax4.fill_between(ESK_bar.index, ESK_bar['ESK_bottom'], ESK_bar['ESK_top'], where=z2>z1, alpha=1, color='orange')  # type: ignore
 	ax4.fill_between(ESK_bar.index, ESK_bar['pers_bottom'], ESK_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax4.margins(x=0)
-	ax4.set_ylabel('ESK', fontsize='45')
-	plt.yticks(fontsize='45')
-	ax4.set_xticklabels([], fontsize=0)			# adds the date to the bottom of the plot
+	ax4.set_ylabel('ESK', fontsize='20')
+	plt.yticks(fontsize='13')
+	plt.xticks(fontsize=15)
+	ax4.xaxis.set_major_formatter(mdates.DateFormatter('%b %d\n %H:%M'))			# adds the date to the bottom of the plot
 
-	ax5 = fig.add_subplot(815, sharex=ax1)			# initalizing the subplot
+	ax5 = fig.add_subplot(422, sharex=ax1)			# initalizing the subplot
 	z1=np.array(STJ_bar['STJ_bottom'])		# creates an array from the y_bar dataframe
 	z2=np.array(STJ_bar['STJ_top'])			# creates another array. These two arrays are compared to create the bar at the top of the plots.
 	w1=np.array(STJ_bar['pers_bottom'])
 	w2=np.array(STJ_bar['pers_top'])
-	ax5.plot(STJ['mean'])								# plots the mean columns of the dataframe.
-	ax5.fill_between(STJ.index, STJ['bottom_perc'], STJ['top_perc'], alpha=0.2)	# type: ignore # fills the area between the confidence interval with a lighter shade
-	ax5.fill_between(STJ_bar.index, STJ_bar['STJ_bottom'], STJ_bar['STJ_top'], where=z2>z1, alpha=1)												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
-	ax5.fill_between(STJ_bar.index, STJ_bar['pers_bottom'], STJ_bar['pers_top'], where=w2>w1, alpha=1, color='black')
+	ax5.plot(STJ['mean'], label='mean')								# plots the mean columns of the dataframe.
+	ax5.fill_between(STJ.index, STJ['bottom_perc'], STJ['top_perc'], alpha=0.2, label='$95^{th}$ percentile', color='indigo')	# type: ignore # fills the area between the confidence interval with a lighter shade
+	ax5.fill_between(STJ_bar.index, STJ_bar['STJ_bottom'], STJ_bar['STJ_top'], where=z2>z1, alpha=1, label='ground truth', color='orange')												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
+	ax5.fill_between(STJ_bar.index, STJ_bar['pers_bottom'], STJ_bar['pers_top'], where=w2>w1, alpha=1, color='black', label='persistance')
+	plt.legend(loc='upper left', fontsize='15')
 	ax5.margins(x=0)							# tightning the plot margins
-	ax5.set_ylabel('STJ', fontsize='45')
-	plt.yticks(fontsize='45')
+	ax5.set_ylabel('STJ', fontsize='20')
+	plt.yticks(fontsize='13')
 	ax5.set_xticklabels([], fontsize=0)
 
-	ax6 = fig.add_subplot(816, sharex=ax1)
+	ax6 = fig.add_subplot(424, sharex=ax1)
 	z1=np.array(OTT_bar['OTT_bottom'])
 	z2=np.array(OTT_bar['OTT_top'])
 	w1=np.array(OTT_bar['pers_bottom'])
 	w2=np.array(OTT_bar['pers_top'])
 	ax6.plot(OTT['mean'])
-	ax6.fill_between(OTT.index, OTT['bottom_perc'], OTT['top_perc'], alpha=0.2)  # type: ignore
-	ax6.fill_between(OTT_bar.index, OTT_bar['OTT_bottom'], OTT_bar['OTT_top'], where=z2>z1, alpha=1)  # type: ignore
+	ax6.fill_between(OTT.index, OTT['bottom_perc'], OTT['top_perc'], alpha=0.2, color='indigo')  # type: ignore
+	ax6.fill_between(OTT_bar.index, OTT_bar['OTT_bottom'], OTT_bar['OTT_top'], where=z2>z1, alpha=1, color='orange')  # type: ignore
 	ax6.fill_between(OTT_bar.index, OTT_bar['pers_bottom'], OTT_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax6.margins(x=0)
-	ax6.set_ylabel('OTT', fontsize='45')
-	plt.yticks(fontsize='45')
-	plt.xticks(fontsize=30)
+	ax6.set_ylabel('OTT', fontsize='20')
+	plt.yticks(fontsize='13')
+	plt.xticks(fontsize=5)
 	ax6.set_xticklabels([], fontsize=0)
 
-	ax7 = fig.add_subplot(817, sharex=ax1)
+	ax7 = fig.add_subplot(426, sharex=ax1)
 	z1=np.array(NEW_bar['NEW_bottom'])
 	z2=np.array(NEW_bar['NEW_top'])
 	w1=np.array(NEW_bar['pers_bottom'])
 	w2=np.array(NEW_bar['pers_top'])
 	ax7.plot(NEW['mean'])
-	ax7.fill_between(NEW.index, NEW['bottom_perc'], NEW['top_perc'], alpha=0.2)  # type: ignore
-	ax7.fill_between(NEW_bar.index, NEW_bar['NEW_bottom'], NEW_bar['NEW_top'], where=z2>z1, alpha=1)  # type: ignore
+	ax7.fill_between(NEW.index, NEW['bottom_perc'], NEW['top_perc'], alpha=0.2, color='indigo')  # type: ignore
+	ax7.fill_between(NEW_bar.index, NEW_bar['NEW_bottom'], NEW_bar['NEW_top'], where=z2>z1, alpha=1, color='orange')  # type: ignore
 	ax7.fill_between(NEW_bar.index, NEW_bar['pers_bottom'], NEW_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax7.margins(x=0)
-	ax7.set_ylabel('NEW', fontsize='45')
-	plt.yticks(fontsize='45')
-	plt.xticks(fontsize=30)
+	ax7.set_ylabel('NEW', fontsize='20')
+	plt.yticks(fontsize='13')
+	plt.xticks(fontsize=5)
 	ax7.set_xticklabels([], fontsize=0)
 
-	ax8 = fig.add_subplot(818, sharex=ax1)
+	ax8 = fig.add_subplot(428, sharex=ax1)
 	z1=np.array(VIC_bar['VIC_bottom'])
 	z2=np.array(VIC_bar['VIC_top'])
 	w1=np.array(VIC_bar['pers_bottom'])
 	w2=np.array(VIC_bar['pers_top'])
 	ax8.plot(VIC['mean'])
-	ax8.fill_between(VIC.index, VIC['bottom_perc'], VIC['top_perc'], alpha=0.2)  # type: ignore
-	ax8.fill_between(VIC_bar.index, VIC_bar['VIC_bottom'], VIC_bar['VIC_top'], where=z2>z1, alpha=1)  # type: ignore
+	ax8.fill_between(VIC.index, VIC['bottom_perc'], VIC['top_perc'], alpha=0.2, color='indigo')  # type: ignore
+	ax8.fill_between(VIC_bar.index, VIC_bar['VIC_bottom'], VIC_bar['VIC_top'], where=z2>z1, alpha=1, color='orange')  # type: ignore
 	ax8.fill_between(VIC_bar.index, VIC_bar['pers_bottom'], VIC_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax8.margins(x=0)
-	ax8.set_ylabel('VIC', fontsize='45')
-	plt.yticks(fontsize='45')
-	plt.xticks(fontsize=30)
+	ax8.set_ylabel('VIC', fontsize='20')
+	plt.yticks(fontsize='13')
+	plt.xticks(fontsize=15)
 	ax8.xaxis.set_major_formatter(mdates.DateFormatter('%b %d\n %H:%M'))			# adds the date to the bottom of the plot
 
 	plt.savefig('plots/k_fold_{0}_storm.png'.format(storm), bbox_inches='tight')		# saves the plot
@@ -529,7 +537,7 @@ def main():
 	metrics_dict = sorting_metrics(results_dict, CONFIG['stations'], CONFIG['metrics'], len(CONFIG['test_storm_stime']))
 
 	plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'])
-	plot_total_metrics(metrics_dict, CONFIG['stations'])
+	plot_total_metrics(metrics_dict, CONFIG['stations'], metrics=['AUC', 'HSS'])
 
 	for station in CONFIG['stations']:
 		plot_precision_recall(results_dict, station, CONFIG['plot_titles'])
