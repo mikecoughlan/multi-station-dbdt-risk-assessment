@@ -1,15 +1,15 @@
-##########################################################################################
+############################################################################################
 #
+#	multi-station-dbdt-risk-assessment/preparing_mag_data.py
 #
+#	File for preparing the ground magnetometer data from the SuperMAG stations. Standardizes
+# 	column names and interpolates up to 15 minutes of missing data. Saves the data as an
+# 	external file for use in later scripts.
 #
-#
-#
-#
-#
-#
-##########################################################################################
+#	SCRIPT ADAPTED FROM SIMILAR SCRIPT WRITTEN BY VICTOR A. PINTO
+############################################################################################
 
-
+# importing relevent packages
 import datetime as dt
 import glob
 import os
@@ -18,12 +18,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-unix_time = dt.date(1971,1,1).toordinal()*24*60*60
-plt.rcParams['figure.figsize'] = [15, 5]
-
-#dataDir = 'D:/Data/supermag/'
+# defining reletive file paths
 dataDir = '../../../../../data/supermag/baseline/'
 
+# defining the beginning and ending years.
 syear = 1995
 eyear = 2019
 
@@ -32,15 +30,18 @@ start_time = start_time.replace(' ', '').replace('-', '').replace(':', '')
 end_time = str(pd.Timestamp(eyear,12,31,23,59,59))
 end_time = end_time.replace(' ', '').replace('-', '').replace(':', '')
 
-
+# listing stations being examined in this work
 stations = ['VIC', 'NEW', 'OTT', 'STJ',
 			'ESK', 'LER', 'WNG',
 			'BFE']
-method = 'linear'
-limit = 15
 
+method = 'linear'	# defining the interpolation method
+limit = 15			# defining the limit of interploation
+
+# defining the dir for saving the resulting data
 dataDump = '../../data/supermag/'
 
+# creating it if it doesn't already exist
 if not os.path.exists(dataDump):
 	os.makedirs(dataDump)
 
@@ -91,7 +92,7 @@ for station in stations:
 	magData.reset_index(inplace=True, drop=True)
 
 	# saving as feather to conserve memory and imporve perfromance
-	magData.to_feather(dataDump+'{0}_15_interp.feather'.format(station))
+	magData.to_feather(dataDump+'{0}_{1}_interp.feather'.format(station, limit))
 
 	print('{0} completed'.format(station))
 
