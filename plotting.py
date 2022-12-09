@@ -1,3 +1,14 @@
+##########################################################################################
+#
+#	multi-station-dbdt-risk-assessment/preparing_SW_data.py
+#
+#
+#
+#
+#
+#
+##########################################################################################
+
 import pickle
 
 import matplotlib.dates as mdates
@@ -83,7 +94,7 @@ def plot_metrics(metrics_dict, stations, metrics):
 		'''
 	for metric in metrics:
 
-		fig = plt.figure(figsize=(60,55))													# establishing the figure
+		fig = plt.figure(figsize=(10,7))													# establishing the figure
 		plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)			# trimming the whitespace in the subplots
 
 		X = [5, 35, 65, 95, 125, 155, 185, 215]				# need to find a better way to do this. Used for labeling the x axis of the plots for each threshold.
@@ -154,23 +165,23 @@ def plot_metrics(metrics_dict, stations, metrics):
 		ymax7 = ymax7 - y7
 		ymin7 = y7 - ymin7
 
-		plt.title(metric, fontsize='100')		# titling the plot
-		ax.errorbar(x0, y0, yerr=[ymin0, ymax0], fmt='.k', color='blue', label='Mar 2001', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
-		ax.errorbar(x1, y1, yerr=[ymin1, ymax1], fmt='.k', color='orange', label='Sep 2001', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
-		ax.errorbar(x2, y2, yerr=[ymin2, ymax2], fmt='.k', color='green', label='May 2005', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
-		ax.errorbar(x3, y3, yerr=[ymin3, ymax3], fmt='.k', color='red', label='Sep 2005', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
-		ax.errorbar(x4, y4, yerr=[ymin4, ymax4], fmt='.k', color='purple', label='Dec 2006', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
-		ax.errorbar(x5, y5, yerr=[ymin5, ymax5], fmt='.k', color='brown', label='Apr 2010', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
-		ax.errorbar(x6, y6, yerr=[ymin6, ymax6], fmt='.k', color='pink', label='Aug 2011', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
-		ax.errorbar(x7, y7, yerr=[ymin7, ymax7], fmt='.k', color='black', label='Mar 2015', elinewidth=5, markersize=50, capsize=25, capthick=5)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		plt.title(metric, fontsize='20')		# titling the plot
+		ax.errorbar(x0, y0, yerr=[ymin0, ymax0], fmt='.k', color='blue', label='Mar 2001', elinewidth=2, markersize=15, capsize=4, capthick=2)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		ax.errorbar(x1, y1, yerr=[ymin1, ymax1], fmt='.k', color='orange', label='Sep 2001', elinewidth=2, markersize=15, capsize=4, capthick=2)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		ax.errorbar(x2, y2, yerr=[ymin2, ymax2], fmt='.k', color='green', label='May 2005', elinewidth=2, markersize=15, capsize=4, capthick=2)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		ax.errorbar(x3, y3, yerr=[ymin3, ymax3], fmt='.k', color='red', label='Sep 2005', elinewidth=2, markersize=15, capsize=4, capthick=2)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		ax.errorbar(x4, y4, yerr=[ymin4, ymax4], fmt='.k', color='purple', label='Dec 2006', elinewidth=2, markersize=15, capsize=4, capthick=2)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		ax.errorbar(x5, y5, yerr=[ymin5, ymax5], fmt='.k', color='brown', label='Apr 2010', elinewidth=2, markersize=15, capsize=4, capthick=2)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		ax.errorbar(x6, y6, yerr=[ymin6, ymax6], fmt='.k', color='pink', label='Aug 2011', elinewidth=2, markersize=15, capsize=4, capthick=2)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		ax.errorbar(x7, y7, yerr=[ymin7, ymax7], fmt='.k', color='black', label='Mar 2015', elinewidth=2, markersize=15, capsize=4, capthick=2)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
 		plt.axhline(0, color='black')
 		# plt.ylim(0,1)																# keeping the plot within limits to eliminate as much white space as possible.
 		# plt.xlim(0,70)
-		plt.xlabel('Stations', fontsize='70')			# adding the label on the x axis label
-		plt.ylabel(metric, fontsize='70')				# adding teh y axis label
-		plt.xticks(X, stations, fontsize='70')		# adding ticks to the points on the x axis
-		plt.yticks(fontsize='58')						# making the y ticks a bit bigger. They're a bit more important
-		plt.legend(fontsize='65')
+		plt.xlabel('Stations', fontsize='15')			# adding the label on the x axis label
+		plt.ylabel(metric, fontsize='15')				# adding teh y axis label
+		plt.xticks(X, stations, fontsize='15')		# adding ticks to the points on the x axis
+		plt.yticks(fontsize='15')						# making the y ticks a bit bigger. They're a bit more important
+		plt.legend(fontsize='10')
 
 		plt.savefig('plots/{0}_version_{1}.png'.format(metric, CONFIG['version']), bbox_inches='tight')
 
@@ -210,10 +221,10 @@ def plot_total_metrics(metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE']):
 		ax.scatter(X, metrics_dict['pers_{0}'.format(metric)], marker='^', color=color1, label='pers.{0}'.format(metric), s=150)
 	# plt.ylim(0,1)																# keeping the plot within limits to eliminate as much white space as possible.
 	# plt.xlim(0,70)
-	plt.xlabel('Stations', fontsize='15')			# adding the label on the x axis label
-	plt.ylabel('Score', fontsize='15')				# adding teh y axis label
+	plt.xlabel('Stations', fontsize='15')		# adding the label on the x axis label
+	plt.ylabel('Score', fontsize='15')			# adding the y axis label
 	plt.xticks(X, stations, fontsize='15')		# adding ticks to the points on the x axis
-	plt.yticks(fontsize='15')						# making the y ticks a bit bigger. They're a bit more important
+	plt.yticks(fontsize='15')					# making the y ticks a bit bigger. They're a bit more important
 	plt.legend(fontsize='10', loc='lower left')
 
 	plt.savefig('plots/metrics_total.png', bbox_inches='tight')
@@ -270,11 +281,11 @@ def plot_precision_recall(results_dict, station, plot_titles):
 
 	PR_dict = sorting_PR(results_dict, station)
 
-	fig = plt.figure(figsize=(60,55))
+	fig = plt.figure(figsize=(10,7))
 	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)
 
 	ax = fig.add_subplot(111)
-	plt.title('Precision-Recall Curves for {0} Station'.format(station), fontsize='130')
+	plt.title('Precision-Recall Curves for {0} Station'.format(station), fontsize='20')
 	for i, title in enumerate(plot_titles):
 		try:
 			prec = PR_dict['storm_{0}'.format(i)]['prec']
@@ -283,11 +294,11 @@ def plot_precision_recall(results_dict, station, plot_titles):
 			plt.plot(rec, prec, linewidth=4, label='{0} AUC:{1}'.format(title, area))
 		except:
 			print('skipping this station-storm combo')
-	plt.xlabel('Recall', fontsize='90')
-	plt.ylabel('Precision', fontsize='90')
-	plt.legend(fontsize='60', loc='lower center')
-	plt.xticks(fontsize='58')
-	plt.yticks(fontsize='58')
+	plt.xlabel('Recall', fontsize='15')
+	plt.ylabel('Precision', fontsize='15')
+	plt.legend(fontsize='10', loc='lower center')
+	plt.xticks(fontsize='15')
+	plt.yticks(fontsize='15')
 	plt.savefig('plots/precision_recall_{0}.png'.format(station))
 
 
@@ -407,7 +418,7 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	plt.yticks([])
 	plt.title(title, fontsize=30)
 
-	ax1 = fig.add_subplot(421)			# initalizing the subplot
+	ax1 = fig.add_subplot(811)			# initalizing the subplot
 	z1=np.array(BFE_bar['BFE_bottom'])		# creates an array from the y_bar dataframe
 	z2=np.array(BFE_bar['BFE_top'])			# creates another array. These two arrays are compared to create the bar at the top of the plots.
 	w1=np.array(BFE_bar['pers_bottom'])
@@ -423,7 +434,7 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	# ax1.xaxis.set_major_locator(ticker.NullLocator())
 	ax1.set_xticklabels([], fontsize=0)
 
-	ax2 = fig.add_subplot(423, sharex=ax1)
+	ax2 = fig.add_subplot(812, sharex=ax1)
 	z1=np.array(WNG_bar['WNG_bottom'])
 	z2=np.array(WNG_bar['WNG_top'])
 	w1=np.array(WNG_bar['pers_bottom'])
@@ -437,7 +448,7 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	plt.yticks(fontsize='13')
 	ax2.set_xticklabels([], fontsize=0)			# adds the date to the bottom of the plot
 
-	ax3 = fig.add_subplot(425, sharex=ax1)			# initalizing the subplot
+	ax3 = fig.add_subplot(813, sharex=ax1)			# initalizing the subplot
 	z1=np.array(LER_bar['LER_bottom'])		# creates an array from the y_bar dataframe
 	z2=np.array(LER_bar['LER_top'])			# creates another array. These two arrays are compared to create the bar at the top of the plots.
 	w1=np.array(LER_bar['pers_bottom'])
@@ -451,7 +462,7 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	plt.yticks(fontsize='13')
 	ax3.set_xticklabels([], fontsize=0)
 
-	ax4 = fig.add_subplot(427, sharex=ax1)
+	ax4 = fig.add_subplot(814, sharex=ax1)
 	z1=np.array(ESK_bar['ESK_bottom'])
 	z2=np.array(ESK_bar['ESK_top'])
 	w1=np.array(ESK_bar['pers_bottom'])
@@ -464,9 +475,9 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	ax4.set_ylabel('ESK', fontsize='20')
 	plt.yticks(fontsize='13')
 	plt.xticks(fontsize=15)
-	ax4.xaxis.set_major_formatter(mdates.DateFormatter('%b %d\n %H:%M'))			# adds the date to the bottom of the plot
+	ax4.set_xticklabels([], fontsize=0)
 
-	ax5 = fig.add_subplot(422, sharex=ax1)			# initalizing the subplot
+	ax5 = fig.add_subplot(815, sharex=ax1)			# initalizing the subplot
 	z1=np.array(STJ_bar['STJ_bottom'])		# creates an array from the y_bar dataframe
 	z2=np.array(STJ_bar['STJ_top'])			# creates another array. These two arrays are compared to create the bar at the top of the plots.
 	w1=np.array(STJ_bar['pers_bottom'])
@@ -481,7 +492,7 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	plt.yticks(fontsize='13')
 	ax5.set_xticklabels([], fontsize=0)
 
-	ax6 = fig.add_subplot(424, sharex=ax1)
+	ax6 = fig.add_subplot(816, sharex=ax1)
 	z1=np.array(OTT_bar['OTT_bottom'])
 	z2=np.array(OTT_bar['OTT_top'])
 	w1=np.array(OTT_bar['pers_bottom'])
@@ -496,7 +507,7 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	plt.xticks(fontsize=5)
 	ax6.set_xticklabels([], fontsize=0)
 
-	ax7 = fig.add_subplot(426, sharex=ax1)
+	ax7 = fig.add_subplot(817, sharex=ax1)
 	z1=np.array(NEW_bar['NEW_bottom'])
 	z2=np.array(NEW_bar['NEW_top'])
 	w1=np.array(NEW_bar['pers_bottom'])
@@ -511,7 +522,7 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	plt.xticks(fontsize=5)
 	ax7.set_xticklabels([], fontsize=0)
 
-	ax8 = fig.add_subplot(428, sharex=ax1)
+	ax8 = fig.add_subplot(818, sharex=ax1)
 	z1=np.array(VIC_bar['VIC_bottom'])
 	z2=np.array(VIC_bar['VIC_top'])
 	w1=np.array(VIC_bar['pers_bottom'])
