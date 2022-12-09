@@ -429,7 +429,7 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	ax1.fill_between(BFE_bar.index, BFE_bar['pers_bottom'], BFE_bar['pers_top'], where=w2>w1, alpha=1, color='black', label='persistance')												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
 	ax1.margins(x=0)							# tightning the plot margins
 	ax1.set_ylabel('BFE', fontsize='20')
-	# plt.legend()
+	plt.legend()
 	plt.yticks(fontsize='13')
 	# ax1.xaxis.set_major_locator(ticker.NullLocator())
 	ax1.set_xticklabels([], fontsize=0)
@@ -486,7 +486,6 @@ def plot_model_outputs(results_dict, storm, splits, title, stime, etime):
 	ax5.fill_between(STJ.index, STJ['bottom_perc'], STJ['top_perc'], alpha=0.2, label='$95^{th}$ percentile', color='indigo')	# type: ignore # fills the area between the confidence interval with a lighter shade
 	ax5.fill_between(STJ_bar.index, STJ_bar['STJ_bottom'], STJ_bar['STJ_top'], where=z2>z1, alpha=1, label='ground truth', color='orange')												# type: ignore # creates a bar at the top of the plot indicating the positve part of the binary real data
 	ax5.fill_between(STJ_bar.index, STJ_bar['pers_bottom'], STJ_bar['pers_top'], where=w2>w1, alpha=1, color='black', label='persistance')
-	plt.legend(loc='upper left', fontsize='15')
 	ax5.margins(x=0)							# tightning the plot margins
 	ax5.set_ylabel('STJ', fontsize='20')
 	plt.yticks(fontsize='13')
