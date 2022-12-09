@@ -180,11 +180,11 @@ def fit_CNN(model, xtrain, xval, ytrain, yval, early_stop, split, station, first
 		if not os.path.exists('models/{0}'.format(station)):
 			os.makedirs('models/{0}'.format(station))
 
-		model.save('models/{0}/CNN_SW_only_split_{2}.h5'.format(station, split))
+		model.save('models/{0}/CNN_SW_only_split_{1}.h5'.format(station, split))
 
 	if not first_time:
 
-		model = load_model('models/{0}/CNN_SW_only_split_{2}.h5'.format(station, split))				# loading the models if already trained
+		model = load_model('models/{0}/CNN_SW_only_split_{1}.h5'.format(station, split))				# loading the models if already trained
 
 	return model
 
@@ -249,8 +249,8 @@ def main(station):
 		yval = train_dict['crossing'][val_index]
 		array_sum = np.sum(yval)
 		print(np.isnan(array_sum))
-
-		if os.path.exists('models/{0}/CNN_SW_only_split_{2}.h5'.format(station, MODEL_CONFIG['version'], split)):
+		print(MODEL.summary())
+		if os.path.exists('models/{0}/CNN_SW_only_split_{1}.h5'.format(station, split)):
 			model = fit_CNN(MODEL, xtrain, xval, ytrain, yval, early_stop, split, station, first_time=False)			# does the model fit!
 
 		else:
@@ -268,7 +268,7 @@ def main(station):
 		if not os.path.exists('outputs/{0}'.format(station)):
 			os.makedirs('outputs/{0}'.format(station))
 
-		real_df.to_feather('outputs/{0}/SW_only_storm_{2}.feather'.format(station, MODEL_CONFIG['version'], i))
+		real_df.to_feather('outputs/{0}/SW_only_storm_{1}.feather'.format(station, i))
 
 
 if __name__ == '__main__':
