@@ -1,6 +1,6 @@
 ##########################################################################################
 #
-#	multi-station-dbdt-risk-assessment/preparing_SW_data.py
+#	multi-station-dbdt-risk-assessment/combining_and_processing_data.py
 #
 #	Combines the preprocessed magnetometer and solar wind data, segments out the training
 # 	and testing data and creates the arrays that will be used for input to the models.

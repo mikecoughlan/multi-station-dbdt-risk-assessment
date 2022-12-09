@@ -1,20 +1,18 @@
 ##############################################################################################################
 #
-# project/risk_classification/k_fold_analysis_ver2.py
+#	  multi-station-dbdt-risk-assessment/analyzing_results.py
 #
-# Calculates metric scores from predicted data. Prepares them for plotting. Also calculates the percentiles
-# that will be used for plotting the uncertainties.
+#   Calculates metric scores from predicted data and defines the median, mean and 95th percentiles for plotting.
+#   Saves results to a dictonary for plotting in the plotting.py script. Plots some supplimental information
+#   such as correlations betwwen model input values and model outputs.
 #
 ##############################################################################################################
 
 
+import json
 import pickle
-import random
-from pickle import load as pkload
-from statistics import mean
 
 import matplotlib as mpl
-import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -31,65 +29,77 @@ except:
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
-# Data directories
-projectDir = '~/projects/risk_classification/'
 
+# loading config and specific model config files. Using them as dictonaries
+with open('config.json', 'r') as con:
+	CONFIG = json.load(con)
 
-CONFIG = {'thresholds': [7.15], # list of thresholds to be examined.
-      'params': ['N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
-	   					'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T',
-	   					 'AE_INDEX', 'SZA', 'dBHt', 'B'],                  # List of parameters that will be used for training.
-                                                  # Date_UTC will be removed, kept here for resons that will be evident below
-      'test_storm_stime': ['2001-03-29 09:59:00', '2001-08-29 21:59:00', '2005-05-13 21:59:00',
-                 '2005-08-30 07:59:00', '2006-12-13 09:59:00', '2010-04-03 21:59:00',
-                 '2011-08-04 06:59:00', '2015-03-15 23:59:00'],           # These are the start times for testing storms
-      'test_storm_etime': ['2001-04-02 12:00:00', '2001-09-02 00:00:00', '2005-05-17 00:00:00',
-                  '2005-09-02 12:00:00', '2006-12-17 00:00:00', '2010-04-07 00:00:00',
-                  '2011-08-07 09:00:00', '2015-03-19 14:00:00'],  # end times for testing storms. This will remove them from training
-      'forecast': 30,
-      'window': 30,                                 # time window over which the metrics will be calculated
-      'splits': 100,                         # amount of k fold splits to be performed. Program will create this many models
-      # 'stations':['OTT', 'STJ', 'VIC', 'NEW', 'ESK', 'WNG', 'LER', 'BFE', 'NGK'],
-      'stations': ['BFE', 'WNG', 'LER', 'ESK', 'STJ', 'OTT', 'NEW', 'VIC'],
-	    'version':5}    # list of stations being examined
-
-
+with open('model_config.json', 'r') as mcon:
+	MODEL_CONFIG = json.load(mcon)
 
 
 def load_feather(station, i):
 
+  '''
+  Function for loading the feather files saved in the modeling.py script
+
+  Args:
+    station (str): three diget code indicating the station for which results are being loaded
+    i (int): testing storm code from 0-7
+
+  Returns:
+    pd.dataframe: dataframe contining the model predictions for the station and storm
+  '''
+
   df = pd.read_feather('outputs/{0}/version_{1}_storm_{2}.feather'.format(station, CONFIG['version'], i))
+
   # making the Date_UTC the index
   pd.to_datetime(df['Date_UTC'], format='%Y-%m-%d %H:%M:%S')
   df.reset_index(drop=True, inplace=True)
   df.set_index('Date_UTC', inplace=True, drop=True)
   df.index = pd.to_datetime(df.index)
 
-  # try:
-  #   df.drop('Unnamed: 0', inplace=True, axis=1)
-  # except KeyError:
-  #   print('No Unnamed column.')
-
   return df
 
 
 def getting_model_input_data():
 
+  '''
+  Combines the data input to the models for testing, calculates the mean, max,
+  and standard deviation of the 100 models for each time step. These are calculated
+  for each station data individually, and the results are paried with the input data
+  at that time step. These are saved in unique dataframes for each statistic.
+
+  Returns:
+    pd.dataframes (3): dataframes for each statistical metric.
+  '''
+
   mean_df, std_df, max_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+  # loops through all the stations
   for station in CONFIG['stations']:
 
+    # loads the testing data for this station
     with open('../data/prepared_data/{0}_test_dict.pkl'.format(station), 'rb') as f:
       test_dict = pickle.load(f)
 
-    X = [test_dict['storm_{0}'.format(i)]['Y'] for i in range(len(test_dict))] 		# loading the omni data
+    # creating a lsit of all the storm dataframes
+    X = [test_dict['storm_{0}'.format(i)]['Y'] for i in range(len(test_dict))]
+
+    # combining them into one dataframe
     X = np.concatenate(X, axis=0)
+
+    # calculating the mean, max, and std for each time step
     X_mean = np.mean(X, axis=1)
     X_std = np.std(X, axis=1)
     X_max = np.amax(np.absolute(X), axis=1)
 
+    # defining the solar wind features so they are only added to the resulting dfs once instead of for each station
     sw_feats = ['B_Total', 'BY_GSM', 'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T','AE_INDEX', 'SZA']
 
+    # looping through the columns in the np array and the features list
     for col, feat in zip(range(X.shape[2]), CONFIG['params']):
+      # skipping over the sw conditions unless it's the first time the calculations are done.
+      # SW conditions will be the dsame for all stations.
       if (station != CONFIG['stations'][0]) and (feat in sw_feats):
         continue
       if feat in sw_feats:
@@ -97,6 +107,7 @@ def getting_model_input_data():
         std_df['{0}'.format(feat)] = X_std[:,col]
         max_df['{0}'.format(feat)] = X_max[:,col]
       else:
+        # specifically labeling the station data
         mean_df['{0}_{1}'.format(station, feat)] = X_mean[:,col]
         std_df['{0}_{1}'.format(station, feat)] = X_std[:,col]
         max_df['{0}_{1}'.format(station, feat)] = X_max[:,col]
@@ -105,13 +116,27 @@ def getting_model_input_data():
 
 
 def calculating_scores(df, splits, station):
-  '''calculating the hss and rmse scores and then putting them in a list. Then getting a 95 percent confidence level for each metric.
-    Inputs:
-    df: results df from the testing predictions
-    threshold: threshold being examined
-    splits: number of splits
+  '''
+    Calculating the hss, area under the precision recall curve, and rmse scores
+    then putting them in a list. Then getting a 95 percent confidence level for
+    each metric. Also creates a spread dataframe which measures the difference
+    between the 97.5th percentile and the 2.5th percentile. THis is used to
+    compare to the testing input data to see how the input data affects the
+    differences in the models. The diffrence is also calculated and a dataframe
+    created for the same purpose. Here the difference is the absoulute value
+    of the crossing ground truth and the mean model prediction.
+
+    Args:
+      df (pd.dataframe): results df from the testing predictions
+      splits (int): number of train-val splits
+      station (str): 3 diget code for the station models being examined.
+
+    Returns:
+      pd.dataframes (4): dataframes containing the precision-recall values for
+                          plotting, the metric scores, the spead and difference dfs
 	'''
 
+  # Definging the index column for saving the metric results
   index_column = ['mean', 'max' ,'min']
 
   prec_recall = pd.DataFrame()
@@ -119,25 +144,35 @@ def calculating_scores(df, splits, station):
 
   bias, std_pred, rmse, area_uc, precision, recall, hss = [], [], [], [], [], [], []      # initalizing the lists for storing the individual scores
   diff_df, spread_df = pd.DataFrame(), pd.DataFrame()
+
+  # setting the index for the spead and diff data frames
   diff_df['Date_UTC'] = df.index
   spread_df['Date_UTC'] = df.index
   diff_df.set_index('Date_UTC', inplace=True)
   spread_df.set_index('Date_UTC', inplace=True)
 
+  # segmenting a df containing only the model predictions and calculating the percentiles and spread
   newdf = df[['predicted_split_{0}'.format(split) for split in range(splits)]]
   top_perc = newdf.quantile(0.975, axis=1)
   bottom_perc = newdf.quantile(0.025, axis=1)
   spread_df[station] = top_perc - bottom_perc
 
+  # looping through the number of plots and calculating the values for each model's output
   for split in range(splits):
+
+    # creating a temporary df for just the ground truth data and this model's prediction
     temp_df = df[['crossing', 'predicted_split_{0}'.format(split)]]
+
+    # metric calcualtions cannot handle nan so they are dropped
     temp_df.dropna(inplace=True)
 
     pred = temp_df['predicted_split_{0}'.format(split)]        # Grabbing the specific predicted data
     re = temp_df['crossing']                   # and the real data for comparison
 
+    # calculating the difference and adding it as a column to the diff df for this split
     diff_df['{0}_split_{1}'.format(station, split)] = abs(re-pred)
 
+    # getting the precision and recall, then calculating the auc for this split
     prec, rec, ____ = precision_recall_curve(re, pred)
     area = auc(rec, prec)
 
@@ -165,6 +200,7 @@ def calculating_scores(df, splits, station):
     else:
       hs_score = 'NaN'
 
+    # if model is perfect but not all elements are filled, hss is set to one
     if ((a>0)or(d>0)) and ((b==0)and(c==0)):
       hs_score = 1
 
@@ -179,6 +215,7 @@ def calculating_scores(df, splits, station):
     recall.append(rec)
 
 
+  # getting the median of the auc and getting the precision recall curves that correspond
   try:
     medIdx = area_uc.index(np.percentile(area_uc,50,interpolation='nearest'))  # type: ignore
     prec_recall['prec'] = precision[medIdx]
@@ -187,13 +224,14 @@ def calculating_scores(df, splits, station):
   except ValueError:
     print('No AUC scores for this station and storm')
 
-
+  # turning the matric lists into arrays so the mean and percentiles can be calculated
   hss = np.array(hss)
   bias = np.array(bias)
   std_pred = np.array(std_pred)
   rmse = np.array(rmse)
   area_uc = np.array(area_uc)
 
+  # defining the top and bottom percentiles to be calculated. Corresponds to the 95th percentile
   max_perc = 97.5
   min_perc = 2.5
 
@@ -203,25 +241,47 @@ def calculating_scores(df, splits, station):
   metrics['RMSE'] = [np.mean(rmse), np.percentile(rmse, max_perc), np.percentile(rmse, min_perc)]
   metrics['AUC'] = [np.mean(area_uc), np.percentile(area_uc, max_perc), np.percentile(area_uc, min_perc)]
 
+  # setting the index of the metrics to make the plotting easier
   metrics.set_index('ind', drop=True, inplace=True)
 
   return prec_recall, metrics, diff_df, spread_df
 
 
-
 def aggregate_results(length, splits, station):
+  '''
+  loads the data for each station/storm/split, calculates the metrics scores,
+  combines them into one data frame, and gets the persistance scores for comparison.
 
+  Args:
+      length (int): number of testing storms
+      splits (int): number of train-val splits and unique models for each station
+      station (str): 3 diget code describing the station being examined.
+
+  Returns:
+      dict: contains all metric results for this station
+  '''
+
+  # initalizing the dict
   results_dict = {}
   for i in range(length):
+
+    # creating a dict for each storm
     results_dict['storm_{0}'.format(i)] = {}
+
+    # loading the model results for this storm
     results_dict['storm_{0}'.format(i)]['raw_results'] = load_feather(station, i)
+
+    # calculating the metric scores
     prec_recall, metrics, diff_df, spread_df = calculating_scores(results_dict['storm_{0}'.format(i)]['raw_results'], splits, station)
+
+    # assigning the different dataframes to dict keys
     results_dict['storm_{0}'.format(i)]['diff_df'] = diff_df
     results_dict['storm_{0}'.format(i)]['spread_df'] = spread_df
     results_dict['storm_{0}'.format(i)]['precision_recall'] = prec_recall
     results_dict['storm_{0}'.format(i)]['metrics'] = metrics
     results_dict['storm_{0}'.format(i)]['STD_real'] = results_dict['storm_{0}'.format(i)]['raw_results']['crossing'].std()
 
+  # combining all of the storms to get one metric result across all storms. Repeating above steps
   results_dict['all_storms_df'] = pd.concat([results_dict['storm_{0}'.format(i)]['raw_results'] for i in range(length)], axis=0, ignore_index=True)
   prec_recall, metrics, ___, ___ = calculating_scores(results_dict['all_storms_df'], splits, station)
   results_dict['total_metrics'] = metrics
@@ -231,26 +291,32 @@ def aggregate_results(length, splits, station):
   results_dict['pers_AUC'] = auc
   results_dict['pers_RMSE'] = rmse
 
-  print('Stations: '+str(station) +' metrics:')
-  print(metrics)
-  print('Pers HSS: '+str(hss))
-  print('Pers AUC: '+str(auc))
-  print('Pers RMSE: '+str(rmse))
-
   return results_dict
 
 
-
 def getting_persistance_results(df):
+  '''
+  Calculates the results for the persistance models for comparison to the
+  neural netwrok model outputs. Outputs just one value for each metric
+  instead of a mean and percentile values.
+
+  Args:
+      df (pd.dataframe): dataframe containing the persistance model and the ground truth
+
+  Returns:
+      float (3): hss, auc, and rmse for persistance model
+  '''
 
   rmse, area_uc, hss = [], [], []      # initalizing the lists for storing the individual scores
 
+  # creating the temp df containing jsut the relevent columns and dropping the nan rows
   temp_df = df[['crossing', 'persistance']]
   temp_df.dropna(inplace=True)
 
   pred = temp_df['persistance']        # Grabbing the specific predicted data
-  re = temp_df['crossing']                   # and the real data for comparison
+  re = temp_df['crossing']             # and the real data for comparison
 
+  # getting the precision and recall arrays and calculating the area under the curve
   prec, rec, ____ = precision_recall_curve(re, pred)
   area = auc(rec, prec)
 
@@ -291,15 +357,33 @@ def getting_persistance_results(df):
 
 
 def plotting_corrs(diff_df, spread_df, params, name):
+  '''
+  Plots the spread and differences from the models as a function of
+  the std, mean, or max for various input features. Saves the resulting plots.
 
+  Args:
+      diff_df (pd.dataframe): dataframe containing the differences for each station and storm
+      spread_df (pd.dataframe): dataframe containing the spreads for each station and storm
+      params (str or list of strs): input param or list of params to plot against the spread
+                                      and difference
+      name (str): std, mean, or max or the input parameters to be compared.
+  '''
+
+  # defining which are the solar wind features
   sw_feats = ['B_Total', 'BY_GSM', 'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T','AE_INDEX', 'SZA']
+
+  # looping through the parameters
   for param in params:
     x, y = pd.Series(), pd.Series()
     fig = plt.figure()
     plt.title('{0} {1} vs. Difference'.format(param, name))
+
+    # looping through the stations and splits and concating all of the results together
     for station in CONFIG['stations']:
       for i in range(CONFIG['splits']):
         x = pd.concat([x,diff_df['{0}_split_{1}'.format(station, i)]])
+
+        # all stations see same sw params, no need to loop over them all
         if param in sw_feats:
           y = pd.concat([y,diff_df[param]])
         else:
@@ -309,9 +393,12 @@ def plotting_corrs(diff_df, spread_df, params, name):
     temp_df.dropna(inplace=True)
     x = np.array(temp_df['x'])
     y = np.array(temp_df['y'])
+
+    # creates a 2d histogram for comparison and saving it
     plt.hist2d(x,y, bins=(100,100), norm=mpl.colors.LogNorm(), range=((0.01,1), (y.min(),y.max())))
     plt.savefig('plots/{0}_{1}_vs_difference.png'.format(param, name))
 
+    # repeats the procedure for the spred comparison plots
     fig = plt.figure()
     x, y = pd.Series(), pd.Series()
     plt.title('{0} {1} vs. Spread'.format(param, name))
@@ -332,47 +419,59 @@ def plotting_corrs(diff_df, spread_df, params, name):
 
 
 def main():
+  '''
+  Pulling all the functions together
+  '''
 
+  # creating a dict for saving each station's metric results
   stations_dict = {}
+
+  # looping through the stations and pulling together the metric results
   for station in CONFIG['stations']:
     results_dict = aggregate_results(len(CONFIG['test_storm_stime']), CONFIG['splits'], station)
+
+    # saving the resulting metric df to the staion key
     stations_dict[station] = results_dict
+
+  # concatenating together all the diff and spread dfs
   diff_df, spread_df = pd.DataFrame(), pd.DataFrame()
   for i in range(len(CONFIG['test_storm_stime'])):
     temp_diff, temp_spread = pd.DataFrame(), pd.DataFrame()
-    # for station in CONFIG['stations']:
-    #   temp_diff = pd.concat([temp_diff, stations_dict[station]['storm_{0}'.format(i)]['diff_df']], axis=1, ignore_index=False)
-    #   temp_spread = pd.concat([temp_spread, stations_dict[station]['storm_{0}'.format(i)]['spread_df']], axis=1, ignore_index=False)
+    for station in CONFIG['stations']:
+      temp_diff = pd.concat([temp_diff, stations_dict[station]['storm_{0}'.format(i)]['diff_df']], axis=1, ignore_index=False)
+      temp_spread = pd.concat([temp_spread, stations_dict[station]['storm_{0}'.format(i)]['spread_df']], axis=1, ignore_index=False)
 
-    # diff_df = pd.concat([diff_df, temp_diff], axis=0)
-  #   spread_df = pd.concat([spread_df, temp_spread], axis=0)
+    diff_df = pd.concat([diff_df, temp_diff], axis=0)
+    spread_df = pd.concat([spread_df, temp_spread], axis=0)
 
-  # mean_df, std_df, max_df = getting_model_input_data()
-  # diff_df.reset_index(inplace=True, drop=True)
-  # spread_df.reset_index(inplace=True, drop=True)
+  # getting the max std and mean dfs
+  mean_df, std_df, max_df = getting_model_input_data()
+  diff_df.reset_index(inplace=True, drop=True)
+  spread_df.reset_index(inplace=True, drop=True)
 
-  # mean_diff_df = pd.concat([diff_df, mean_df], axis=1, ignore_index=False)
-  # std_diff_df = pd.concat([diff_df, std_df], axis=1, ignore_index=False)
-  # max_diff_df = pd.concat([diff_df, max_df], axis=1, ignore_index=False)
+  # creating dfs for all the stat and model result combinations to make the plotting easier
+  mean_diff_df = pd.concat([diff_df, mean_df], axis=1, ignore_index=False)
+  std_diff_df = pd.concat([diff_df, std_df], axis=1, ignore_index=False)
+  max_diff_df = pd.concat([diff_df, max_df], axis=1, ignore_index=False)
 
-  # mean_spread_df = pd.concat([spread_df, mean_df], axis=1, ignore_index=False)
-  # std_spread_df = pd.concat([spread_df, std_df], axis=1, ignore_index=False)
-  # max_spread_df = pd.concat([spread_df, max_df], axis=1, ignore_index=False)
+  mean_spread_df = pd.concat([spread_df, mean_df], axis=1, ignore_index=False)
+  std_spread_df = pd.concat([spread_df, std_df], axis=1, ignore_index=False)
+  max_spread_df = pd.concat([spread_df, max_df], axis=1, ignore_index=False)
 
-  # plotting_corrs(mean_diff_df, mean_spread_df, CONFIG['params'], 'mean')
-  # plotting_corrs(std_diff_df, std_spread_df, CONFIG['params'], 'std')
-  # plotting_corrs(max_diff_df, max_spread_df, CONFIG['params'], 'max')
+  # putting all the correlation dfs into the plotting functions
+  plotting_corrs(mean_diff_df, mean_spread_df, CONFIG['params'], 'mean')
+  plotting_corrs(std_diff_df, std_spread_df, CONFIG['params'], 'std')
+  plotting_corrs(max_diff_df, max_spread_df, CONFIG['params'], 'max')
 
+  # saving the dict with all the station metric results for plotting
   with open('outputs/stations_results_dict.pkl', 'wb') as f:
     pickle.dump(stations_dict, f)
-
-
 
 
 if __name__ == '__main__':
 
   main()    # calling the main function.
 
-  print('It ran. Good job!')                    # if we get here we're doing alright.
+  print('It ran. Good job!')       # if we get here we're doing alright.
 
 

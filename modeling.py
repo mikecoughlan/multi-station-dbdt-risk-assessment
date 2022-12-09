@@ -1,10 +1,13 @@
 ##########################################################################################
 #
-#	multi-station-dbdt-risk-assessment/preparing_SW_data.py
+#	multi-station-dbdt-risk-assessment/modeling.py
 #
-#
-#
-#
+#	Script for defining the neural network, fitting the model, and making a prediction
+#	on the testing data. Fits models for the 100 unique train-val splits and makes
+# 	100 corresponding predictions for each testing storm. Saves the results to a
+# 	csv/feather file used for analyzing results in the analyzing_results.py script.
+# 	Uses an argparser for choosing the magnetometer station the models will be created
+# 	for.
 #
 #
 ##########################################################################################
