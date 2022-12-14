@@ -416,7 +416,7 @@ def plotting_results(results):
 
 
 def main(path, station):
-	'''Here we go baby! bringing it all together.
+	'''Bringing it all together.
 		Inputs:
 		path: path to the data.
 		CONFIG: dictonary containing different specifications for the data prep and other things that aren;t the models themselves.
