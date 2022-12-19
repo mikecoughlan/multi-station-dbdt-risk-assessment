@@ -12,7 +12,7 @@
 	"plot_titles": ["March 2001", "September 2001", "May 2005", "September 2005", "December 2006", "April 2010", "August 2011", "March 2015"],
 	"forecast": 30,
 	"window": 30,
-	"k_fold_splits": 100,
+	"splits": 100,
 	"lead": 12,
 	"recovery": 24,
 	"random_seed": 42,
