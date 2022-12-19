@@ -1,5 +1,5 @@
 
-{"stations": ["VIC", "NEW", "OTT", "STJ", "ESK", "LER", "WNG", "NGK", "BFE"],
+{"stations": ["OTT", "STJ"],
 	"thresholds": 0.99,
 	"params": ["Date_UTC", "sinMLT", "cosMLT", "B_Total", "BY_GSM", "BZ_GSM",
 				"Vx", "Vy", "Vz", "proton_density", "T", "dBHt"],

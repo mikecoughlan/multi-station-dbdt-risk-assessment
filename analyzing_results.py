@@ -59,7 +59,15 @@ def load_feather(station, i):
   df.set_index('Date_UTC', inplace=True, drop=True)
   df.index = pd.to_datetime(df.index)
 
-  return df
+  sw_df = pd.read_feather('outputs/{0}/SW_only_storm_{1}.feather'.format(station, i))
+
+  # making the Date_UTC the index
+  pd.to_datetime(sw_df['Date_UTC'], format='%Y-%m-%d %H:%M:%S')
+  sw_df.reset_index(drop=True, inplace=True)
+  sw_df.set_index('Date_UTC', inplace=True, drop=True)
+  sw_df.index = pd.to_datetime(sw_df.index)
+
+  return df, sw_df
 
 
 def getting_model_input_data():
@@ -269,23 +277,32 @@ def aggregate_results(length, splits, station):
     results_dict['storm_{0}'.format(i)] = {}
 
     # loading the model results for this storm
-    results_dict['storm_{0}'.format(i)]['raw_results'] = load_feather(station, i)
+    results_dict['storm_{0}'.format(i)]['raw_results'], results_dict['storm_{0}'.format(i)]['sw_results'] = load_feather(station, i)
 
     # calculating the metric scores
     prec_recall, metrics, diff_df, spread_df = calculating_scores(results_dict['storm_{0}'.format(i)]['raw_results'], splits, station)
+    sw_prec_recall, sw_metrics, ___, ___ = calculating_scores(results_dict['storm_{0}'.format(i)]['sw_results'], splits, station)
 
     # assigning the different dataframes to dict keys
     results_dict['storm_{0}'.format(i)]['diff_df'] = diff_df
     results_dict['storm_{0}'.format(i)]['spread_df'] = spread_df
     results_dict['storm_{0}'.format(i)]['precision_recall'] = prec_recall
     results_dict['storm_{0}'.format(i)]['metrics'] = metrics
+    results_dict['storm_{0}'.format(i)]['sw_precision_recall'] = sw_prec_recall
+    results_dict['storm_{0}'.format(i)]['sw_metrics'] = sw_metrics
     results_dict['storm_{0}'.format(i)]['STD_real'] = results_dict['storm_{0}'.format(i)]['raw_results']['crossing'].std()
 
   # combining all of the storms to get one metric result across all storms. Repeating above steps
   results_dict['all_storms_df'] = pd.concat([results_dict['storm_{0}'.format(i)]['raw_results'] for i in range(length)], axis=0, ignore_index=True)
+  results_dict['all_sw_storms_df'] = pd.concat([results_dict['storm_{0}'.format(i)]['sw_results'] for i in range(length)], axis=0, ignore_index=True)
+
   prec_recall, metrics, ___, ___ = calculating_scores(results_dict['all_storms_df'], splits, station)
+  sw_prec_recall, sw_metrics, ___, ___ = calculating_scores(results_dict['all_storms_df'], splits, station)
   results_dict['total_metrics'] = metrics
   results_dict['total_precision_recall'] = prec_recall
+  results_dict['total_sw_metrics'] = sw_metrics
+  results_dict['total_sw_precision_recall'] = sw_prec_recall
+
   hss, auc, rmse = getting_persistance_results(results_dict['all_storms_df'])
   results_dict['pers_HSS'] = hss
   results_dict['pers_AUC'] = auc
@@ -433,35 +450,35 @@ def main():
     # saving the resulting metric df to the staion key
     stations_dict[station] = results_dict
 
-  # concatenating together all the diff and spread dfs
-  diff_df, spread_df = pd.DataFrame(), pd.DataFrame()
-  for i in range(len(CONFIG['test_storm_stime'])):
-    temp_diff, temp_spread = pd.DataFrame(), pd.DataFrame()
-    for station in CONFIG['stations']:
-      temp_diff = pd.concat([temp_diff, stations_dict[station]['storm_{0}'.format(i)]['diff_df']], axis=1, ignore_index=False)
-      temp_spread = pd.concat([temp_spread, stations_dict[station]['storm_{0}'.format(i)]['spread_df']], axis=1, ignore_index=False)
+  # # concatenating together all the diff and spread dfs
+  # diff_df, spread_df = pd.DataFrame(), pd.DataFrame()
+  # for i in range(len(CONFIG['test_storm_stime'])):
+  #   temp_diff, temp_spread = pd.DataFrame(), pd.DataFrame()
+  #   for station in CONFIG['stations']:
+  #     temp_diff = pd.concat([temp_diff, stations_dict[station]['storm_{0}'.format(i)]['diff_df']], axis=1, ignore_index=False)
+  #     temp_spread = pd.concat([temp_spread, stations_dict[station]['storm_{0}'.format(i)]['spread_df']], axis=1, ignore_index=False)
 
-    diff_df = pd.concat([diff_df, temp_diff], axis=0)
-    spread_df = pd.concat([spread_df, temp_spread], axis=0)
+  #   diff_df = pd.concat([diff_df, temp_diff], axis=0)
+  #   spread_df = pd.concat([spread_df, temp_spread], axis=0)
 
-  # getting the max std and mean dfs
-  mean_df, std_df, max_df = getting_model_input_data()
-  diff_df.reset_index(inplace=True, drop=True)
-  spread_df.reset_index(inplace=True, drop=True)
+  # # getting the max std and mean dfs
+  # mean_df, std_df, max_df = getting_model_input_data()
+  # diff_df.reset_index(inplace=True, drop=True)
+  # spread_df.reset_index(inplace=True, drop=True)
 
-  # creating dfs for all the stat and model result combinations to make the plotting easier
-  mean_diff_df = pd.concat([diff_df, mean_df], axis=1, ignore_index=False)
-  std_diff_df = pd.concat([diff_df, std_df], axis=1, ignore_index=False)
-  max_diff_df = pd.concat([diff_df, max_df], axis=1, ignore_index=False)
+  # # creating dfs for all the stat and model result combinations to make the plotting easier
+  # mean_diff_df = pd.concat([diff_df, mean_df], axis=1, ignore_index=False)
+  # std_diff_df = pd.concat([diff_df, std_df], axis=1, ignore_index=False)
+  # max_diff_df = pd.concat([diff_df, max_df], axis=1, ignore_index=False)
 
-  mean_spread_df = pd.concat([spread_df, mean_df], axis=1, ignore_index=False)
-  std_spread_df = pd.concat([spread_df, std_df], axis=1, ignore_index=False)
-  max_spread_df = pd.concat([spread_df, max_df], axis=1, ignore_index=False)
+  # mean_spread_df = pd.concat([spread_df, mean_df], axis=1, ignore_index=False)
+  # std_spread_df = pd.concat([spread_df, std_df], axis=1, ignore_index=False)
+  # max_spread_df = pd.concat([spread_df, max_df], axis=1, ignore_index=False)
 
-  # putting all the correlation dfs into the plotting functions
-  plotting_corrs(mean_diff_df, mean_spread_df, CONFIG['params'], 'mean')
-  plotting_corrs(std_diff_df, std_spread_df, CONFIG['params'], 'std')
-  plotting_corrs(max_diff_df, max_spread_df, CONFIG['params'], 'max')
+  # # putting all the correlation dfs into the plotting functions
+  # plotting_corrs(mean_diff_df, mean_spread_df, CONFIG['params'], 'mean')
+  # plotting_corrs(std_diff_df, std_spread_df, CONFIG['params'], 'std')
+  # plotting_corrs(max_diff_df, max_spread_df, CONFIG['params'], 'max')
 
   # saving the dict with all the station metric results for plotting
   with open('outputs/stations_results_dict.pkl', 'wb') as f:

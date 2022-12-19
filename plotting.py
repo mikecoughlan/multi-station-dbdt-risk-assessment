@@ -50,7 +50,7 @@ def load_stats():
 	return stations_dict
 
 
-def sorting_metrics(results_dict, stations, metrics, length):
+def sorting_metrics(results_dict, stations, metrics, length, sw=False):
 	'''
 	Sorting the metrics to make the plotting easier. Metrics are
 	stored for both each storm and for all storms combined.
@@ -60,6 +60,8 @@ def sorting_metrics(results_dict, stations, metrics, length):
 		stations (str or list of strs): 3 diges code(s) identifying stations being examined
 		metrics (str or list of str): codes for metrics that will be sorted and plotted
 		length (int): number of testing storms
+		sw (bool): if False does the sorting for the combined model. If True does the
+					sorting for just the SW only models. Defaults to False.
 
 	Returns:
 		dict: contains just the metric scores that will be used for plotting
@@ -74,7 +76,10 @@ def sorting_metrics(results_dict, stations, metrics, length):
 		for i in range(length):
 			df = pd.DataFrame()
 			for station in stations:
-				df[station] = results_dict[station]['storm_{0}'.format(i)]['metrics'][metric]
+				if not sw:
+					df[station] = results_dict[station]['storm_{0}'.format(i)]['metrics'][metric]
+				else:
+					df[station] = results_dict[station]['storm_{0}'.format(i)]['sw_metrics'][metric]
 
 			''' transposing the metric df from the storm so that the columns
 				are now the median, and top and bottom percentiles. The station
@@ -430,7 +435,7 @@ def reliability_plots(results_dict, station, splits, plot_titles):
 	plt.savefig('plots/{0}_reliability_plot.png'.format(station))
 
 
-def plot_model_outputs(results_dict, storm, splits, title):
+def plot_model_outputs(results_dict, storm, splits, title, model):
 	'''
 	Plots all of the model output results with confidence intervals. Plots the ground truth
 	data and the persistance model at the top of each station's plot for comparison Saves the
@@ -440,18 +445,19 @@ def plot_model_outputs(results_dict, storm, splits, title):
 		results_dict (dict): dictonary containing precision and recall arrays segmented by testing storm
 		storm (int): integer code identifying which storm is being plotted.
 		splits (int): number of shuffeled k-fold splits performed. Also the number of models created for each station
-		title (str): plot tilte
+		title (str): plot title
+		model (str): either raw for the models with combined sw and mag data as input, or sw for just sw input models
 	'''
 
 	# calling the prep_k_fold function for each threshold. Should probably find a better way to do this.
-	OTT = prep_k_fold_results(results_dict['OTT']['storm_{0}'.format(storm)]['raw_results'], splits)
-	BFE = prep_k_fold_results(results_dict['BFE']['storm_{0}'.format(storm)]['raw_results'], splits)
-	WNG = prep_k_fold_results(results_dict['WNG']['storm_{0}'.format(storm)]['raw_results'], splits)
-	STJ = prep_k_fold_results(results_dict['STJ']['storm_{0}'.format(storm)]['raw_results'], splits)
-	NEW = prep_k_fold_results(results_dict['NEW']['storm_{0}'.format(storm)]['raw_results'], splits)
-	VIC = prep_k_fold_results(results_dict['VIC']['storm_{0}'.format(storm)]['raw_results'], splits)
-	ESK = prep_k_fold_results(results_dict['ESK']['storm_{0}'.format(storm)]['raw_results'], splits)
-	LER = prep_k_fold_results(results_dict['LER']['storm_{0}'.format(storm)]['raw_results'], splits)
+	OTT = prep_k_fold_results(results_dict['OTT']['storm_{0}'.format(storm)]['{0}_results'.format(model)], splits)
+	BFE = prep_k_fold_results(results_dict['BFE']['storm_{0}'.format(storm)]['{0}_results'.format(model)], splits)
+	WNG = prep_k_fold_results(results_dict['WNG']['storm_{0}'.format(storm)]['{0}_results'.format(model)], splits)
+	STJ = prep_k_fold_results(results_dict['STJ']['storm_{0}'.format(storm)]['{0}_results'.format(model)], splits)
+	NEW = prep_k_fold_results(results_dict['NEW']['storm_{0}'.format(storm)]['{0}_results'.format(model)], splits)
+	VIC = prep_k_fold_results(results_dict['VIC']['storm_{0}'.format(storm)]['{0}_results'.format(model)], splits)
+	ESK = prep_k_fold_results(results_dict['ESK']['storm_{0}'.format(storm)]['{0}_results'.format(model)], splits)
+	LER = prep_k_fold_results(results_dict['LER']['storm_{0}'.format(storm)]['{0}_results'.format(model)], splits)
 
 
 	'''creats a new dataframe that will allow me to create a bar at the top of the
@@ -669,20 +675,26 @@ def main():
 	results_dict = load_stats()
 
 	# sorting the metrics
-	metrics_dict = sorting_metrics(results_dict, CONFIG['stations'], CONFIG['metrics'], len(CONFIG['test_storm_stime']))
+	metrics_dict = sorting_metrics(results_dict, CONFIG['stations'], CONFIG['metrics'], len(CONFIG['test_storm_stime']), sw=False)
+	sw_metrics_dict = sorting_metrics(results_dict, CONFIG['stations'], CONFIG['metrics'], len(CONFIG['test_storm_stime']), sw=True)
 
 	# Plotting the individual storm metrics and the total metrics for each station
 	plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'])
 	plot_total_metrics(metrics_dict, CONFIG['stations'], metrics=['AUC', 'HSS'])
+
+	# Plotting the individual storm metrics and the total metrics for each station
+	plot_metrics(sw_metrics_dict, CONFIG['stations'], CONFIG['metrics'])
+	plot_total_metrics(sw_metrics_dict, CONFIG['stations'], metrics=['AUC', 'HSS'])
 
 	# plotting the precision recall curves and the reliability diagrams for each station
 	for station in CONFIG['stations']:
 		plot_precision_recall(results_dict, station, CONFIG['plot_titles'])
 		reliability_plots(results_dict, station, CONFIG['splits'], CONFIG['plot_titles'])
 
-	# getting teh full model outputs for each testing storm
+	# getting the full model outputs for each testing storm
 	for i, title, stime, etime in zip(range(len(CONFIG['test_storm_stime'])), CONFIG['plot_titles'], CONFIG['test_storm_stime'], CONFIG['test_storm_etime']):		# looping through all of the relevent lists to plots the model outputs
-		plot_model_outputs(results_dict, i, CONFIG['splits'], title, stime, etime)
+		plot_model_outputs(results_dict, i, CONFIG['splits'], title, 'raw')
+		plot_model_outputs(results_dict, i, CONFIG['splits'], title, 'sw')
 
 
 if __name__ == '__main__':
