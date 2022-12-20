@@ -1,5 +1,5 @@
 
-{"stations": ["OTT", "STJ"],
+{"stations": ["LER", "ESK", "STJ", "OTT"],
 	"thresholds": 0.99,
 	"params": ["Date_UTC", "sinMLT", "cosMLT", "B_Total", "BY_GSM", "BZ_GSM",
 				"Vx", "Vy", "Vz", "proton_density", "T", "dBHt"],
@@ -16,4 +16,5 @@
 	"lead": 12,
 	"recovery": 24,
 	"random_seed": 42,
-	"metrics": ["HSS", "BIAS", "STD_PRED", "RMSE", "AUC"]}
+	"metrics": ["HSS", "BIAS", "STD_PRED", "RMSE", "AUC"],
+	"version": 5}
