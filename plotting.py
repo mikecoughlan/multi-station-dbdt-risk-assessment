@@ -131,7 +131,7 @@ def plot_metrics(metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE'], sw=Fals
 		plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)			# trimming the whitespace in the subplots
 
 		# X = [5, 35, 65, 95, 125, 155, 185, 215]				# Used for labeling the x axis of the plots for each station.
-		X = [5, 35, 65, 95]				# Used for labeling the x axis of the plots for each station.
+		X = [5, 35, 65, 95, 125, 155]				# Used for labeling the x axis of the plots for each station.
 
 		'''subtracting and adding from the main X array above to
 			create slight speration in each of the storm metric results'''
@@ -245,7 +245,7 @@ def plot_total_metrics(metrics_dict, sw_metrics_dict, stations, metrics=['HSS', 
 	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)			# trimming the whitespace in the subplots
 
 	# X = [5, 15, 25, 35, 45, 55, 65, 75]
-	X = [5, 10, 15, 20]
+	X = [5, 10, 15, 20, 25, 30]
 
 	x0 = [(num-1.5) for num in X]
 	x1 = [(num+1.5) for num in X]
@@ -472,8 +472,8 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	# BFE = prep_k_fold_results(results_dict['BFE']['storm_{0}'.format(storm)]['raw_results'], splits)
 	# WNG = prep_k_fold_results(results_dict['WNG']['storm_{0}'.format(storm)]['raw_results'], splits)
 	STJ = prep_k_fold_results(results_dict['STJ']['storm_{0}'.format(storm)]['raw_results'], splits)
-	# NEW = prep_k_fold_results(results_dict['NEW']['storm_{0}'.format(storm)]['raw_results'], splits)
-	# VIC = prep_k_fold_results(results_dict['VIC']['storm_{0}'.format(storm)]['raw_results'], splits)
+	NEW = prep_k_fold_results(results_dict['NEW']['storm_{0}'.format(storm)]['raw_results'], splits)
+	VIC = prep_k_fold_results(results_dict['VIC']['storm_{0}'.format(storm)]['raw_results'], splits)
 	ESK = prep_k_fold_results(results_dict['ESK']['storm_{0}'.format(storm)]['raw_results'], splits)
 	LER = prep_k_fold_results(results_dict['LER']['storm_{0}'.format(storm)]['raw_results'], splits)
 
@@ -481,8 +481,8 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	STJ_sw = prep_k_fold_results(results_dict['STJ']['storm_{0}'.format(storm)]['sw_results'], splits)
 	LER_sw = prep_k_fold_results(results_dict['LER']['storm_{0}'.format(storm)]['sw_results'], splits)
 	ESK_sw = prep_k_fold_results(results_dict['ESK']['storm_{0}'.format(storm)]['sw_results'], splits)
-	# NEW_sw = prep_k_fold_results(results_dict['NEW']['storm_{0}'.format(storm)]['sw_results'], splits)
-	# VIC_sw = prep_k_fold_results(results_dict['VIC']['storm_{0}'.format(storm)]['sw_results'], splits)
+	NEW_sw = prep_k_fold_results(results_dict['NEW']['storm_{0}'.format(storm)]['sw_results'], splits)
+	VIC_sw = prep_k_fold_results(results_dict['VIC']['storm_{0}'.format(storm)]['sw_results'], splits)
 	# BFE_sw = prep_k_fold_results(results_dict['BFE']['storm_{0}'.format(storm)]['sw_results'], splits)
 	# WNG_sw = prep_k_fold_results(results_dict['WNG']['storm_{0}'.format(storm)]['sw_results'], splits)
 
@@ -514,16 +514,16 @@ def plot_model_outputs(results_dict, storm, splits, title):
 							'pers_bottom':STJ['persistance']*1.07,
 							'pers_top':STJ['persistance']*1.12},
 							index=STJ.index)
-	# NEW_bar = pd.DataFrame({'NEW_bottom':NEW['cross']*1.01,
-	# 						'NEW_top':NEW['cross']*1.06,
-	# 						'pers_bottom':NEW['persistance']*1.07,
-	# 						'pers_top':NEW['persistance']*1.12},
-	# 						index=NEW.index)
-	# VIC_bar = pd.DataFrame({'VIC_bottom':VIC['cross']*1.01,
-	# 						'VIC_top':VIC['cross']*1.06,
-	# 						'pers_bottom':VIC['persistance']*1.07,
-	# 						'pers_top':VIC['persistance']*1.12},
-	# 						index=VIC.index)
+	NEW_bar = pd.DataFrame({'NEW_bottom':NEW['cross']*1.01,
+							'NEW_top':NEW['cross']*1.06,
+							'pers_bottom':NEW['persistance']*1.07,
+							'pers_top':NEW['persistance']*1.12},
+							index=NEW.index)
+	VIC_bar = pd.DataFrame({'VIC_bottom':VIC['cross']*1.01,
+							'VIC_top':VIC['cross']*1.06,
+							'pers_bottom':VIC['persistance']*1.07,
+							'pers_top':VIC['persistance']*1.12},
+							index=VIC.index)
 	ESK_bar = pd.DataFrame({'ESK_bottom':ESK['cross']*1.01,
 							'ESK_top':ESK['cross']*1.06,
 							'pers_bottom':ESK['persistance']*1.07,
@@ -540,8 +540,8 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	# BFE_bar.index=pd.to_datetime(BFE_bar.index)
 	# WNG_bar.index=pd.to_datetime(WNG_bar.index)
 	STJ_bar.index=pd.to_datetime(STJ_bar.index)
-	# NEW_bar.index=pd.to_datetime(NEW_bar.index)
-	# VIC_bar.index=pd.to_datetime(VIC_bar.index)
+	NEW_bar.index=pd.to_datetime(NEW_bar.index)
+	VIC_bar.index=pd.to_datetime(VIC_bar.index)
 	ESK_bar.index=pd.to_datetime(ESK_bar.index)
 	LER_bar.index=pd.to_datetime(LER_bar.index)
 
@@ -601,7 +601,7 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	# plt.yticks(fontsize='13')
 	# ax2.set_xticklabels([], fontsize=0)
 
-	ax3 = fig.add_subplot(411)
+	ax3 = fig.add_subplot(611)
 	z1=np.array(LER_bar['LER_bottom'])
 	z2=np.array(LER_bar['LER_top'])
 	w1=np.array(LER_bar['pers_bottom'])
@@ -617,7 +617,7 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	plt.yticks(fontsize='13')
 	ax3.set_xticklabels([], fontsize=0)
 
-	ax4 = fig.add_subplot(412, sharex=ax3)
+	ax4 = fig.add_subplot(612, sharex=ax3)
 	z1=np.array(ESK_bar['ESK_bottom'])
 	z2=np.array(ESK_bar['ESK_top'])
 	w1=np.array(ESK_bar['pers_bottom'])
@@ -634,7 +634,7 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	plt.xticks(fontsize=15)
 	ax4.set_xticklabels([], fontsize=0)
 
-	ax5 = fig.add_subplot(413, sharex=ax3)
+	ax5 = fig.add_subplot(613, sharex=ax3)
 	z1=np.array(STJ_bar['STJ_bottom'])
 	z2=np.array(STJ_bar['STJ_top'])
 	w1=np.array(STJ_bar['pers_bottom'])
@@ -650,7 +650,7 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	plt.yticks(fontsize='13')
 	ax5.set_xticklabels([], fontsize=0)
 
-	ax6 = fig.add_subplot(414, sharex=ax3)
+	ax6 = fig.add_subplot(614, sharex=ax3)
 	z1=np.array(OTT_bar['OTT_bottom'])
 	z2=np.array(OTT_bar['OTT_top'])
 	w1=np.array(OTT_bar['pers_bottom'])
@@ -667,37 +667,41 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	plt.xticks(fontsize=15)
 	# ax6.set_xticklabels([], fontsize=0)
 
-	# ax7 = fig.add_subplot(817, sharex=ax1)
-	# z1=np.array(NEW_bar['NEW_bottom'])
-	# z2=np.array(NEW_bar['NEW_top'])
-	# w1=np.array(NEW_bar['pers_bottom'])
-	# w2=np.array(NEW_bar['pers_top'])
-	# ax7.plot(NEW['mean'])
-	# ax7.fill_between(NEW.index, NEW['bottom_perc'], NEW['top_perc'], alpha=0.2, color='indigo')
-	# ax7.fill_between(NEW_bar.index, NEW_bar['NEW_bottom'], NEW_bar['NEW_top'], where=z2>z1, alpha=1, color='orange')
-	# ax7.fill_between(NEW_bar.index, NEW_bar['pers_bottom'], NEW_bar['pers_top'], where=w2>w1, alpha=1, color='black')
-	# ax7.margins(x=0)
-	# ax7.set_ylabel('NEW', fontsize='20')
-	# plt.yticks(fontsize='13')
-	# plt.xticks(fontsize=5)
-	# ax7.set_xticklabels([], fontsize=0)
+	ax7 = fig.add_subplot(615, sharex=ax3)
+	z1=np.array(NEW_bar['NEW_bottom'])
+	z2=np.array(NEW_bar['NEW_top'])
+	w1=np.array(NEW_bar['pers_bottom'])
+	w2=np.array(NEW_bar['pers_top'])
+	ax7.plot(NEW['mean'])
+	ax7.plot(NEW_sw['mean'], color='red')
+	ax7.fill_between(NEW.index, NEW['bottom_perc'], NEW['top_perc'], alpha=0.3)
+	ax7.fill_between(NEW_sw.index, NEW_sw['bottom_perc'], NEW_sw['top_perc'], alpha=0.3, color='red')
+	ax7.fill_between(NEW_bar.index, NEW_bar['NEW_bottom'], NEW_bar['NEW_top'], where=z2>z1, alpha=1, color='tab:green')
+	ax7.fill_between(NEW_bar.index, NEW_bar['pers_bottom'], NEW_bar['pers_top'], where=w2>w1, alpha=1, color='black')
+	ax7.margins(x=0)
+	ax7.set_ylabel('NEW', fontsize='20')
+	plt.yticks(fontsize='13')
+	plt.xticks(fontsize=5)
+	ax7.set_xticklabels([], fontsize=0)
 
-	# ax8 = fig.add_subplot(818, sharex=ax1)
-	# z1=np.array(VIC_bar['VIC_bottom'])
-	# z2=np.array(VIC_bar['VIC_top'])
-	# w1=np.array(VIC_bar['pers_bottom'])
-	# w2=np.array(VIC_bar['pers_top'])
-	# ax8.plot(VIC['mean'])
-	# ax8.fill_between(VIC.index, VIC['bottom_perc'], VIC['top_perc'], alpha=0.2, color='indigo')
-	# ax8.fill_between(VIC_bar.index, VIC_bar['VIC_bottom'], VIC_bar['VIC_top'], where=z2>z1, alpha=1, color='orange')
-	# ax8.fill_between(VIC_bar.index, VIC_bar['pers_bottom'], VIC_bar['pers_top'], where=w2>w1, alpha=1, color='black')
-	# ax8.margins(x=0)
-	# ax8.set_ylabel('VIC', fontsize='20')
-	# plt.yticks(fontsize='13')
-	# plt.xticks(fontsize=15)
+	ax8 = fig.add_subplot(616, sharex=ax3)
+	z1=np.array(VIC_bar['VIC_bottom'])
+	z2=np.array(VIC_bar['VIC_top'])
+	w1=np.array(VIC_bar['pers_bottom'])
+	w2=np.array(VIC_bar['pers_top'])
+	ax8.plot(VIC['mean'])
+	ax8.plot(VIC_sw['mean'], color='red')
+	ax8.fill_between(VIC.index, VIC['bottom_perc'], VIC['top_perc'], alpha=0.3)
+	ax8.fill_between(VIC_sw.index, VIC_sw['bottom_perc'], VIC_sw['top_perc'], alpha=0.3, color='red')
+	ax8.fill_between(VIC_bar.index, VIC_bar['VIC_bottom'], VIC_bar['VIC_top'], where=z2>z1, alpha=1, color='tab:green')
+	ax8.fill_between(VIC_bar.index, VIC_bar['pers_bottom'], VIC_bar['pers_top'], where=w2>w1, alpha=1, color='black')
+	ax8.margins(x=0)
+	ax8.set_ylabel('VIC', fontsize='20')
+	plt.yticks(fontsize='13')
+	plt.xticks(fontsize=15)
 
 	# # adds the date to the bottom of the plot
-	ax6.xaxis.set_major_formatter(mdates.DateFormatter('%b %d\n %H:%M'))
+	ax8.xaxis.set_major_formatter(mdates.DateFormatter('%b %d\n %H:%M'))
 
 	plt.savefig('plots/{0}_storm.png'.format(storm), bbox_inches='tight')
 

@@ -1,6 +1,6 @@
 
-{"stations": ["LER", "ESK", "STJ", "OTT"],
-	"thresholds": 0.99,
+{"stations": ["BFE", "WNG", "LER", "ESK", "STJ", "OTT", "NEW", "VIC"],
+	"threshold": 0.99,
 	"params": ["Date_UTC", "sinMLT", "cosMLT", "B_Total", "BY_GSM", "BZ_GSM",
 				"Vx", "Vy", "Vz", "proton_density", "T", "dBHt"],
 	"test_storm_stime": ["2001-03-29 09:59:00", "2001-08-29 21:59:00", "2005-05-13 21:59:00",

@@ -240,6 +240,11 @@ def main(station):
 		ytrain = train_dict['crossing'][train_index]
 		yval = train_dict['crossing'][val_index]
 
+		print('X Train input Nans: '+str(np.isnan(xtrain).sum()))
+		print('X Val input Nans: '+str(np.isnan(xval).sum()))
+		print('Y Train input Nans: '+str(np.isnan(ytrain).sum()))
+		print('Y Val input Nans: '+str(np.isnan(yval).sum()))
+
 		# if the saved model already exists, loads the pre-fit model
 		if os.path.exists('models/{0}/CNN_SW_only_split_{1}.h5'.format(station, split)):
 			model = fit_CNN(MODEL, xtrain, xval, ytrain, yval, early_stop, split, station, first_time=False)
