@@ -75,7 +75,7 @@ class EarlyStopper:
         return False
 
 
-def transform_data_for_modeling(X, y, shuffle=True):
+def transform_data_for_modeling(X, y, batch_size=32, shuffle=True):
 
 	# transofrming the numpy arrays into tensors
 	X = torch.Tensor(X)
@@ -93,17 +93,22 @@ class CNN(nn.Module):
 	def __init__(self):
 		super(CNN, self).__init__()
 		self.conv1 = nn.Conv2d(in_channels=1, out_channels=128, kernel_size=(2,2), padding='same')
-		self.pool = nn.MaxPool2d(2, 2)
+		self.relu = nn.ReLU()
+		self.pool = nn.MaxPool2d(kernal_size=(2, 2))
 		self.flatten = nn.Flatten()
 		self.dense1 = nn.Linear(128*2*2, 128)
 		self.dense2 = nn.Linear(128, 64)
 		self.dense3 = nn.Linear(64, 2)
 
 	def forward(self, x):
-		x = self.pool(F.relu(self.conv1(x)))
+		x = self.conv1(x)
+		x = self.relu(x)
+		x = self.pool(x)
 		x = self.flatten(x)
-		x = F.relu(self.dense1(x))
-		x = F.relu(self.dense2(x))
+		x = self.dense1(x)
+		x = self.relu(x)
+		x = self.dense2(x)
+		x = self.relu(x)
 		x = self.dense3(x)
 		return x
 
