@@ -75,14 +75,18 @@ class EarlyStopper:
         return False
 
 
-def transform_data_for_modeling(X, y, batch_size=32, shuffle=True):
+def transform_data_for_modeling(X, y=None, batch_size=32, shuffle=True):
 
 	# transofrming the numpy arrays into tensors
 	X = torch.Tensor(X)
 	y = torch.Tensor(y)
 
-	# creating the tensor datasets from teh tensor objects
-	dataset = torch.utils.data.TensorDataset(X, y)
+	# creating the tensor datasets from the tensor objects
+	if y.empty:
+		dataset = torch.utils.data.TensorDataset(X)
+	if not y.empty:
+		dataset = torch.utils.data.TensorDataset(X,y)
+
 	dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
 
 	return dataloader
@@ -195,7 +199,49 @@ def model_training(model, train_data, val_data, early_stopping_patience=3):
 	return model
 
 
+def making_predictions(model, test_dict, split):
+	'''
+	Function using the trained models to make predictions with the testing data.
 
+	Args:
+		model (object): pre-trained model
+		test_dict (dict): dictonary with the testing model inputs and the real data for comparison
+		split (int): which split is being tested
+
+	Returns:
+		dict: test dict now containing columns in the dataframe with the model predictions for this split
+	'''
+
+	# looping through the sub dictonaries for each storm
+	for key in test_dict:
+
+		X_test = test_dict[key]['Y']						# defining the testing inputs
+		X_test_data = transform_data_for_modeling(Xtest, batch_size=X_test.shape[0], shuffle=False) 		# transforming the data into torch datasets
+		Xtest = Xtest.reshape((Xtest.shape[0], 1, Xtest.shape[1], Xtest.shape[2]))		# reshpaing for one channel input
+		print('Test input Nans: '+str(np.isnan(Xtest).sum()))
+
+		with torch.no_grad():
+			model.eval()
+			for Xtest in X_test_data:
+
+				Xtest = Xtest.reshape([Xtest.size(0), 1, Xtest.size(1), Xtest.size(2)])
+
+				Xtest = Xtest.to(device)
+				test_outputs = model(Xtest)
+				test_outputs = test_outputs.numpy()
+
+		predicted = test_outputs[:,1]		# grabbing the positive node
+		predicted = pd.Series(predicted.reshape(len(predicted),))		# and then into a pd.series
+
+		df = test_dict[key]['real_df']									# calling the correct dataframe
+		df['predicted_split_{0}'.format(split)] = predicted		# and storing the results
+		re = df['crossing']
+
+		# checking for nan data in the results
+		print('Pred has Nan: '+str(predicted.isnull().sum()))
+		print('Real has Nan: '+str(re.isnull().sum()))
+
+	return test_dict
 
 
 def main(station):
