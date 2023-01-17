@@ -82,7 +82,7 @@ def transform_data_for_modeling(X, y, batch_size=32, shuffle=True):
 	y = torch.Tensor(y)
 
 	# creating the tensor datasets from teh tensor objects
-	dataset = torch.utils.data.TorchDataset(X, y)
+	dataset = torch.utils.data.TensorDataset(X, y)
 	dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
 
 	return dataloader
