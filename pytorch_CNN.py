@@ -17,6 +17,13 @@ import torchvision.transforms as transforms
 # Device config
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+# loading config and specific model config files. Using them as dictonaries
+with open('config.json', 'r') as con:
+	CONFIG = json.load(con)
+
+with open('model_config.json', 'r') as mcon:
+	MODEL_CONFIG = json.load(mcon)
+
 # setting the random seeds for reproducibility
 random.seed(CONFIG['random_seed'])
 np.random.seed(CONFIG['random_seed'])
