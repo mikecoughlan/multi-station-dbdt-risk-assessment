@@ -18,6 +18,7 @@ import json
 import os
 import pickle
 import random
+import sys
 
 import numpy as np
 import pandas as pd
@@ -234,6 +235,8 @@ def main(station):
 			reset_keras(MODEL)
 		MODEL, early_stop = create_CNN_model(n_features=train_dict['X'].shape[2], loss='categorical_crossentropy', early_stop_patience=5)					# creating the model
 
+		print(MODEL.summary())
+		sys.exit()
 		# pulling the data and catagorizing it into the train-val pairs
 		xtrain = train_dict['X'][train_index]
 		xval =  train_dict['X'][val_index]

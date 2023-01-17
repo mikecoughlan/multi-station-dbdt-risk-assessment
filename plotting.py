@@ -131,7 +131,7 @@ def plot_metrics(metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE'], sw=Fals
 		plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)			# trimming the whitespace in the subplots
 
 		# X = [5, 35, 65, 95, 125, 155, 185, 215]				# Used for labeling the x axis of the plots for each station.
-		X = [5, 35, 65, 95, 125, 155]				# Used for labeling the x axis of the plots for each station.
+		X = [5, 35, 65, 95, 125, 155, 185, 215]				# Used for labeling the x axis of the plots for each station.
 
 		'''subtracting and adding from the main X array above to
 			create slight speration in each of the storm metric results'''
@@ -245,7 +245,7 @@ def plot_total_metrics(metrics_dict, sw_metrics_dict, stations, metrics=['HSS', 
 	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)			# trimming the whitespace in the subplots
 
 	# X = [5, 15, 25, 35, 45, 55, 65, 75]
-	X = [5, 10, 15, 20, 25, 30]
+	X = [5, 10, 15, 20, 25, 30, 35, 40]
 
 	x0 = [(num-1.5) for num in X]
 	x1 = [(num+1.5) for num in X]
@@ -469,8 +469,8 @@ def plot_model_outputs(results_dict, storm, splits, title):
 
 	# calling the prep_k_fold function for each threshold. Should probably find a better way to do this.
 	OTT = prep_k_fold_results(results_dict['OTT']['storm_{0}'.format(storm)]['raw_results'], splits)
-	# BFE = prep_k_fold_results(results_dict['BFE']['storm_{0}'.format(storm)]['raw_results'], splits)
-	# WNG = prep_k_fold_results(results_dict['WNG']['storm_{0}'.format(storm)]['raw_results'], splits)
+	BFE = prep_k_fold_results(results_dict['BFE']['storm_{0}'.format(storm)]['raw_results'], splits)
+	WNG = prep_k_fold_results(results_dict['WNG']['storm_{0}'.format(storm)]['raw_results'], splits)
 	STJ = prep_k_fold_results(results_dict['STJ']['storm_{0}'.format(storm)]['raw_results'], splits)
 	NEW = prep_k_fold_results(results_dict['NEW']['storm_{0}'.format(storm)]['raw_results'], splits)
 	VIC = prep_k_fold_results(results_dict['VIC']['storm_{0}'.format(storm)]['raw_results'], splits)
@@ -483,8 +483,8 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ESK_sw = prep_k_fold_results(results_dict['ESK']['storm_{0}'.format(storm)]['sw_results'], splits)
 	NEW_sw = prep_k_fold_results(results_dict['NEW']['storm_{0}'.format(storm)]['sw_results'], splits)
 	VIC_sw = prep_k_fold_results(results_dict['VIC']['storm_{0}'.format(storm)]['sw_results'], splits)
-	# BFE_sw = prep_k_fold_results(results_dict['BFE']['storm_{0}'.format(storm)]['sw_results'], splits)
-	# WNG_sw = prep_k_fold_results(results_dict['WNG']['storm_{0}'.format(storm)]['sw_results'], splits)
+	BFE_sw = prep_k_fold_results(results_dict['BFE']['storm_{0}'.format(storm)]['sw_results'], splits)
+	WNG_sw = prep_k_fold_results(results_dict['WNG']['storm_{0}'.format(storm)]['sw_results'], splits)
 
 
 
@@ -499,16 +499,16 @@ def plot_model_outputs(results_dict, storm, splits, title):
 							'pers_bottom':OTT['persistance']*1.07,
 							'pers_top':OTT['persistance']*1.12},
 							index=OTT.index)
-	# BFE_bar = pd.DataFrame({'BFE_bottom':BFE['cross']*1.01,
-	# 						'BFE_top':BFE['cross']*1.06,
-	# 						'pers_bottom':BFE['persistance']*1.07,
-	# 						'pers_top':BFE['persistance']*1.12},
-	# 						index=BFE.index)
-	# WNG_bar = pd.DataFrame({'WNG_bottom':WNG['cross']*1.01,
-	# 						'WNG_top':WNG['cross']*1.06,
-	# 						'pers_bottom':WNG['persistance']*1.07,
-	# 						'pers_top':WNG['persistance']*1.12},
-	# 						index=WNG.index)
+	BFE_bar = pd.DataFrame({'BFE_bottom':BFE['cross']*1.01,
+							'BFE_top':BFE['cross']*1.06,
+							'pers_bottom':BFE['persistance']*1.07,
+							'pers_top':BFE['persistance']*1.12},
+							index=BFE.index)
+	WNG_bar = pd.DataFrame({'WNG_bottom':WNG['cross']*1.01,
+							'WNG_top':WNG['cross']*1.06,
+							'pers_bottom':WNG['persistance']*1.07,
+							'pers_top':WNG['persistance']*1.12},
+							index=WNG.index)
 	STJ_bar = pd.DataFrame({'STJ_bottom':STJ['cross']*1.01,
 							'STJ_top':STJ['cross']*1.06,
 							'pers_bottom':STJ['persistance']*1.07,
@@ -537,8 +537,8 @@ def plot_model_outputs(results_dict, storm, splits, title):
 
 	# adds datetime index
 	OTT_bar.index=pd.to_datetime(OTT_bar.index)
-	# BFE_bar.index=pd.to_datetime(BFE_bar.index)
-	# WNG_bar.index=pd.to_datetime(WNG_bar.index)
+	BFE_bar.index=pd.to_datetime(BFE_bar.index)
+	WNG_bar.index=pd.to_datetime(WNG_bar.index)
 	STJ_bar.index=pd.to_datetime(STJ_bar.index)
 	NEW_bar.index=pd.to_datetime(NEW_bar.index)
 	VIC_bar.index=pd.to_datetime(VIC_bar.index)
@@ -555,53 +555,57 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	plt.yticks([])
 	plt.title(title, fontsize=30)
 
-	# ax1 = fig.add_subplot(811)			# initalizing the subplot
+	ax1 = fig.add_subplot(811)			# initalizing the subplot
 
-	# # creates an array from the y_bar dataframe
-	# z1=np.array(BFE_bar['BFE_bottom'])
+	# creates an array from the y_bar dataframe
+	z1=np.array(BFE_bar['BFE_bottom'])
 
-	# # creates another array. These two arrays are compared to create the bar at the top of the plots.
-	# z2=np.array(BFE_bar['BFE_top'])
+	# creates another array. These two arrays are compared to create the bar at the top of the plots.
+	z2=np.array(BFE_bar['BFE_top'])
 
-	# # This repeats the above for the persistance maodel
-	# w1=np.array(BFE_bar['pers_bottom'])
-	# w2=np.array(BFE_bar['pers_top'])
+	# This repeats the above for the persistance maodel
+	w1=np.array(BFE_bar['pers_bottom'])
+	w2=np.array(BFE_bar['pers_top'])
 
 	# # plots the mean columns of the dataframe.
-	# ax1.plot(BFE['mean'], label='mean')
+	ax1.plot(BFE['mean'], label='Combined mean')
+	ax1.plot(BFE_sw['mean'], label='SW mean', color='red')
 
-	# # fills the area between the confidence interval with a lighter shade
-	# ax1.fill_between(BFE.index, BFE['bottom_perc'], BFE['top_perc'], alpha=0.2, label='$95^{th}$ percentile', color='indigo')
+	# fills the area between the confidence interval with a lighter shade
+	ax1.fill_between(BFE.index, BFE['bottom_perc'], BFE['top_perc'], alpha=0.3, label='Combined $95^{th}$ perc.')
+	ax1.fill_between(BFE_sw.index, BFE_sw['bottom_perc'], BFE_sw['top_perc'], alpha=0.3, label='SW $95^{th}$ perc.', color='red')
 
 	# # creates a bar at the top of the plot indicating the positve part of the binary real data
-	# ax1.fill_between(BFE_bar.index, BFE_bar['BFE_bottom'], BFE_bar['BFE_top'], where=z2>z1, alpha=1, label='ground truth', color='orange')
-	# ax1.fill_between(BFE_bar.index, BFE_bar['pers_bottom'], BFE_bar['pers_top'], where=w2>w1, alpha=1, color='black', label='persistance')
+	ax1.fill_between(BFE_bar.index, BFE_bar['BFE_bottom'], BFE_bar['BFE_top'], where=z2>z1, alpha=1, label='ground truth', color='tab:green')
+	ax1.fill_between(BFE_bar.index, BFE_bar['pers_bottom'], BFE_bar['pers_top'], where=w2>w1, alpha=1, color='black', label='persistance')
 
-	# # tightning the plot margins
-	# ax1.margins(x=0)
-	# ax1.set_ylabel('BFE', fontsize='20')
-	# plt.legend()
-	# plt.yticks(fontsize='13')
+	# tightning the plot margins
+	ax1.margins(x=0)
+	ax1.set_ylabel('BFE', fontsize='20')
+	plt.legend(bbox_to_anchor=(1,1), loc='upper left', fontsize=12)
+	plt.yticks(fontsize='13')
 
 	# # clears the x-axis labels. Won't be seen anyway as they will be covered by next subplot.
-	# ax1.set_xticklabels([], fontsize=0)
+	ax1.set_xticklabels([], fontsize=0)
 
 	# # Repeats the above for the other 7 stations
-	# ax2 = fig.add_subplot(812, sharex=ax1)
-	# z1=np.array(WNG_bar['WNG_bottom'])
-	# z2=np.array(WNG_bar['WNG_top'])
-	# w1=np.array(WNG_bar['pers_bottom'])
-	# w2=np.array(WNG_bar['pers_top'])
-	# ax2.plot(WNG.index, WNG['mean'])
-	# ax2.fill_between(WNG.index, WNG['bottom_perc'], WNG['top_perc'], alpha=0.2, color='indigo')
-	# ax2.fill_between(WNG_bar.index, WNG_bar['WNG_bottom'], WNG_bar['WNG_top'], where=z2>z1, alpha=1, color='orange')
-	# ax2.fill_between(WNG_bar.index, WNG_bar['pers_bottom'], WNG_bar['pers_top'], where=w2>w1, alpha=1, color='black')
-	# ax2.margins(x=0)
-	# ax2.set_ylabel('WNG', fontsize='20')
-	# plt.yticks(fontsize='13')
-	# ax2.set_xticklabels([], fontsize=0)
+	ax2 = fig.add_subplot(812, sharex=ax1)
+	z1=np.array(WNG_bar['WNG_bottom'])
+	z2=np.array(WNG_bar['WNG_top'])
+	w1=np.array(WNG_bar['pers_bottom'])
+	w2=np.array(WNG_bar['pers_top'])
+	ax2.plot(WNG.index, WNG['mean'])
+	ax2.plot(WNG_sw['mean'], label='sw mean', color='red')
+	ax2.fill_between(WNG.index, WNG['bottom_perc'], WNG['top_perc'], alpha=0.3)
+	ax2.fill_between(WNG_sw.index, WNG_sw['bottom_perc'], WNG_sw['top_perc'], alpha=0.3, label='SW only $95^{th}$ percentile', color='red')
+	ax2.fill_between(WNG_bar.index, WNG_bar['WNG_bottom'], WNG_bar['WNG_top'], where=z2>z1, alpha=1, color='tab:green')
+	ax2.fill_between(WNG_bar.index, WNG_bar['pers_bottom'], WNG_bar['pers_top'], where=w2>w1, alpha=1, color='black')
+	ax2.margins(x=0)
+	ax2.set_ylabel('WNG', fontsize='20')
+	plt.yticks(fontsize='13')
+	ax2.set_xticklabels([], fontsize=0)
 
-	ax3 = fig.add_subplot(611)
+	ax3 = fig.add_subplot(813, sharex=ax1)
 	z1=np.array(LER_bar['LER_bottom'])
 	z2=np.array(LER_bar['LER_top'])
 	w1=np.array(LER_bar['pers_bottom'])
@@ -617,7 +621,7 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	plt.yticks(fontsize='13')
 	ax3.set_xticklabels([], fontsize=0)
 
-	ax4 = fig.add_subplot(612, sharex=ax3)
+	ax4 = fig.add_subplot(814, sharex=ax1)
 	z1=np.array(ESK_bar['ESK_bottom'])
 	z2=np.array(ESK_bar['ESK_top'])
 	w1=np.array(ESK_bar['pers_bottom'])
@@ -634,7 +638,7 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	plt.xticks(fontsize=15)
 	ax4.set_xticklabels([], fontsize=0)
 
-	ax5 = fig.add_subplot(613, sharex=ax3)
+	ax5 = fig.add_subplot(815, sharex=ax1)
 	z1=np.array(STJ_bar['STJ_bottom'])
 	z2=np.array(STJ_bar['STJ_top'])
 	w1=np.array(STJ_bar['pers_bottom'])
@@ -650,7 +654,7 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	plt.yticks(fontsize='13')
 	ax5.set_xticklabels([], fontsize=0)
 
-	ax6 = fig.add_subplot(614, sharex=ax3)
+	ax6 = fig.add_subplot(816, sharex=ax1)
 	z1=np.array(OTT_bar['OTT_bottom'])
 	z2=np.array(OTT_bar['OTT_top'])
 	w1=np.array(OTT_bar['pers_bottom'])
@@ -665,9 +669,9 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax6.set_ylabel('OTT', fontsize='20')
 	plt.yticks(fontsize='13')
 	plt.xticks(fontsize=15)
-	# ax6.set_xticklabels([], fontsize=0)
+	ax6.set_xticklabels([], fontsize=0)
 
-	ax7 = fig.add_subplot(615, sharex=ax3)
+	ax7 = fig.add_subplot(817, sharex=ax1)
 	z1=np.array(NEW_bar['NEW_bottom'])
 	z2=np.array(NEW_bar['NEW_top'])
 	w1=np.array(NEW_bar['pers_bottom'])
@@ -684,7 +688,7 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	plt.xticks(fontsize=5)
 	ax7.set_xticklabels([], fontsize=0)
 
-	ax8 = fig.add_subplot(616, sharex=ax3)
+	ax8 = fig.add_subplot(818, sharex=ax1)
 	z1=np.array(VIC_bar['VIC_bottom'])
 	z2=np.array(VIC_bar['VIC_top'])
 	w1=np.array(VIC_bar['pers_bottom'])
