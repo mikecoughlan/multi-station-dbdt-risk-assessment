@@ -90,25 +90,30 @@ def sorting_metrics(results_dict, stations, metrics, length, sw=False):
 		for station in stations:
 			''' adds the total results for all storms to the
 				total metrics df using the station code as the column name'''
-			total_df[station] = results_dict[station]['total_metrics'][metric]
+			if not sw:
+				total_df[station] = results_dict[station]['total_metrics'][metric]
+			else:
+				total_df[station] = results_dict[station]['total_sw_metrics'][metric]
 		# transposes the df so the station names are the row names
 		metrics_dict['total_{0}'.format(metric)] = total_df.T
-	hss, auc, rmse = [], [], []
+	hss, auc, rmse, bias = [], [], [], []
 
 	# saving the persistance metric results
 	for station in stations:
 		hss.append(results_dict[station]['pers_HSS'][0])
 		auc.append(results_dict[station]['pers_AUC'][0])
 		rmse.append(results_dict[station]['pers_RMSE'][0])
+		bias.append(results_dict[station]['pers_BIAS'][0])
 	metrics_dict['pers_HSS'] = hss
 	metrics_dict['pers_AUC'] = auc
 	metrics_dict['pers_RMSE'] = rmse
+	metrics_dict['pers_BIAS'] = bias
 
 	return metrics_dict
 
 
 
-def plot_metrics(metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE']):
+def plot_metrics(metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE'], sw=False):
 	'''
 	Plotting function for the storm seperated metrics. Makes a unique
 	plot for each metric and displays the results for each station bunched
@@ -125,6 +130,7 @@ def plot_metrics(metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE']):
 		fig = plt.figure(figsize=(10,7))													# establishing the figure
 		plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)			# trimming the whitespace in the subplots
 
+		# X = [5, 35, 65, 95, 125, 155, 185, 215]				# Used for labeling the x axis of the plots for each station.
 		X = [5, 35, 65, 95, 125, 155, 185, 215]				# Used for labeling the x axis of the plots for each station.
 
 		'''subtracting and adding from the main X array above to
@@ -216,11 +222,14 @@ def plot_metrics(metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE']):
 		plt.yticks(fontsize='15')					# making the y ticks a bit bigger. They're a bit more important
 		plt.legend(fontsize='10')
 
-		plt.savefig('plots/{0}_version_{1}.png'.format(metric, CONFIG['version']), bbox_inches='tight')
+		if not sw:
+			plt.savefig('plots/{0}_version_{1}.png'.format(metric, CONFIG['version']), bbox_inches='tight')
+		else:
+			plt.savefig('plots/{0}_version_{1}_sw_models.png'.format(metric, CONFIG['version']), bbox_inches='tight')
 
 
 
-def plot_total_metrics(metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE']):
+def plot_total_metrics(metrics_dict, sw_metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE']):
 	'''
 	Plotting the total metrics instead of the individual storm metrics. Very similar
 	to the plot_metrics function above. Seperated the functions to make it easier to
@@ -235,36 +244,46 @@ def plot_total_metrics(metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE']):
 	fig = plt.figure(figsize=(10,7))													# establishing the figure
 	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)			# trimming the whitespace in the subplots
 
-	X = [5, 15, 25, 35, 45, 55, 65, 75]
+	# X = [5, 15, 25, 35, 45, 55, 65, 75]
+	X = [5, 10, 15, 20, 25, 30, 35, 40]
 
 	x0 = [(num-1.5) for num in X]
 	x1 = [(num+1.5) for num in X]
 
 
 	ax = fig.add_subplot(111)					# adding the subplot
-	plt.title('Metric Scores', fontsize='20')		# titling the plot
+	plt.title('{0} and {1} Scores'.format(metrics[0], metrics[1]), fontsize='20')		# titling the plot
 
 	# specifying plot colors
-	bar_colors = ['blue', 'tomato']
+	bar_colors = ['blue', 'darkred']
+	sw_bar_colors = ['tab:blue', 'chocolate']
 	persistance_colors = ['deepskyblue', 'orange']
-	for metric, color0, color1 in zip(metrics, bar_colors, persistance_colors):
+	for metric, color0, color1, color_sw in zip(metrics, bar_colors, persistance_colors, sw_bar_colors):
 		y0 = metrics_dict['total_{0}'.format(metric)]['mean'].to_numpy()		# defining the y center point
 		ymax0 = metrics_dict['total_{0}'.format(metric)]['max'].to_numpy()	# defining the y upper bound
 		ymin0 = metrics_dict['total_{0}'.format(metric)]['min'].to_numpy()	# defining the y lower bound
 
+		sw_y0 = sw_metrics_dict['total_{0}'.format(metric)]['mean'].to_numpy()		# defining the y center point
+		sw_ymax0 = sw_metrics_dict['total_{0}'.format(metric)]['max'].to_numpy()	# defining the y upper bound
+		sw_ymin0 = sw_metrics_dict['total_{0}'.format(metric)]['min'].to_numpy()	# defining the y lower bound
+
 		ymax0 = ymax0 - y0
 		ymin0 = y0 - ymin0
 
-		ax.errorbar(X, y0, yerr=[ymin0, ymax0], fmt='.', color=color0, label='{0}'.format(metric), elinewidth=3, markersize=15, capsize=4, capthick=3)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
-		ax.scatter(X, metrics_dict['pers_{0}'.format(metric)], marker='^', color=color1, label='pers.{0}'.format(metric), s=150)
+		sw_ymax0 = sw_ymax0 - sw_y0
+		sw_ymin0 = sw_y0 - sw_ymin0
+
+		ax.errorbar(X, y0, yerr=[ymin0, ymax0], fmt='.', color=color0, label='combined {0}'.format(metric), elinewidth=3, markersize=15, capsize=4, capthick=3)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		ax.errorbar(X, sw_y0, yerr=[sw_ymin0, sw_ymax0], fmt='.', color=color_sw, label='sw {0}'.format(metric), elinewidth=3, markersize=15, capsize=4, capthick=3)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
+		ax.scatter(X, metrics_dict['pers_{0}'.format(metric)], marker='^', color=color1, label='pers {0}'.format(metric), s=150)
 
 	plt.xlabel('Stations', fontsize='15')		# adding the label on the x axis label
 	plt.ylabel('Score', fontsize='15')			# adding the y axis label
 	plt.xticks(X, stations, fontsize='15')		# adding ticks to the points on the x axis
 	plt.yticks(fontsize='15')					# making the y ticks a bit bigger. They're a bit more important
-	plt.legend(fontsize='10', loc='lower left')
+	plt.legend(fontsize='10')
 
-	plt.savefig('plots/metrics_total.png', bbox_inches='tight')
+	plt.savefig('plots/{0}_{1}_metrics_total.png'.format(metrics[0], metrics[1]), bbox_inches='tight')
 
 
 def prep_k_fold_results(df, splits):
@@ -435,7 +454,7 @@ def reliability_plots(results_dict, station, splits, plot_titles):
 	plt.savefig('plots/{0}_reliability_plot.png'.format(station))
 
 
-def plot_model_outputs(results_dict, storm, splits, title, model):
+def plot_model_outputs(results_dict, storm, splits, title):
 	'''
 	Plots all of the model output results with confidence intervals. Plots the ground truth
 	data and the persistance model at the top of each station's plot for comparison Saves the
@@ -446,18 +465,29 @@ def plot_model_outputs(results_dict, storm, splits, title, model):
 		storm (int): integer code identifying which storm is being plotted.
 		splits (int): number of shuffeled k-fold splits performed. Also the number of models created for each station
 		title (str): plot title
-		model (str): either raw for the models with combined sw and mag data as input, or sw for just sw input models
 	'''
 
 	# calling the prep_k_fold function for each threshold. Should probably find a better way to do this.
-	OTT = prep_k_fold_results(results_dict['OTT']['storm_{0}'.format(storm)]['{0}_results'.format(model)], splits)
-	BFE = prep_k_fold_results(results_dict['BFE']['storm_{0}'.format(storm)]['{0}_results'.format(model)], splits)
-	WNG = prep_k_fold_results(results_dict['WNG']['storm_{0}'.format(storm)]['{0}_results'.format(model)], splits)
-	STJ = prep_k_fold_results(results_dict['STJ']['storm_{0}'.format(storm)]['{0}_results'.format(model)], splits)
-	NEW = prep_k_fold_results(results_dict['NEW']['storm_{0}'.format(storm)]['{0}_results'.format(model)], splits)
-	VIC = prep_k_fold_results(results_dict['VIC']['storm_{0}'.format(storm)]['{0}_results'.format(model)], splits)
-	ESK = prep_k_fold_results(results_dict['ESK']['storm_{0}'.format(storm)]['{0}_results'.format(model)], splits)
-	LER = prep_k_fold_results(results_dict['LER']['storm_{0}'.format(storm)]['{0}_results'.format(model)], splits)
+	OTT = prep_k_fold_results(results_dict['OTT']['storm_{0}'.format(storm)]['raw_results'], splits)
+	BFE = prep_k_fold_results(results_dict['BFE']['storm_{0}'.format(storm)]['raw_results'], splits)
+	WNG = prep_k_fold_results(results_dict['WNG']['storm_{0}'.format(storm)]['raw_results'], splits)
+	STJ = prep_k_fold_results(results_dict['STJ']['storm_{0}'.format(storm)]['raw_results'], splits)
+	NEW = prep_k_fold_results(results_dict['NEW']['storm_{0}'.format(storm)]['raw_results'], splits)
+	VIC = prep_k_fold_results(results_dict['VIC']['storm_{0}'.format(storm)]['raw_results'], splits)
+	ESK = prep_k_fold_results(results_dict['ESK']['storm_{0}'.format(storm)]['raw_results'], splits)
+	LER = prep_k_fold_results(results_dict['LER']['storm_{0}'.format(storm)]['raw_results'], splits)
+
+	OTT_sw = prep_k_fold_results(results_dict['OTT']['storm_{0}'.format(storm)]['sw_results'], splits)
+	STJ_sw = prep_k_fold_results(results_dict['STJ']['storm_{0}'.format(storm)]['sw_results'], splits)
+	LER_sw = prep_k_fold_results(results_dict['LER']['storm_{0}'.format(storm)]['sw_results'], splits)
+	ESK_sw = prep_k_fold_results(results_dict['ESK']['storm_{0}'.format(storm)]['sw_results'], splits)
+	NEW_sw = prep_k_fold_results(results_dict['NEW']['storm_{0}'.format(storm)]['sw_results'], splits)
+	VIC_sw = prep_k_fold_results(results_dict['VIC']['storm_{0}'.format(storm)]['sw_results'], splits)
+	BFE_sw = prep_k_fold_results(results_dict['BFE']['storm_{0}'.format(storm)]['sw_results'], splits)
+	WNG_sw = prep_k_fold_results(results_dict['WNG']['storm_{0}'.format(storm)]['sw_results'], splits)
+
+
+
 
 
 	'''creats a new dataframe that will allow me to create a bar at the top of the
@@ -537,34 +567,38 @@ def plot_model_outputs(results_dict, storm, splits, title, model):
 	w1=np.array(BFE_bar['pers_bottom'])
 	w2=np.array(BFE_bar['pers_top'])
 
-	# plots the mean columns of the dataframe.
-	ax1.plot(BFE['mean'], label='mean')
+	# # plots the mean columns of the dataframe.
+	ax1.plot(BFE['mean'], label='Combined mean')
+	ax1.plot(BFE_sw['mean'], label='SW mean', color='red')
 
 	# fills the area between the confidence interval with a lighter shade
-	ax1.fill_between(BFE.index, BFE['bottom_perc'], BFE['top_perc'], alpha=0.2, label='$95^{th}$ percentile', color='indigo')
+	ax1.fill_between(BFE.index, BFE['bottom_perc'], BFE['top_perc'], alpha=0.3, label='Combined $95^{th}$ perc.')
+	ax1.fill_between(BFE_sw.index, BFE_sw['bottom_perc'], BFE_sw['top_perc'], alpha=0.3, label='SW $95^{th}$ perc.', color='red')
 
-	# creates a bar at the top of the plot indicating the positve part of the binary real data
-	ax1.fill_between(BFE_bar.index, BFE_bar['BFE_bottom'], BFE_bar['BFE_top'], where=z2>z1, alpha=1, label='ground truth', color='orange')
+	# # creates a bar at the top of the plot indicating the positve part of the binary real data
+	ax1.fill_between(BFE_bar.index, BFE_bar['BFE_bottom'], BFE_bar['BFE_top'], where=z2>z1, alpha=1, label='ground truth', color='tab:green')
 	ax1.fill_between(BFE_bar.index, BFE_bar['pers_bottom'], BFE_bar['pers_top'], where=w2>w1, alpha=1, color='black', label='persistance')
 
 	# tightning the plot margins
 	ax1.margins(x=0)
 	ax1.set_ylabel('BFE', fontsize='20')
-	plt.legend()
+	plt.legend(bbox_to_anchor=(1,1), loc='upper left', fontsize=12)
 	plt.yticks(fontsize='13')
 
-	# clears the x-axis labels. Won't be seen anyway as they will be covered by next subplot.
+	# # clears the x-axis labels. Won't be seen anyway as they will be covered by next subplot.
 	ax1.set_xticklabels([], fontsize=0)
 
-	# Repeats the above for the other 7 stations
+	# # Repeats the above for the other 7 stations
 	ax2 = fig.add_subplot(812, sharex=ax1)
 	z1=np.array(WNG_bar['WNG_bottom'])
 	z2=np.array(WNG_bar['WNG_top'])
 	w1=np.array(WNG_bar['pers_bottom'])
 	w2=np.array(WNG_bar['pers_top'])
 	ax2.plot(WNG.index, WNG['mean'])
-	ax2.fill_between(WNG.index, WNG['bottom_perc'], WNG['top_perc'], alpha=0.2, color='indigo')
-	ax2.fill_between(WNG_bar.index, WNG_bar['WNG_bottom'], WNG_bar['WNG_top'], where=z2>z1, alpha=1, color='orange')
+	ax2.plot(WNG_sw['mean'], label='sw mean', color='red')
+	ax2.fill_between(WNG.index, WNG['bottom_perc'], WNG['top_perc'], alpha=0.3)
+	ax2.fill_between(WNG_sw.index, WNG_sw['bottom_perc'], WNG_sw['top_perc'], alpha=0.3, label='SW only $95^{th}$ percentile', color='red')
+	ax2.fill_between(WNG_bar.index, WNG_bar['WNG_bottom'], WNG_bar['WNG_top'], where=z2>z1, alpha=1, color='tab:green')
 	ax2.fill_between(WNG_bar.index, WNG_bar['pers_bottom'], WNG_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax2.margins(x=0)
 	ax2.set_ylabel('WNG', fontsize='20')
@@ -577,8 +611,10 @@ def plot_model_outputs(results_dict, storm, splits, title, model):
 	w1=np.array(LER_bar['pers_bottom'])
 	w2=np.array(LER_bar['pers_top'])
 	ax3.plot(LER['mean'])
-	ax3.fill_between(LER.index, LER['bottom_perc'], LER['top_perc'], alpha=0.2, color='indigo')
-	ax3.fill_between(LER_bar.index, LER_bar['LER_bottom'], LER_bar['LER_top'], where=z2>z1, alpha=1, color='orange')
+	ax3.plot(LER_sw['mean'], label='sw mean', color='red')
+	ax3.fill_between(LER.index, LER['bottom_perc'], LER['top_perc'], alpha=0.3)
+	ax3.fill_between(LER_sw.index, LER_sw['bottom_perc'], LER_sw['top_perc'], alpha=0.3, label='SW only $95^{th}$ percentile', color='red')
+	ax3.fill_between(LER_bar.index, LER_bar['LER_bottom'], LER_bar['LER_top'], where=z2>z1, alpha=1, color='tab:green')
 	ax3.fill_between(LER_bar.index, LER_bar['pers_bottom'], LER_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax3.margins(x=0)
 	ax3.set_ylabel('LER', fontsize='20')
@@ -591,8 +627,10 @@ def plot_model_outputs(results_dict, storm, splits, title, model):
 	w1=np.array(ESK_bar['pers_bottom'])
 	w2=np.array(ESK_bar['pers_top'])
 	ax4.plot(ESK.index, ESK['mean'])
-	ax4.fill_between(ESK.index, ESK['bottom_perc'], ESK['top_perc'], alpha=0.2, color='indigo')
-	ax4.fill_between(ESK_bar.index, ESK_bar['ESK_bottom'], ESK_bar['ESK_top'], where=z2>z1, alpha=1, color='orange')
+	ax4.plot(ESK_sw['mean'], label='sw mean', color='red')
+	ax4.fill_between(ESK.index, ESK['bottom_perc'], ESK['top_perc'], alpha=0.3)
+	ax4.fill_between(ESK_sw.index, ESK_sw['bottom_perc'], ESK_sw['top_perc'], alpha=0.3, label='SW only $95^{th}$ percentile', color='red')
+	ax4.fill_between(ESK_bar.index, ESK_bar['ESK_bottom'], ESK_bar['ESK_top'], where=z2>z1, alpha=1, color='tab:green')
 	ax4.fill_between(ESK_bar.index, ESK_bar['pers_bottom'], ESK_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax4.margins(x=0)
 	ax4.set_ylabel('ESK', fontsize='20')
@@ -606,8 +644,10 @@ def plot_model_outputs(results_dict, storm, splits, title, model):
 	w1=np.array(STJ_bar['pers_bottom'])
 	w2=np.array(STJ_bar['pers_top'])
 	ax5.plot(STJ['mean'], label='mean')
-	ax5.fill_between(STJ.index, STJ['bottom_perc'], STJ['top_perc'], alpha=0.2, label='$95^{th}$ percentile', color='indigo')
-	ax5.fill_between(STJ_bar.index, STJ_bar['STJ_bottom'], STJ_bar['STJ_top'], where=z2>z1, alpha=1, label='ground truth', color='orange')
+	ax5.plot(STJ_sw['mean'], label='mean', color='red')
+	ax5.fill_between(STJ.index, STJ['bottom_perc'], STJ['top_perc'], alpha=0.3, label='$95^{th}$ percentile')
+	ax5.fill_between(STJ_sw.index, STJ_sw['bottom_perc'], STJ_sw['top_perc'], alpha=0.3, label='SW only $95^{th}$ percentile', color='red')
+	ax5.fill_between(STJ_bar.index, STJ_bar['STJ_bottom'], STJ_bar['STJ_top'], where=z2>z1, alpha=1, label='ground truth', color='tab:green')
 	ax5.fill_between(STJ_bar.index, STJ_bar['pers_bottom'], STJ_bar['pers_top'], where=w2>w1, alpha=1, color='black', label='persistance')
 	ax5.margins(x=0)
 	ax5.set_ylabel('STJ', fontsize='20')
@@ -620,13 +660,15 @@ def plot_model_outputs(results_dict, storm, splits, title, model):
 	w1=np.array(OTT_bar['pers_bottom'])
 	w2=np.array(OTT_bar['pers_top'])
 	ax6.plot(OTT['mean'])
-	ax6.fill_between(OTT.index, OTT['bottom_perc'], OTT['top_perc'], alpha=0.2, color='indigo')
-	ax6.fill_between(OTT_bar.index, OTT_bar['OTT_bottom'], OTT_bar['OTT_top'], where=z2>z1, alpha=1, color='orange')
+	ax6.plot(OTT_sw['mean'], color='red')
+	ax6.fill_between(OTT.index, OTT['bottom_perc'], OTT['top_perc'], alpha=0.3)
+	ax6.fill_between(OTT_sw.index, OTT_sw['bottom_perc'], OTT_sw['top_perc'], alpha=0.3, color='red')
+	ax6.fill_between(OTT_bar.index, OTT_bar['OTT_bottom'], OTT_bar['OTT_top'], where=z2>z1, alpha=1, color='tab:green')
 	ax6.fill_between(OTT_bar.index, OTT_bar['pers_bottom'], OTT_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax6.margins(x=0)
 	ax6.set_ylabel('OTT', fontsize='20')
 	plt.yticks(fontsize='13')
-	plt.xticks(fontsize=5)
+	plt.xticks(fontsize=15)
 	ax6.set_xticklabels([], fontsize=0)
 
 	ax7 = fig.add_subplot(817, sharex=ax1)
@@ -635,8 +677,10 @@ def plot_model_outputs(results_dict, storm, splits, title, model):
 	w1=np.array(NEW_bar['pers_bottom'])
 	w2=np.array(NEW_bar['pers_top'])
 	ax7.plot(NEW['mean'])
-	ax7.fill_between(NEW.index, NEW['bottom_perc'], NEW['top_perc'], alpha=0.2, color='indigo')
-	ax7.fill_between(NEW_bar.index, NEW_bar['NEW_bottom'], NEW_bar['NEW_top'], where=z2>z1, alpha=1, color='orange')
+	ax7.plot(NEW_sw['mean'], color='red')
+	ax7.fill_between(NEW.index, NEW['bottom_perc'], NEW['top_perc'], alpha=0.3)
+	ax7.fill_between(NEW_sw.index, NEW_sw['bottom_perc'], NEW_sw['top_perc'], alpha=0.3, color='red')
+	ax7.fill_between(NEW_bar.index, NEW_bar['NEW_bottom'], NEW_bar['NEW_top'], where=z2>z1, alpha=1, color='tab:green')
 	ax7.fill_between(NEW_bar.index, NEW_bar['pers_bottom'], NEW_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax7.margins(x=0)
 	ax7.set_ylabel('NEW', fontsize='20')
@@ -650,18 +694,20 @@ def plot_model_outputs(results_dict, storm, splits, title, model):
 	w1=np.array(VIC_bar['pers_bottom'])
 	w2=np.array(VIC_bar['pers_top'])
 	ax8.plot(VIC['mean'])
-	ax8.fill_between(VIC.index, VIC['bottom_perc'], VIC['top_perc'], alpha=0.2, color='indigo')
-	ax8.fill_between(VIC_bar.index, VIC_bar['VIC_bottom'], VIC_bar['VIC_top'], where=z2>z1, alpha=1, color='orange')
+	ax8.plot(VIC_sw['mean'], color='red')
+	ax8.fill_between(VIC.index, VIC['bottom_perc'], VIC['top_perc'], alpha=0.3)
+	ax8.fill_between(VIC_sw.index, VIC_sw['bottom_perc'], VIC_sw['top_perc'], alpha=0.3, color='red')
+	ax8.fill_between(VIC_bar.index, VIC_bar['VIC_bottom'], VIC_bar['VIC_top'], where=z2>z1, alpha=1, color='tab:green')
 	ax8.fill_between(VIC_bar.index, VIC_bar['pers_bottom'], VIC_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax8.margins(x=0)
 	ax8.set_ylabel('VIC', fontsize='20')
 	plt.yticks(fontsize='13')
 	plt.xticks(fontsize=15)
 
-	# adds the date to the bottom of the plot
+	# # adds the date to the bottom of the plot
 	ax8.xaxis.set_major_formatter(mdates.DateFormatter('%b %d\n %H:%M'))
 
-	plt.savefig('plots/k_fold_{0}_storm.png'.format(storm), bbox_inches='tight')
+	plt.savefig('plots/{0}_storm.png'.format(storm), bbox_inches='tight')
 
 
 def main():
@@ -678,13 +724,16 @@ def main():
 	metrics_dict = sorting_metrics(results_dict, CONFIG['stations'], CONFIG['metrics'], len(CONFIG['test_storm_stime']), sw=False)
 	sw_metrics_dict = sorting_metrics(results_dict, CONFIG['stations'], CONFIG['metrics'], len(CONFIG['test_storm_stime']), sw=True)
 
+
 	# Plotting the individual storm metrics and the total metrics for each station
-	plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'])
-	plot_total_metrics(metrics_dict, CONFIG['stations'], metrics=['AUC', 'HSS'])
+	plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'], sw=False)
+	plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'], sw=True)
+	plot_total_metrics(metrics_dict, sw_metrics_dict, CONFIG['stations'], metrics=['AUC', 'HSS'])
+	plot_total_metrics(metrics_dict, sw_metrics_dict, CONFIG['stations'], metrics=['RMSE', 'BIAS'])
+
 
 	# Plotting the individual storm metrics and the total metrics for each station
 	plot_metrics(sw_metrics_dict, CONFIG['stations'], CONFIG['metrics'])
-	plot_total_metrics(sw_metrics_dict, CONFIG['stations'], metrics=['AUC', 'HSS'])
 
 	# plotting the precision recall curves and the reliability diagrams for each station
 	for station in CONFIG['stations']:
@@ -693,8 +742,8 @@ def main():
 
 	# getting the full model outputs for each testing storm
 	for i, title, stime, etime in zip(range(len(CONFIG['test_storm_stime'])), CONFIG['plot_titles'], CONFIG['test_storm_stime'], CONFIG['test_storm_etime']):		# looping through all of the relevent lists to plots the model outputs
-		plot_model_outputs(results_dict, i, CONFIG['splits'], title, 'raw')
-		plot_model_outputs(results_dict, i, CONFIG['splits'], title, 'sw')
+		plot_model_outputs(results_dict, i, CONFIG['splits'], title)
+		plot_model_outputs(results_dict, i, CONFIG['splits'], title)
 
 
 if __name__ == '__main__':

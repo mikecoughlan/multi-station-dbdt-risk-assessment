@@ -390,6 +390,7 @@ def prep_train_data(df, stime, etime, lead, recovery, time_history):
 		train1 = np.concatenate([train1, x1])
 
 	# adding all of the training arrays to the dict
+	print('Num nan in Train data: '+str(np.isnan(Train).sum()))
 	train_dict['X'] = Train
 	train_dict['crossing'] = train1
 
@@ -410,8 +411,9 @@ def main(station):
 
 	print('Entering main...')
 
-	splits = CONFIG['k_fold_splits']		# denines the number of splits
+	splits = CONFIG['splits']		# denines the number of splits
 	df, threshold = data_prep(station, CONFIG['threshold'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep function
+	print('Station: '+str(station))
 	train_dict, scaler = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'],
 											MODEL_CONFIG['time_history'])  												# calling the training data prep function
 	if not os.path.exists('multi-station-dbdt-risk-assessment/models/scalers/'):

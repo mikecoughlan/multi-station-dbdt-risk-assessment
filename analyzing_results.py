@@ -257,7 +257,7 @@ def calculating_scores(df, splits, station):
 
 def aggregate_results(length, splits, station):
   '''
-  loads the data for each station/storm/split, calculates the metrics scores,
+  Loads the data for each station/storm/split, calculates the metrics scores,
   combines them into one data frame, and gets the persistance scores for comparison.
 
   Args:
@@ -297,16 +297,17 @@ def aggregate_results(length, splits, station):
   results_dict['all_sw_storms_df'] = pd.concat([results_dict['storm_{0}'.format(i)]['sw_results'] for i in range(length)], axis=0, ignore_index=True)
 
   prec_recall, metrics, ___, ___ = calculating_scores(results_dict['all_storms_df'], splits, station)
-  sw_prec_recall, sw_metrics, ___, ___ = calculating_scores(results_dict['all_storms_df'], splits, station)
+  sw_prec_recall, sw_metrics, ___, ___ = calculating_scores(results_dict['all_sw_storms_df'], splits, station)
   results_dict['total_metrics'] = metrics
   results_dict['total_precision_recall'] = prec_recall
   results_dict['total_sw_metrics'] = sw_metrics
   results_dict['total_sw_precision_recall'] = sw_prec_recall
 
-  hss, auc, rmse = getting_persistance_results(results_dict['all_storms_df'])
+  hss, auc, rmse, bias = getting_persistance_results(results_dict['all_storms_df'])
   results_dict['pers_HSS'] = hss
   results_dict['pers_AUC'] = auc
   results_dict['pers_RMSE'] = rmse
+  results_dict['pers_BIAS'] = bias
 
   return results_dict
 
@@ -321,10 +322,10 @@ def getting_persistance_results(df):
       df (pd.dataframe): dataframe containing the persistance model and the ground truth
 
   Returns:
-      float (3): hss, auc, and rmse for persistance model
+      float (3): hss, auc, rmse, and bias for persistance model
   '''
 
-  rmse, area_uc, hss = [], [], []      # initalizing the lists for storing the individual scores
+  rmse, area_uc, hss, bias = [], [], [], []      # initalizing the lists for storing the individual scores
 
   # creating the temp df containing jsut the relevent columns and dropping the nan rows
   temp_df = df[['crossing', 'persistance']]
@@ -332,6 +333,7 @@ def getting_persistance_results(df):
 
   pred = temp_df['persistance']        # Grabbing the specific predicted data
   re = temp_df['crossing']             # and the real data for comparison
+  bias.append(pred.mean()-re.mean())
 
   # getting the precision and recall arrays and calculating the area under the curve
   prec, rec, ____ = precision_recall_curve(re, pred)
@@ -370,7 +372,7 @@ def getting_persistance_results(df):
   area_uc.append(area.round(decimals=3))
   rmse.append(np.sqrt(mean_squared_error(re,pred)))             # calculating the root mean square error
 
-  return hss, area_uc, rmse
+  return hss, area_uc, rmse, bias
 
 
 def plotting_corrs(diff_df, spread_df, params, name):

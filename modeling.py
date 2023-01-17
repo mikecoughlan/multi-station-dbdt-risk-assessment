@@ -18,6 +18,7 @@ import json
 import os
 import pickle
 import random
+import sys
 
 import numpy as np
 import pandas as pd
@@ -234,11 +235,18 @@ def main(station):
 			reset_keras(MODEL)
 		MODEL, early_stop = create_CNN_model(n_features=train_dict['X'].shape[2], loss='categorical_crossentropy', early_stop_patience=5)					# creating the model
 
+		print(MODEL.summary())
+		sys.exit()
 		# pulling the data and catagorizing it into the train-val pairs
 		xtrain = train_dict['X'][train_index]
 		xval =  train_dict['X'][val_index]
 		ytrain = train_dict['crossing'][train_index]
 		yval = train_dict['crossing'][val_index]
+
+		print('X Train input Nans: '+str(np.isnan(xtrain).sum()))
+		print('X Val input Nans: '+str(np.isnan(xval).sum()))
+		print('Y Train input Nans: '+str(np.isnan(ytrain).sum()))
+		print('Y Val input Nans: '+str(np.isnan(yval).sum()))
 
 		# if the saved model already exists, loads the pre-fit model
 		if os.path.exists('models/{0}/CNN_SW_only_split_{1}.h5'.format(station, split)):
