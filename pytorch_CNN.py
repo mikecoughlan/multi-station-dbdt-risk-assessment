@@ -162,7 +162,10 @@ def model_training(model, train_data, val_data, early_stopping_patience):
 				valLoss += criterion(val_outputs, y_val)
 				val_samples += y_val.size(0)
 
-			print(f'epoch: {epoch} / {num_epochs}, train loss = {trainLoss/train_samples: .4f}, val loss = {valLoss/val_samples: .4f}')
+			end_time = time.time()
+			epoch_training_time = end_time - start_time
+
+			print(f'epoch: {epoch} / {num_epochs}, time: {epoch_training_time:.4f}s, train loss: {trainLoss/train_samples: .4f}, val loss: {valLoss/val_samples: .4f}')
 
 
 		if early_stopper.early_stop(valLoss/val_samples):
