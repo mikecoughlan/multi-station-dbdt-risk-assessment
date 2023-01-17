@@ -1,6 +1,6 @@
 ##########################################################################################
 #
-#
+#	multi-station-dbdt-risk-assessment/preparing_SW_data.py
 #
 #
 #
@@ -11,13 +11,12 @@
 
 import random
 from datetime import datetime
-from typing import no_type_check
+import json
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from tensorflow.keras.utils import to_categorical
 
 # Data directories
 projectDir = '~/projects/ml_helio_paper/'
@@ -32,37 +31,16 @@ except:
   pass
 
 
-CONFIG = {'stations': ['VIC', 'NEW', 'OTT', 'STJ', 'ESK', 'LER', 'WNG', 'BFE'],
-			'thresholds': 0.99,	# list of thresholds to be examined.
-			'params': ['Date_UTC', 'N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
+old_params = ['Date_UTC', 'N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
 	   					'BZ_GSM', 'Vx', 'Vy', 'Vz', 'proton_density', 'T',
-	   					 'AE_INDEX', 'SZA', 'dBHt', 'B'],								# List of parameters that will be used for training.
-	   																							# Date_UTC will be removed, kept here for resons that will be evident below
-			'test_storm_stime': ['2001-03-29 09:59:00', '2001-08-29 21:59:00', '2005-05-13 21:59:00',
-								 '2005-08-30 07:59:00', '2006-12-13 09:59:00', '2010-04-03 21:59:00',
-								 '2011-08-04 06:59:00', '2015-03-15 23:59:00'],						# These are the start times for testing storms
-			'test_storm_etime': ['2001-04-02 12:00:00', '2001-09-02 00:00:00', '2005-05-17 00:00:00',
-									'2005-09-02 12:00:00', '2006-12-17 00:00:00', '2010-04-07 00:00:00',
-									'2011-08-07 09:00:00', '2015-03-19 14:00:00'],	# end times for testing storms. This will remove them from training
-			'plot_stime': ['2011-08-05 16:00', '2006-12-14 12:00', '2001-03-30 21:00'],		# start times for the plotting widow. Focuses on the main sequence of the storm
-			'plot_etime': ['2011-08-06 18:00', '2006-12-15 20:00', '2001-04-01 02:00'],		# end plotting times
-			'plot_titles': ['2011_storm', '2006_storm', '2001_storm'],						# list used for plot titles so I don't have to do it manually
-			'forecast': 30,
-			'window': 30,																	# time window over which the metrics will be calculated
-			'k_fold_splits': 100,													# amount of k fold splits to be performed. Program will create this many models
-			'lead': 12,																# lead time added to each storm minimum in SYM-H
-			'recovery':24,
-			'random_seed':42}															# recovery time added to each storm minimum in SYM-H
+	   					 'AE_INDEX', 'SZA', 'dBHt', 'B']
 
-MODEL_CONFIG = {'time_history': 30, 	# How much time history the model will use, defines the 2nd dimension of the model input array
-					'epochs': 100, 		# Maximum amount of empoch the model will run if not killed by early stopping
-					'layers': 1, 		# How many CNN layers the model will have.
-					'filters': 128, 		# Number of filters in the first CNN layer. Will decrease by half for any subsequent layers if "layers">1
-					'dropout': 0.2, 		# Dropout rate for the layers
-					'loss':'mse',
-					'initial_learning_rate': 1e-5,		# Learning rate, used as the inital learning rate if a learning rate decay function is used
-					'lr_decay_steps':230,				# If a learning ray decay funtion is used, dictates the number of decay steps
-					'early_stop_patience':5}
+# loading config and specific model config files. Using them as dictonaries
+with open('config.json', 'r') as con:
+	CONFIG = json.load(con)
+
+with open('model_config.json', 'r') as mcon:
+	MODEL_CONFIG = json.load(mcon)
 
 # setting the random seeds for reproducibility
 random.seed(CONFIG['random_seed'])
