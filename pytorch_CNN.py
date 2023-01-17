@@ -92,33 +92,36 @@ class CNN(nn.Module):
 
 	def __init__(self):
 		super(CNN, self).__init__()
-		self.conv1 = nn.Conv2d(in_channels=1, out_channels=128, kernel_size=(2,2), padding='same')
+		self.conv1 = nn.Conv2d(out_channels=128, in_channels=1, kernel_size=(2,2), padding=1)
 		self.relu = nn.ReLU()
-		self.pool = nn.MaxPool2d(kernal_size=(2, 2))
+		self.pool = nn.MaxPool2d(kernel_size=(2, 2), stride=(2,2))
 		self.flatten = nn.Flatten()
-		self.dense1 = nn.Linear(128*2*2, 128)
+		self.drop = nn.Dropout(p=0.2)
+		self.dense1 = nn.Linear(128*15*5, 128)
 		self.dense2 = nn.Linear(128, 64)
 		self.dense3 = nn.Linear(64, 2)
 
 	def forward(self, x):
-		x = self.conv1(x)
-		x = self.relu(x)
-		x = self.pool(x)
-		x = self.flatten(x)
-		x = self.dense1(x)
-		x = self.relu(x)
-		x = self.dense2(x)
-		x = self.relu(x)
-		x = self.dense3(x)
-		return x
+		x1 = self.conv1(x)
+		x2 = self.relu(x1)
+		x3 = self.pool(x2)
+		x4 = self.flatten(x3)
+		x5 = self.drop(x4)
+		x6 = self.dense1(x5)
+		x7 = self.relu(x6)
+		x8 = self.drop(x7)
+		x9 = self.dense2(x8)
+		x10 = self.relu(x9)
+		x11 = self.dense3(x10)
+		return x11
 
 
-def model_training(model, train_data, val_data, early_stopping_patience):
+def model_training(model, train_data, val_data, early_stopping_patience=3):
 
 	# loss, optimizer, and early stopping condition
 	criterion = nn.CrossEntropyLoss()
 	optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-	early_stopper = EarlyStopper(patience=3, min_delta=0)
+	early_stopper = EarlyStopper(patience=early_stopping_patience, min_delta=0)
 
 	H = {
 	"train_loss": [],
@@ -146,6 +149,7 @@ def model_training(model, train_data, val_data, early_stopping_patience):
 
 			# loading features and targets to device
 			(X, y) = (X.to(device), y.to(device))
+			X = X.reshape([X.size(0), 1, X.size(1), X.size(2)])
 
 			# forward pass
 			outputs = model(X)
@@ -168,6 +172,8 @@ def model_training(model, train_data, val_data, early_stopping_patience):
 		with torch.no_grad():
 			model.eval()
 			for (X_val, y_val) in val_data:
+
+				X_val = X_val.reshape([X_val.size(0), 1, X_val.size(1), X_val.size(2)])
 
 				(X_val, y_val) = (X_val.to(device), y_val.to(device))
 				val_outputs = model(X_val)
@@ -233,7 +239,7 @@ def main(station):
 		# if model has not been fit, fits the model
 		else:
 			model = CNN().to(device)
-			model = train_CNN(model, train_data, val_data, early_stop)
+			model = model_training(model, train_data, val_data, early_stopping_patience=3)
 			torch.save(model.state_dict(), PATH)
 
 		# defines the test dictonary for storing results
@@ -254,14 +260,14 @@ def main(station):
 
 
 if __name__ == '__main__':
-	parser = argparse.ArgumentParser()
-	parser.add_argument('station',
-						action='store',
-						choices=['OTT', 'STJ', 'VIC', 'NEW', 'ESK', 'WNG', 'LER', 'BFE', 'NGK'],
-						type=str,
-						help='input station code for the SuperMAG station to be examined.')
+	# parser = argparse.ArgumentParser()
+	# parser.add_argument('station',
+	# 					action='store',
+	# 					choices=['OTT', 'STJ', 'VIC', 'NEW', 'ESK', 'WNG', 'LER', 'BFE', 'NGK'],
+	# 					type=str,
+	# 					help='input station code for the SuperMAG station to be examined.')
 
-	args=parser.parse_args()
+	# args=parser.parse_args()
 
 	main('OTT')
 
