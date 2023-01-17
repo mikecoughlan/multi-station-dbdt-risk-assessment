@@ -150,6 +150,8 @@ def model_training(model, train_data, val_data, early_stopping_patience=3):
 			# loading features and targets to device
 			(X, y) = (X.to(device), y.to(device))
 			X = X.reshape([X.size(0), 1, X.size(1), X.size(2)])
+			if i == 0:
+				print(X[0])
 
 			# forward pass
 			outputs = model(X)
