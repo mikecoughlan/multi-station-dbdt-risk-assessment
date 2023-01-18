@@ -19,13 +19,13 @@ import pandas as pd
 import tensorflow as tf
 from sklearn.metrics import auc, mean_squared_error, precision_recall_curve
 
-# stops this program from hogging the GPU
-physical_devices = tf.config.list_physical_devices('GPU')
-try:
-  tf.config.experimental.set_memory_growth(physical_devices[0], True)
-except:
-  # Invalid device or cannot modify virtual devices once initialized.
-  pass
+# # stops this program from hogging the GPU
+# physical_devices = tf.config.list_physical_devices('GPU')
+# try:
+#   tf.config.experimental.set_memory_growth(physical_devices[0], True)
+# except:
+#   # Invalid device or cannot modify virtual devices once initialized.
+#   pass
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
@@ -51,7 +51,7 @@ def load_feather(station, i):
     pd.dataframe: dataframe contining the model predictions for the station and storm
   '''
 
-  df = pd.read_feather('outputs/{0}/version_{1}_storm_{2}.feather'.format(station, CONFIG['version'], i))
+  df = pd.read_feather(f'outputs/{station}/pytorch_test_storm_{i}.feather')
 
   # making the Date_UTC the index
   pd.to_datetime(df['Date_UTC'], format='%Y-%m-%d %H:%M:%S')
@@ -483,7 +483,7 @@ def main():
   # plotting_corrs(max_diff_df, max_spread_df, CONFIG['params'], 'max')
 
   # saving the dict with all the station metric results for plotting
-  with open('outputs/stations_results_dict.pkl', 'wb') as f:
+  with open('outputs/pytorch_test.pkl', 'wb') as f:
     pickle.dump(stations_dict, f)
 
 

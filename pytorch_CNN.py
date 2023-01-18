@@ -29,7 +29,7 @@ random.seed(CONFIG['random_seed'])
 np.random.seed(CONFIG['random_seed'])
 
 # Hyper-params
-num_epochs = 100
+num_epochs = 10
 batch_size = 32
 learning_rate = 1e-6
 
@@ -79,12 +79,13 @@ def transform_data_for_modeling(X, y=None, batch_size=32, shuffle=True):
 
 	# transofrming the numpy arrays into tensors
 	X = torch.Tensor(X)
-	y = torch.Tensor(y)
+	if y is not None:
+		y = torch.Tensor(y)
 
 	# creating the tensor datasets from the tensor objects
-	if y.empty:
+	if y == None:
 		dataset = torch.utils.data.TensorDataset(X)
-	if not y.empty:
+	if y != None:
 		dataset = torch.utils.data.TensorDataset(X,y)
 
 	dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
@@ -216,19 +217,21 @@ def making_predictions(model, test_dict, split):
 	for key in test_dict:
 
 		X_test = test_dict[key]['Y']						# defining the testing inputs
-		X_test_data = transform_data_for_modeling(Xtest, batch_size=X_test.shape[0], shuffle=False) 		# transforming the data into torch datasets
-		Xtest = Xtest.reshape((Xtest.shape[0], 1, Xtest.shape[1], Xtest.shape[2]))		# reshpaing for one channel input
-		print('Test input Nans: '+str(np.isnan(Xtest).sum()))
+		# X_test = transform_data_for_modeling(X_test_from_dict, batch_size=X_test_from_dict.shape[0], shuffle=False) 		# transforming the data into torch datasets
+		print('Test input Nans: '+str(np.isnan(X_test).sum()))
 
 		with torch.no_grad():
 			model.eval()
-			for Xtest in X_test_data:
 
-				Xtest = Xtest.reshape([Xtest.size(0), 1, Xtest.size(1), Xtest.size(2)])
+			Xtest = torch.Tensor(X_test)
+			Xtest = Xtest.reshape([Xtest.size(0), 1, Xtest.size(1), Xtest.size(2)])
 
-				Xtest = Xtest.to(device)
-				test_outputs = model(Xtest)
-				test_outputs = test_outputs.numpy()
+			Xtest = Xtest.to(device)
+			test_outputs = model(Xtest)
+			softmax = torch.nn.Softmax(dim=1)
+			test_outputs = softmax(test_outputs)
+			test_outputs.to('cpu')
+			test_outputs = test_outputs.cpu().data.numpy()
 
 		predicted = test_outputs[:,1]		# grabbing the positive node
 		predicted = pd.Series(predicted.reshape(len(predicted),))		# and then into a pd.series
@@ -281,7 +284,7 @@ def main(station):
 
 		# if the saved model already exists, loads the pre-fit model
 		if os.path.exists(PATH):
-			model = CNN(*args, **kwargs)
+			model = CNN().to(device)
 			model.load_state_dict(torch.load(PATH))
 
 		# if model has not been fit, fits the model
@@ -296,14 +299,14 @@ def main(station):
 
 	# for each storm we set the datetime index and saves the data in a CSV/feather file
 	for i in range(len(test_dict)):
-		real_df = test_dict['storm_{0}'.format(i)]['real_df']
+		real_df = test_dict[f'storm_{i}']['real_df']
 		pd.to_datetime(real_df['Date_UTC'], format='%Y-%m-%d %H:%M:%S')
 		real_df.reset_index(drop=True, inplace=True)
 
-		if not os.path.exists('outputs/{0}'.format(station)):
-			os.makedirs('outputs/{0}'.format(station))
+		if not os.path.exists(f'outputs/{station}'):
+			os.makedirs(f'outputs/{station}')
 
-		real_df.to_feather('outputs/{0}/SW_only_storm_{1}.feather'.format(station, i))
+		real_df.to_feather(f'outputs/{station}/pytorch_test_storm_{i}.feather')
 
 
 

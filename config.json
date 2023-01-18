@@ -1,5 +1,5 @@
 
-{"stations": ["BFE", "WNG", "LER", "ESK", "STJ", "OTT", "NEW", "VIC"],
+{"stations": ["OTT"],
 	"threshold": 0.99,
 	"params": ["Date_UTC", "sinMLT", "cosMLT", "B_Total", "BY_GSM", "BZ_GSM",
 				"Vx", "Vy", "Vz", "proton_density", "T", "dBHt"],
@@ -12,7 +12,7 @@
 	"plot_titles": ["March 2001", "September 2001", "May 2005", "September 2005", "December 2006", "April 2010", "August 2011", "March 2015"],
 	"forecast": 30,
 	"window": 30,
-	"splits": 100,
+	"splits": 10,
 	"lead": 12,
 	"recovery": 24,
 	"random_seed": 42,
