@@ -35,6 +35,8 @@ with open('config.json', 'r') as con:
 with open('model_config.json', 'r') as mcon:
 	MODEL_CONFIG = json.load(mcon)
 
+quiet_stime = ['1998-10-12 00:00:00', '2008-07-18 00:00:00', '2017-01-14 00:00:00']
+quiet_etime = ['1998-10-16 00:00:00', '2008-07-22 00:00:00', '2017-01-18 00:00:00']
 
 def load_stats():
 	'''
@@ -44,7 +46,7 @@ def load_stats():
 		dict: contains the metric and model results using the stations as the keys
 	'''
 
-	with open('outputs/stations_results_dict.pkl', 'rb') as f:
+	with open('outputs/quiet_time_test.pkl', 'rb') as f:
 		stations_dict = pickle.load(f)
 
 	return stations_dict
@@ -223,9 +225,9 @@ def plot_metrics(metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE'], sw=Fals
 		plt.legend(fontsize='10')
 
 		if not sw:
-			plt.savefig('plots/{0}_version_{1}.png'.format(metric, CONFIG['version']), bbox_inches='tight')
+			plt.savefig('plots/quiet_time_{0}_version_{1}.png'.format(metric, CONFIG['version']), bbox_inches='tight')
 		else:
-			plt.savefig('plots/{0}_version_{1}_sw_models.png'.format(metric, CONFIG['version']), bbox_inches='tight')
+			plt.savefig('plots/quiet_time_{0}_version_{1}_sw_models.png'.format(metric, CONFIG['version']), bbox_inches='tight')
 
 
 
@@ -283,7 +285,7 @@ def plot_total_metrics(metrics_dict, sw_metrics_dict, stations, metrics=['HSS', 
 	plt.yticks(fontsize='15')					# making the y ticks a bit bigger. They're a bit more important
 	plt.legend(fontsize='10')
 
-	plt.savefig('plots/{0}_{1}_metrics_total.png'.format(metrics[0], metrics[1]), bbox_inches='tight')
+	plt.savefig('plots/quiet_time_{0}_{1}_metrics_total.png'.format(metrics[0], metrics[1]), bbox_inches='tight')
 
 
 def prep_k_fold_results(df, splits):
@@ -350,7 +352,7 @@ def sorting_PR(results_dict, station):
 
 	PR_dict = {}
 	# 8 is the number of testing storms being examined.
-	for i in range(8):
+	for i in range(3):
 		PR_dict['storm_{0}'.format(i)] = {}
 		df = results_dict[station]['storm_{0}'.format(i)]['precision_recall']
 
@@ -401,7 +403,7 @@ def plot_precision_recall(results_dict, station, plot_titles):
 	plt.legend(fontsize='10', loc='lower center')
 	plt.xticks(fontsize='15')
 	plt.yticks(fontsize='15')
-	plt.savefig('plots/precision_recall_{0}.png'.format(station))
+	plt.savefig('plots/quiet_time_precision_recall_{0}.png'.format(station))
 
 
 def reliability_plots(results_dict, station, splits, plot_titles):
@@ -420,14 +422,15 @@ def reliability_plots(results_dict, station, splits, plot_titles):
 	storm0 = prep_k_fold_results(results_dict[station]['storm_0']['raw_results'], splits)
 	storm1 = prep_k_fold_results(results_dict[station]['storm_1']['raw_results'], splits)
 	storm2 = prep_k_fold_results(results_dict[station]['storm_2']['raw_results'], splits)
-	storm3 = prep_k_fold_results(results_dict[station]['storm_3']['raw_results'], splits)
-	storm4 = prep_k_fold_results(results_dict[station]['storm_4']['raw_results'], splits)
-	storm5 = prep_k_fold_results(results_dict[station]['storm_5']['raw_results'], splits)
-	storm6 = prep_k_fold_results(results_dict[station]['storm_6']['raw_results'], splits)
-	storm7 = prep_k_fold_results(results_dict[station]['storm_7']['raw_results'], splits)
+	# storm3 = prep_k_fold_results(results_dict[station]['storm_3']['raw_results'], splits)
+	# storm4 = prep_k_fold_results(results_dict[station]['storm_4']['raw_results'], splits)
+	# storm5 = prep_k_fold_results(results_dict[station]['storm_5']['raw_results'], splits)
+	# storm6 = prep_k_fold_results(results_dict[station]['storm_6']['raw_results'], splits)
+	# storm7 = prep_k_fold_results(results_dict[station]['storm_7']['raw_results'], splits)
 
 	# putting them together into a lsit
-	newdfs = [storm0, storm1, storm2, storm3, storm4, storm5, storm6, storm7]
+	# newdfs = [storm0, storm1, storm2, storm3, storm4, storm5, storm6, storm7]
+	newdfs = [storm0, storm1, storm2]
 
 	# concatingating the dataframes together
 	newdf = pd.concat(newdfs, axis=0)
@@ -451,7 +454,7 @@ def reliability_plots(results_dict, station, splits, plot_titles):
 	plt.xticks(fontsize=15)
 	ax.margins(x=0, y=0)
 
-	plt.savefig('plots/{0}_reliability_plot.png'.format(station))
+	plt.savefig('plots/quiet_time_{0}_reliability_plot.png'.format(station))
 
 
 def plot_model_outputs(results_dict, storm, splits, title):
@@ -582,6 +585,7 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	# tightning the plot margins
 	ax1.margins(x=0)
 	ax1.set_ylabel('BFE', fontsize='20')
+	ax1.set_ylim(0,1.15)
 	plt.legend(bbox_to_anchor=(1,1), loc='upper left', fontsize=12)
 	plt.yticks(fontsize='13')
 
@@ -601,6 +605,7 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax2.fill_between(WNG_bar.index, WNG_bar['WNG_bottom'], WNG_bar['WNG_top'], where=z2>z1, alpha=1, color='tab:green')
 	ax2.fill_between(WNG_bar.index, WNG_bar['pers_bottom'], WNG_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax2.margins(x=0)
+	ax2.set_ylim(0,1.15)
 	ax2.set_ylabel('WNG', fontsize='20')
 	plt.yticks(fontsize='13')
 	ax2.set_xticklabels([], fontsize=0)
@@ -617,6 +622,7 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax3.fill_between(LER_bar.index, LER_bar['LER_bottom'], LER_bar['LER_top'], where=z2>z1, alpha=1, color='tab:green')
 	ax3.fill_between(LER_bar.index, LER_bar['pers_bottom'], LER_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax3.margins(x=0)
+	ax3.set_ylim(0,1.15)
 	ax3.set_ylabel('LER', fontsize='20')
 	plt.yticks(fontsize='13')
 	ax3.set_xticklabels([], fontsize=0)
@@ -633,6 +639,7 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax4.fill_between(ESK_bar.index, ESK_bar['ESK_bottom'], ESK_bar['ESK_top'], where=z2>z1, alpha=1, color='tab:green')
 	ax4.fill_between(ESK_bar.index, ESK_bar['pers_bottom'], ESK_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax4.margins(x=0)
+	ax4.set_ylim(0,1.15)
 	ax4.set_ylabel('ESK', fontsize='20')
 	plt.yticks(fontsize='13')
 	plt.xticks(fontsize=15)
@@ -650,6 +657,7 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax5.fill_between(STJ_bar.index, STJ_bar['STJ_bottom'], STJ_bar['STJ_top'], where=z2>z1, alpha=1, label='ground truth', color='tab:green')
 	ax5.fill_between(STJ_bar.index, STJ_bar['pers_bottom'], STJ_bar['pers_top'], where=w2>w1, alpha=1, color='black', label='persistance')
 	ax5.margins(x=0)
+	ax5.set_ylim(0,1.15)
 	ax5.set_ylabel('STJ', fontsize='20')
 	plt.yticks(fontsize='13')
 	ax5.set_xticklabels([], fontsize=0)
@@ -666,6 +674,7 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax6.fill_between(OTT_bar.index, OTT_bar['OTT_bottom'], OTT_bar['OTT_top'], where=z2>z1, alpha=1, color='tab:green')
 	ax6.fill_between(OTT_bar.index, OTT_bar['pers_bottom'], OTT_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax6.margins(x=0)
+	ax6.set_ylim(0,1.15)
 	ax6.set_ylabel('OTT', fontsize='20')
 	plt.yticks(fontsize='13')
 	plt.xticks(fontsize=15)
@@ -683,6 +692,7 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax7.fill_between(NEW_bar.index, NEW_bar['NEW_bottom'], NEW_bar['NEW_top'], where=z2>z1, alpha=1, color='tab:green')
 	ax7.fill_between(NEW_bar.index, NEW_bar['pers_bottom'], NEW_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax7.margins(x=0)
+	ax7.set_ylim(0,1.15)
 	ax7.set_ylabel('NEW', fontsize='20')
 	plt.yticks(fontsize='13')
 	plt.xticks(fontsize=5)
@@ -700,6 +710,7 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax8.fill_between(VIC_bar.index, VIC_bar['VIC_bottom'], VIC_bar['VIC_top'], where=z2>z1, alpha=1, color='tab:green')
 	ax8.fill_between(VIC_bar.index, VIC_bar['pers_bottom'], VIC_bar['pers_top'], where=w2>w1, alpha=1, color='black')
 	ax8.margins(x=0)
+	ax8.set_ylim(0,1.15)
 	ax8.set_ylabel('VIC', fontsize='20')
 	plt.yticks(fontsize='13')
 	plt.xticks(fontsize=15)
@@ -707,7 +718,7 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	# # adds the date to the bottom of the plot
 	ax8.xaxis.set_major_formatter(mdates.DateFormatter('%b %d\n %H:%M'))
 
-	plt.savefig('plots/{0}_storm.png'.format(storm), bbox_inches='tight')
+	plt.savefig('plots/quiet_time_{0}_storm.png'.format(storm), bbox_inches='tight')
 
 
 def main():
@@ -721,27 +732,27 @@ def main():
 	results_dict = load_stats()
 
 	# sorting the metrics
-	metrics_dict = sorting_metrics(results_dict, CONFIG['stations'], CONFIG['metrics'], len(CONFIG['test_storm_stime']), sw=False)
-	sw_metrics_dict = sorting_metrics(results_dict, CONFIG['stations'], CONFIG['metrics'], len(CONFIG['test_storm_stime']), sw=True)
+	# metrics_dict = sorting_metrics(results_dict, CONFIG['stations'], CONFIG['metrics'], len(quiet_stime), sw=False)
+	# sw_metrics_dict = sorting_metrics(results_dict, CONFIG['stations'], CONFIG['metrics'], len(quiet_stime), sw=True)
+
+
+	# # Plotting the individual storm metrics and the total metrics for each station
+	# plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'], sw=False)
+	# plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'], sw=True)
+	# plot_total_metrics(metrics_dict, sw_metrics_dict, CONFIG['stations'], metrics=['AUC', 'HSS'])
+	# plot_total_metrics(metrics_dict, sw_metrics_dict, CONFIG['stations'], metrics=['RMSE', 'BIAS'])
 
 
 	# Plotting the individual storm metrics and the total metrics for each station
-	plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'], sw=False)
-	plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'], sw=True)
-	plot_total_metrics(metrics_dict, sw_metrics_dict, CONFIG['stations'], metrics=['AUC', 'HSS'])
-	plot_total_metrics(metrics_dict, sw_metrics_dict, CONFIG['stations'], metrics=['RMSE', 'BIAS'])
-
-
-	# Plotting the individual storm metrics and the total metrics for each station
-	plot_metrics(sw_metrics_dict, CONFIG['stations'], CONFIG['metrics'])
+	# plot_metrics(sw_metrics_dict, CONFIG['stations'], CONFIG['metrics'])
 
 	# plotting the precision recall curves and the reliability diagrams for each station
 	for station in CONFIG['stations']:
-		plot_precision_recall(results_dict, station, CONFIG['plot_titles'])
+	# 	plot_precision_recall(results_dict, station, CONFIG['plot_titles'])
 		reliability_plots(results_dict, station, CONFIG['splits'], CONFIG['plot_titles'])
 
 	# getting the full model outputs for each testing storm
-	for i, title, stime, etime in zip(range(len(CONFIG['test_storm_stime'])), CONFIG['plot_titles'], CONFIG['test_storm_stime'], CONFIG['test_storm_etime']):		# looping through all of the relevent lists to plots the model outputs
+	for i, title, stime, etime in zip(range(len(quiet_stime)), ['QT_1', 'QT_2', 'QT_3'], quiet_stime, quiet_etime):		# looping through all of the relevent lists to plots the model outputs
 		plot_model_outputs(results_dict, i, CONFIG['splits'], title)
 		plot_model_outputs(results_dict, i, CONFIG['splits'], title)
 

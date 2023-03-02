@@ -37,6 +37,8 @@ with open('config.json', 'r') as con:
 with open('model_config.json', 'r') as mcon:
 	MODEL_CONFIG = json.load(mcon)
 
+quiet_stime = ['1998-10-12 00:00:00', '2008-07-18 00:00:00', '2017-01-14 00:00:00']
+quiet_etime = ['1998-10-16 00:00:00', '2008-07-22 00:00:00', '2017-01-18 00:00:00']
 
 def load_feather(station, i):
 
@@ -51,7 +53,7 @@ def load_feather(station, i):
     pd.dataframe: dataframe contining the model predictions for the station and storm
   '''
 
-  df = pd.read_feather(f'outputs/{station}/pytorch_test_storm_{i}.feather')
+  df = pd.read_feather(f'outputs/{station}/quiet_time_storm_{i}.feather')
 
   # making the Date_UTC the index
   pd.to_datetime(df['Date_UTC'], format='%Y-%m-%d %H:%M:%S')
@@ -59,7 +61,7 @@ def load_feather(station, i):
   df.set_index('Date_UTC', inplace=True, drop=True)
   df.index = pd.to_datetime(df.index)
 
-  sw_df = pd.read_feather('outputs/{0}/SW_only_storm_{1}.feather'.format(station, i))
+  sw_df = pd.read_feather('outputs/{0}/quiet_time_storm_{1}.feather'.format(station, i))
 
   # making the Date_UTC the index
   pd.to_datetime(sw_df['Date_UTC'], format='%Y-%m-%d %H:%M:%S')
@@ -87,7 +89,7 @@ def getting_model_input_data():
   for station in CONFIG['stations']:
 
     # loads the testing data for this station
-    with open('../data/prepared_data/{0}_test_dict.pkl'.format(station), 'rb') as f:
+    with open('../data/prepared_data/quiet_time_{0}_test_dict.pkl'.format(station), 'rb') as f:
       test_dict = pickle.load(f)
 
     # creating a lsit of all the storm dataframes
@@ -447,7 +449,7 @@ def main():
 
   # looping through the stations and pulling together the metric results
   for station in CONFIG['stations']:
-    results_dict = aggregate_results(len(CONFIG['test_storm_stime']), CONFIG['splits'], station)
+    results_dict = aggregate_results(len(quiet_stime), CONFIG['splits'], station)
 
     # saving the resulting metric df to the staion key
     stations_dict[station] = results_dict
@@ -483,7 +485,7 @@ def main():
   # plotting_corrs(max_diff_df, max_spread_df, CONFIG['params'], 'max')
 
   # saving the dict with all the station metric results for plotting
-  with open('outputs/pytorch_test.pkl', 'wb') as f:
+  with open('outputs/quiet_time_test.pkl', 'wb') as f:
     pickle.dump(stations_dict, f)
 
 

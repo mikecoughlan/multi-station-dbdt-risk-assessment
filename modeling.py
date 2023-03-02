@@ -85,12 +85,12 @@ def loading_data_and_indicies(station):
 		train_indicies, val_indicies: dataframes containing the indicies for doing the boothstrapping
 	'''
 
-	with open('../data/prepared_data/SW_only_{0}_train_dict.pkl'.format(station), 'rb') as train:
+	with open('../data/prepared_data/{0}_train_dict.pkl'.format(station), 'rb') as train:
 		train_dict = pickle.load(train)
-	with open('../data/prepared_data/SW_only_{0}_test_dict.pkl'.format(station), 'rb') as test:
+	with open('../data/prepared_data/quiet_time_{0}_test_dict.pkl'.format(station), 'rb') as test:
 		test_dict = pickle.load(test)
-	train_indicies = pd.read_feather('../data/prepared_data/SW_only_{0}_train_indicies.feather'.format(station))
-	val_indicies = pd.read_feather('../data/prepared_data/SW_only_{0}_val_indicies.feather'.format(station))
+	train_indicies = pd.read_feather('../data/prepared_data/{0}_train_indicies.feather'.format(station))
+	val_indicies = pd.read_feather('../data/prepared_data/{0}_val_indicies.feather'.format(station))
 
 	return train_dict, test_dict, train_indicies, val_indicies
 
@@ -163,12 +163,12 @@ def fit_CNN(model, xtrain, xval, ytrain, yval, early_stop, split, station, first
 			os.makedirs('models/{0}'.format(station))
 
 		# saving the model
-		model.save('models/{0}/CNN_SW_only_split_{1}.h5'.format(station, split))
+		model.save('models/{0}/CNN_version_5_split_{1}.h5'.format(station, split))
 
 	if not first_time:
 
 		# loading the model if it has already been trained.
-		model = load_model('models/{0}/CNN_SW_only_split_{1}.h5'.format(station, split))				# loading the models if already trained
+		model = load_model('models/{0}/CNN_version_5_split_{1}.h5'.format(station, split))				# loading the models if already trained
 
 	return model
 
@@ -248,7 +248,7 @@ def main(station):
 		print('Y Val input Nans: '+str(np.isnan(yval).sum()))
 
 		# if the saved model already exists, loads the pre-fit model
-		if os.path.exists('models/{0}/CNN_SW_only_split_{1}.h5'.format(station, split)):
+		if os.path.exists('models/{0}/CNN_version_5_split_{1}.h5'.format(station, split)):
 			model = fit_CNN(MODEL, xtrain, xval, ytrain, yval, early_stop, split, station, first_time=False)
 
 		# if model has not been fit, fits the model
@@ -267,7 +267,7 @@ def main(station):
 		if not os.path.exists('outputs/{0}'.format(station)):
 			os.makedirs('outputs/{0}'.format(station))
 
-		real_df.to_feather('outputs/{0}/SW_only_storm_{1}.feather'.format(station, i))
+		real_df.to_feather('outputs/{0}/quiet_time_storm_{1}.feather'.format(station, i))
 
 
 if __name__ == '__main__':
