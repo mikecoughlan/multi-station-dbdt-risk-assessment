@@ -486,7 +486,7 @@ def main(station):
 
 	with open(f'../data/prepared_data/combined_{station}_train_dict.pkl', 'wb') as combined_train:
 		pickle.dump(train_dict, combined_train)
-	with open(f'../data/prepared_data/SW_only_{station}_test_dict.pkl', 'wb') as combined_test:
+	with open(f'../data/prepared_data/combined_{station}_test_dict.pkl', 'wb') as combined_test:
 		pickle.dump(test_dict, combined_test)
 
 	with open(f'../data/prepared_data/SW_only_{station}_train_dict.pkl', 'wb') as sw_train:
