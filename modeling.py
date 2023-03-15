@@ -30,13 +30,13 @@ from tensorflow.keras.layers import (Conv2D, Dense, Dropout, Flatten,
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.python.keras.backend import get_session
 
-# stops this program from hogging the GPU
-physical_devices = tf.config.list_physical_devices('GPU')
-try:
-    tf.config.experimental.set_memory_growth(physical_devices[0], True)
-except:
-    # Invalid device or cannot modify virtual devices once initialized.
-    pass
+# # stops this program from hogging the GPU
+# physical_devices = tf.config.list_physical_devices('GPU')
+# try:
+#     tf.config.experimental.set_memory_growth(physical_devices[0], True)
+# except:
+#     # Invalid device or cannot modify virtual devices once initialized.
+#     pass
 
 
 old_params = ['Date_UTC', 'N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
@@ -85,12 +85,12 @@ def loading_data_and_indicies(station):
 		train_indicies, val_indicies: dataframes containing the indicies for doing the boothstrapping
 	'''
 
-	with open('../data/prepared_data/{0}_train_dict.pkl'.format(station), 'rb') as train:
+	with open('../data/prepared_data/SW_only_{0}_train_dict.pkl'.format(station), 'rb') as train:
 		train_dict = pickle.load(train)
-	with open('../data/prepared_data/quiet_time_{0}_test_dict.pkl'.format(station), 'rb') as test:
+	with open('../data/prepared_data/SW_only_{0}_test_dict.pkl'.format(station), 'rb') as test:
 		test_dict = pickle.load(test)
-	train_indicies = pd.read_feather('../data/prepared_data/{0}_train_indicies.feather'.format(station))
-	val_indicies = pd.read_feather('../data/prepared_data/{0}_val_indicies.feather'.format(station))
+	train_indicies = pd.read_feather('../data/prepared_data/SW_only_{0}_train_indicies.feather'.format(station))
+	val_indicies = pd.read_feather('../data/prepared_data/SW_only_{0}_val_indicies.feather'.format(station))
 
 	return train_dict, test_dict, train_indicies, val_indicies
 
@@ -114,7 +114,7 @@ def create_CNN_model(n_features, loss='categorical_crossentropy', early_stop_pat
 	model = Sequential()						# initalizing the model
 
 	model.add(Conv2D(MODEL_CONFIG['filters'], 2, padding='same',
-									activation='relu', input_shape=(MODEL_CONFIG['time_history'], n_features, 1)))			# adding the CNN layer
+								activation='relu', input_shape=(MODEL_CONFIG['time_history'], n_features, 1)))			# adding the CNN layer
 	model.add(MaxPooling2D())
 	model.add(Flatten())							# changes dimensions of model. Not sure exactly how this works yet but improves results
 	model.add(Dense(MODEL_CONFIG['filters'], activation='relu'))		# Adding dense layers with dropout in between
@@ -163,12 +163,12 @@ def fit_CNN(model, xtrain, xval, ytrain, yval, early_stop, split, station, first
 			os.makedirs('models/{0}'.format(station))
 
 		# saving the model
-		model.save('models/{0}/CNN_version_5_split_{1}.h5'.format(station, split))
+		model.save('models/{0}/CNN_SW_only_split_{1}.h5'.format(station, split))
 
 	if not first_time:
 
 		# loading the model if it has already been trained.
-		model = load_model('models/{0}/CNN_version_5_split_{1}.h5'.format(station, split))				# loading the models if already trained
+		model = load_model('models/{0}/CNN_SW_only_split_{1}.h5'.format(station, split))				# loading the models if already trained
 
 	return model
 
@@ -195,12 +195,15 @@ def making_predictions(model, test_dict, split):
 
 		predicted = model.predict(Xtest, verbose=1)						# predicting on the testing input data
 
+		print(predicted)
+		print(predicted.shape)
+
 		predicted = tf.gather(predicted, [1], axis=1)					# grabbing the positive node
 		predicted = predicted.numpy()									# turning to a numpy array
 		predicted = pd.Series(predicted.reshape(len(predicted),))		# and then into a pd.series
 
 		df = test_dict[key]['real_df']									# calling the correct dataframe
-		df['predicted_split_{0}'.format(split)] = predicted		# and storing the results
+		df[f'predicted_split_{split}'] = predicted						# and storing the results
 		re = df['crossing']
 
 		# checking for nan data in the results
@@ -248,7 +251,7 @@ def main(station):
 		print('Y Val input Nans: '+str(np.isnan(yval).sum()))
 
 		# if the saved model already exists, loads the pre-fit model
-		if os.path.exists('models/{0}/CNN_version_5_split_{1}.h5'.format(station, split)):
+		if os.path.exists('models/{0}/CNN_SW_only_split_{1}.h5'.format(station, split)):
 			model = fit_CNN(MODEL, xtrain, xval, ytrain, yval, early_stop, split, station, first_time=False)
 
 		# if model has not been fit, fits the model
@@ -267,7 +270,7 @@ def main(station):
 		if not os.path.exists('outputs/{0}'.format(station)):
 			os.makedirs('outputs/{0}'.format(station))
 
-		real_df.to_feather('outputs/{0}/quiet_time_storm_{1}.feather'.format(station, i))
+		real_df.to_feather('outputs/{0}/SW_only_storm_{1}.feather'.format(station, i))
 
 
 if __name__ == '__main__':

@@ -293,13 +293,15 @@ def storm_extract(data, storm_list, lead, recovery, sw_only=False):
 			list: np.arrays of shape (n,2) containing a one hot encoded boolean target array
 		'''
 	storms, y_1 = list(), list()				# initalizing the lists
-	df = pd.concat(data, ignore_index=True)		# putting all of the dataframes together, makes the searching for stomrs easier
+	temp_df = pd.DataFrame()
+	df = pd.concat(data, ignore_index=True)		# putting all of the dataframes together, makes the searching for storms easier
 
 	# setting the datetime index
 	pd.to_datetime(df['Date_UTC'], format='%Y-%m-%d %H:%M:%S')
 	df.reset_index(drop=True, inplace=True)
 	df.set_index('Date_UTC', inplace=True, drop=True)
 	df.index = pd.to_datetime(df.index)
+
 
 	stime, etime = [], []					# will store the resulting time stamps here then append them to the storm time df
 
@@ -318,6 +320,7 @@ def storm_extract(data, storm_list, lead, recovery, sw_only=False):
 			storms.append(storm)			# creates a list of smaller storm time dataframes
 
 	for storm in storms:
+		temp_df = pd.concat([temp_df, storm], axis=0, ignore_index=False)
 		storm.reset_index(drop=True, inplace=True)		# resetting the storm index and simultaniously dropping the date so it doesn't get trained on
 		y_1.append(to_categorical(storm['crossing'].to_numpy(), num_classes=2))		# turns the one demensional resulting array for the storm into a
 
@@ -325,7 +328,8 @@ def storm_extract(data, storm_list, lead, recovery, sw_only=False):
 			storm.drop(['persistance', 'crossing', 'dBHt'], axis=1, inplace=True)  		# removing the target variable from the storm data so we don't train on it
 		else:
 			storm.drop(['persistance', 'crossing'], axis=1, inplace=True)  		# removing the target variable from the storm data so we don't train on it
-
+	temp_df.dropna(inplace=True)
+	print(temp_df['dBHt'].median())
 	return storms, y_1
 
 
@@ -390,7 +394,11 @@ def prep_train_data(df, stime, etime, lead, recovery, time_history, sw_only=Fals
 
 	print('Number of storms: '+str(len(storms)))
 
+	checking_median = pd.concat(storms, axis=0, ignore_index=True)
+	print('Storm median for OTT == '+str(checking_median['dBHt'].median()))
+
 	to_scale_with = pd.concat(storms, axis=0, ignore_index=True)	# finding the largest storm with which we can scale the data. Not sure this is the best way to do this
+	raise
 	scaler = StandardScaler()									# defining the type of scaler to use
 	print('Fitting scaler')
 	scaler.fit(to_scale_with)									# fitting the scaler to the longest storm
