@@ -9,9 +9,9 @@
 #
 ##########################################################################################
 
+import json
 import random
 from datetime import datetime
-import json
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -84,7 +84,7 @@ def ace_prep(name):
 		Inputs:
 		path: path to project directory
 	'''
-	df = pd.read_feather('../../data/SW/solarwind_and_indicies{0}.feather'.format(name)) 		# loading the omni data
+	df = pd.read_feather('../data/SW/solarwind_and_indicies{0}.feather'.format(name)) 		# loading the omni data
 
 	df.reset_index(drop=True, inplace=True) 		# reseting the index so its easier to work with integer indexes
 
@@ -98,7 +98,7 @@ def ace_prep(name):
 	return df
 
 
-def data_prep(name, station, thresholds, params, forecast, window, do_calc=True):
+def data_prep(name, station, params, forecast, window, do_calc=True):
 	''' Preparing the magnetometer data for the other functions and concatinating with the other loaded dfs.
 		Inputs:
 		path: the file path to the project directory
@@ -114,7 +114,7 @@ def data_prep(name, station, thresholds, params, forecast, window, do_calc=True)
 				file will be loaded.
 	'''
 	if do_calc:
-		df = pd.read_feather('../../data/supermag/{0}{1}.feather'.format(station, name)) # loading the station data.
+		df = pd.read_feather('../data/supermag/{0}{1}.feather'.format(station, name)) # loading the station data.
 		df['dN'] = df['N'].diff(1) # creates the dN column
 		df['dE'] = df['E'].diff(1) # creates the dE column
 		df['B'] = np.sqrt((df['N']**2)+((df['E']**2))) # creates the combined dB/dt column
@@ -133,7 +133,7 @@ def data_prep(name, station, thresholds, params, forecast, window, do_calc=True)
 
 		df = pd.concat([df, acedf], axis=1, ignore_index=False)	# adding on the omni data
 
-		threshold = df['dBHt'].quantile(CONFIG['thresholds'])
+		threshold = df['dBHt'].quantile(0.99)
 
 		df = df[params][1:]	# drops all features not in the features list above and drops the first row because of the derivatives
 
@@ -340,10 +340,10 @@ def main():
 	no_interp, interp5, interp15 = [], [], []
 	interp = [no_interp, interp5, interp15]
 	for station in CONFIG['stations']:
-		file_names = ['_no_interp', '_5_interp', '_15_interp']
+		file_names = ['_no_interp', '_5_interp', '']
 		print('Entering main...')
 		for file, interp_len in zip(file_names, interp):
-			df, threhsold = data_prep(file, station, CONFIG['thresholds'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep
+			df, threhsold = data_prep(file, station, CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep
 			Total, Nans = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'])
 			interp_len.append(100-((Nans/Total)*100))											# calling the training data prep function
 
@@ -351,7 +351,7 @@ def main():
 		# 						MODEL_CONFIG['time_history'], prediction_length=CONFIG['forecast']+CONFIG['window'])
 
 
-	fig = plt.figure(figsize=(20,15))
+	fig = plt.figure(figsize=(10,5))
 	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)
 
 	ax = fig.add_subplot(111)
@@ -360,11 +360,11 @@ def main():
 	plt.scatter(x,interp[0], label='No interpolation')
 	plt.scatter(x,interp[1], label='5 minutes')
 	plt.scatter(x,interp[2], label='15 minutes')
-	plt.xlabel('Stations', fontsize='40')
-	plt.ylabel('Percentage of Avalable Data', fontsize='40')
-	plt.legend(fontsize='30', loc='center right')
-	plt.xticks(ticks=x, labels=CONFIG['stations'], fontsize='28')
-	plt.yticks(fontsize='28')
+	plt.xlabel('Stations', fontsize='15')
+	plt.ylabel('Percentage of Avalable Data', fontsize='15')
+	plt.legend(fontsize='10', loc='bottom right')
+	plt.xticks(ticks=x, labels=CONFIG['stations'], fontsize='10')
+	plt.yticks(fontsize='10')
 	plt.savefig('plots/avalable_data.png')
 
 if __name__ == '__main__':

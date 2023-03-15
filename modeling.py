@@ -30,13 +30,13 @@ from tensorflow.keras.layers import (Conv2D, Dense, Dropout, Flatten,
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.python.keras.backend import get_session
 
-# stops this program from hogging the GPU
-physical_devices = tf.config.list_physical_devices('GPU')
-try:
-    tf.config.experimental.set_memory_growth(physical_devices[0], True)
-except:
-    # Invalid device or cannot modify virtual devices once initialized.
-    pass
+# # stops this program from hogging the GPU
+# physical_devices = tf.config.list_physical_devices('GPU')
+# try:
+#     tf.config.experimental.set_memory_growth(physical_devices[0], True)
+# except:
+#     # Invalid device or cannot modify virtual devices once initialized.
+#     pass
 
 
 old_params = ['Date_UTC', 'N', 'E', 'sinMLT', 'cosMLT', 'B_Total', 'BY_GSM',
@@ -114,7 +114,7 @@ def create_CNN_model(n_features, loss='categorical_crossentropy', early_stop_pat
 	model = Sequential()						# initalizing the model
 
 	model.add(Conv2D(MODEL_CONFIG['filters'], 2, padding='same',
-									activation='relu', input_shape=(MODEL_CONFIG['time_history'], n_features, 1)))			# adding the CNN layer
+								activation='relu', input_shape=(MODEL_CONFIG['time_history'], n_features, 1)))			# adding the CNN layer
 	model.add(MaxPooling2D())
 	model.add(Flatten())							# changes dimensions of model. Not sure exactly how this works yet but improves results
 	model.add(Dense(MODEL_CONFIG['filters'], activation='relu'))		# Adding dense layers with dropout in between
@@ -195,12 +195,15 @@ def making_predictions(model, test_dict, split):
 
 		predicted = model.predict(Xtest, verbose=1)						# predicting on the testing input data
 
+		print(predicted)
+		print(predicted.shape)
+
 		predicted = tf.gather(predicted, [1], axis=1)					# grabbing the positive node
 		predicted = predicted.numpy()									# turning to a numpy array
 		predicted = pd.Series(predicted.reshape(len(predicted),))		# and then into a pd.series
 
 		df = test_dict[key]['real_df']									# calling the correct dataframe
-		df['predicted_split_{0}'.format(split)] = predicted		# and storing the results
+		df[f'predicted_split_{split}'] = predicted						# and storing the results
 		re = df['crossing']
 
 		# checking for nan data in the results

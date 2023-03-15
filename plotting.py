@@ -8,6 +8,7 @@
 #
 ##########################################################################################
 
+import datetime as dt
 import json
 import pickle
 
@@ -223,9 +224,9 @@ def plot_metrics(metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE'], sw=Fals
 		plt.legend(fontsize='10')
 
 		if not sw:
-			plt.savefig('plots/{0}_version_{1}.png'.format(metric, CONFIG['version']), bbox_inches='tight')
+			plt.savefig('plots/quiet_time_{0}_version_{1}.png'.format(metric, CONFIG['version']), bbox_inches='tight')
 		else:
-			plt.savefig('plots/{0}_version_{1}_sw_models.png'.format(metric, CONFIG['version']), bbox_inches='tight')
+			plt.savefig('plots/quiet_time_{0}_version_{1}_sw_models.png'.format(metric, CONFIG['version']), bbox_inches='tight')
 
 
 
@@ -283,7 +284,7 @@ def plot_total_metrics(metrics_dict, sw_metrics_dict, stations, metrics=['HSS', 
 	plt.yticks(fontsize='15')					# making the y ticks a bit bigger. They're a bit more important
 	plt.legend(fontsize='10')
 
-	plt.savefig('plots/{0}_{1}_metrics_total.png'.format(metrics[0], metrics[1]), bbox_inches='tight')
+	plt.savefig(f'plots/lat_sorted{metrics[0]}_{metrics[1]}_metrics_total.png', bbox_inches='tight')
 
 
 def prep_k_fold_results(df, splits):
@@ -350,7 +351,7 @@ def sorting_PR(results_dict, station):
 
 	PR_dict = {}
 	# 8 is the number of testing storms being examined.
-	for i in range(8):
+	for i in range(3):
 		PR_dict['storm_{0}'.format(i)] = {}
 		df = results_dict[station]['storm_{0}'.format(i)]['precision_recall']
 
@@ -401,7 +402,7 @@ def plot_precision_recall(results_dict, station, plot_titles):
 	plt.legend(fontsize='10', loc='lower center')
 	plt.xticks(fontsize='15')
 	plt.yticks(fontsize='15')
-	plt.savefig('plots/precision_recall_{0}.png'.format(station))
+	plt.savefig('plots/quiet_time_precision_recall_{0}.png'.format(station))
 
 
 def reliability_plots(results_dict, station, splits, plot_titles):
@@ -420,14 +421,15 @@ def reliability_plots(results_dict, station, splits, plot_titles):
 	storm0 = prep_k_fold_results(results_dict[station]['storm_0']['raw_results'], splits)
 	storm1 = prep_k_fold_results(results_dict[station]['storm_1']['raw_results'], splits)
 	storm2 = prep_k_fold_results(results_dict[station]['storm_2']['raw_results'], splits)
-	storm3 = prep_k_fold_results(results_dict[station]['storm_3']['raw_results'], splits)
-	storm4 = prep_k_fold_results(results_dict[station]['storm_4']['raw_results'], splits)
-	storm5 = prep_k_fold_results(results_dict[station]['storm_5']['raw_results'], splits)
-	storm6 = prep_k_fold_results(results_dict[station]['storm_6']['raw_results'], splits)
-	storm7 = prep_k_fold_results(results_dict[station]['storm_7']['raw_results'], splits)
+	# storm3 = prep_k_fold_results(results_dict[station]['storm_3']['raw_results'], splits)
+	# storm4 = prep_k_fold_results(results_dict[station]['storm_4']['raw_results'], splits)
+	# storm5 = prep_k_fold_results(results_dict[station]['storm_5']['raw_results'], splits)
+	# storm6 = prep_k_fold_results(results_dict[station]['storm_6']['raw_results'], splits)
+	# storm7 = prep_k_fold_results(results_dict[station]['storm_7']['raw_results'], splits)
 
 	# putting them together into a lsit
-	newdfs = [storm0, storm1, storm2, storm3, storm4, storm5, storm6, storm7]
+	# newdfs = [storm0, storm1, storm2, storm3, storm4, storm5, storm6, storm7]
+	newdfs = [storm0, storm1, storm2]
 
 	# concatingating the dataframes together
 	newdf = pd.concat(newdfs, axis=0)
@@ -451,7 +453,7 @@ def reliability_plots(results_dict, station, splits, plot_titles):
 	plt.xticks(fontsize=15)
 	ax.margins(x=0, y=0)
 
-	plt.savefig('plots/{0}_reliability_plot.png'.format(station))
+	plt.savefig('plots/quiet_time_{0}_reliability_plot.png'.format(station))
 
 
 def plot_model_outputs(results_dict, storm, splits, title):
@@ -466,6 +468,24 @@ def plot_model_outputs(results_dict, storm, splits, title):
 		splits (int): number of shuffeled k-fold splits performed. Also the number of models created for each station
 		title (str): plot title
 	'''
+
+	highlighting_color = 'black'
+	if storm == 4:
+		shade_stimes = ['2006-12-14 16:00:00', '2006-12-15 04:45:00', '2006-12-15 15:15:00', '2006-12-15 21:00:00']
+		shade_etimes = ['2006-12-14 22:00:00', '2006-12-15 14:00:00', '2006-12-15 16:45:00', '2006-12-15 23:30:00']
+		ann_xpositions = ['2006-12-14 16:15:00', '2006-12-15 11:05:00', '2006-12-15 14:45:00', '2006-12-15 21:25:00']
+		ann_xpositions = [dt.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for x in ann_xpositions]
+		ann_ypositions = [0.1, 0.1, 0.05, 0.6]
+		ann_labels = ['A', 'B', 'C', 'D']
+	elif storm == 7:
+		shade_stimes = ['2015-03-17 04:05:00', '2015-03-17 08:45:00', '2015-03-17 23:00:00', '2015-03-18 05:00:00']
+		shade_etimes = ['2015-03-17 05:30:00', '2015-03-17 10:15:00', '2015-03-18 03:00:00', '2015-03-19 03:00:00']
+		ann_xpositions = ['2015-03-17 04:05:00', '2015-03-17 08:45:00', '2015-03-17 22:00:00', '2015-03-19 00:30:00']
+		ann_xpositions = [dt.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for x in ann_xpositions]
+		ann_ypositions = [0.1, 0.1, 0.4, 0.7]
+		ann_labels = ['A', 'B', 'C', 'D']
+	else:
+		shade_stimes, shade_etimes, ann_xpositions, ann_ypositions, ann_labels = [], [], [], [], []
 
 	# calling the prep_k_fold function for each threshold. Should probably find a better way to do this.
 	OTT = prep_k_fold_results(results_dict['OTT']['storm_{0}'.format(storm)]['raw_results'], splits)
@@ -485,9 +505,6 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	VIC_sw = prep_k_fold_results(results_dict['VIC']['storm_{0}'.format(storm)]['sw_results'], splits)
 	BFE_sw = prep_k_fold_results(results_dict['BFE']['storm_{0}'.format(storm)]['sw_results'], splits)
 	WNG_sw = prep_k_fold_results(results_dict['WNG']['storm_{0}'.format(storm)]['sw_results'], splits)
-
-
-
 
 
 	'''creats a new dataframe that will allow me to create a bar at the top of the
@@ -575,13 +592,19 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax1.fill_between(BFE.index, BFE['bottom_perc'], BFE['top_perc'], alpha=0.3, label='Combined $95^{th}$ perc.')
 	ax1.fill_between(BFE_sw.index, BFE_sw['bottom_perc'], BFE_sw['top_perc'], alpha=0.3, label='SW $95^{th}$ perc.', color='red')
 
-	# # creates a bar at the top of the plot indicating the positve part of the binary real data
+	# creates a bar at the top of the plot indicating the positve part of the binary real data
 	ax1.fill_between(BFE_bar.index, BFE_bar['BFE_bottom'], BFE_bar['BFE_top'], where=z2>z1, alpha=1, label='ground truth', color='tab:green')
 	ax1.fill_between(BFE_bar.index, BFE_bar['pers_bottom'], BFE_bar['pers_top'], where=w2>w1, alpha=1, color='black', label='persistance')
+
+	# Highlihting area of interest
+	for s, e, xpos, ypos, lab in zip(shade_stimes, shade_etimes, ann_xpositions, ann_ypositions, ann_labels):
+		ax1.fill_between(BFE[s:e].index, 0, 1.12, alpha=0.15, color=highlighting_color)
+		ax1.text(xpos, ypos, s=lab, color='black', fontsize=22)
 
 	# tightning the plot margins
 	ax1.margins(x=0)
 	ax1.set_ylabel('BFE', fontsize='20')
+	ax1.set_ylim(0,1.15)
 	plt.legend(bbox_to_anchor=(1,1), loc='upper left', fontsize=12)
 	plt.yticks(fontsize='13')
 
@@ -600,7 +623,10 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax2.fill_between(WNG_sw.index, WNG_sw['bottom_perc'], WNG_sw['top_perc'], alpha=0.3, label='SW only $95^{th}$ percentile', color='red')
 	ax2.fill_between(WNG_bar.index, WNG_bar['WNG_bottom'], WNG_bar['WNG_top'], where=z2>z1, alpha=1, color='tab:green')
 	ax2.fill_between(WNG_bar.index, WNG_bar['pers_bottom'], WNG_bar['pers_top'], where=w2>w1, alpha=1, color='black')
+	for s, e in zip(shade_stimes, shade_etimes):
+		ax2.fill_between(WNG[s:e].index, 0, 1.12, alpha=0.15, color=highlighting_color)
 	ax2.margins(x=0)
+	ax2.set_ylim(0,1.15)
 	ax2.set_ylabel('WNG', fontsize='20')
 	plt.yticks(fontsize='13')
 	ax2.set_xticklabels([], fontsize=0)
@@ -616,7 +642,10 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax3.fill_between(LER_sw.index, LER_sw['bottom_perc'], LER_sw['top_perc'], alpha=0.3, label='SW only $95^{th}$ percentile', color='red')
 	ax3.fill_between(LER_bar.index, LER_bar['LER_bottom'], LER_bar['LER_top'], where=z2>z1, alpha=1, color='tab:green')
 	ax3.fill_between(LER_bar.index, LER_bar['pers_bottom'], LER_bar['pers_top'], where=w2>w1, alpha=1, color='black')
+	for s, e in zip(shade_stimes, shade_etimes):
+		ax3.fill_between(LER[s:e].index, 0, 1.12, alpha=0.15, color=highlighting_color)
 	ax3.margins(x=0)
+	ax3.set_ylim(0,1.15)
 	ax3.set_ylabel('LER', fontsize='20')
 	plt.yticks(fontsize='13')
 	ax3.set_xticklabels([], fontsize=0)
@@ -632,7 +661,10 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax4.fill_between(ESK_sw.index, ESK_sw['bottom_perc'], ESK_sw['top_perc'], alpha=0.3, label='SW only $95^{th}$ percentile', color='red')
 	ax4.fill_between(ESK_bar.index, ESK_bar['ESK_bottom'], ESK_bar['ESK_top'], where=z2>z1, alpha=1, color='tab:green')
 	ax4.fill_between(ESK_bar.index, ESK_bar['pers_bottom'], ESK_bar['pers_top'], where=w2>w1, alpha=1, color='black')
+	for s, e in zip(shade_stimes, shade_etimes):
+		ax4.fill_between(ESK[s:e].index, 0, 1.12, alpha=0.15, color=highlighting_color)
 	ax4.margins(x=0)
+	ax4.set_ylim(0,1.15)
 	ax4.set_ylabel('ESK', fontsize='20')
 	plt.yticks(fontsize='13')
 	plt.xticks(fontsize=15)
@@ -649,7 +681,10 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax5.fill_between(STJ_sw.index, STJ_sw['bottom_perc'], STJ_sw['top_perc'], alpha=0.3, label='SW only $95^{th}$ percentile', color='red')
 	ax5.fill_between(STJ_bar.index, STJ_bar['STJ_bottom'], STJ_bar['STJ_top'], where=z2>z1, alpha=1, label='ground truth', color='tab:green')
 	ax5.fill_between(STJ_bar.index, STJ_bar['pers_bottom'], STJ_bar['pers_top'], where=w2>w1, alpha=1, color='black', label='persistance')
+	for s, e in zip(shade_stimes, shade_etimes):
+		ax5.fill_between(STJ[s:e].index, 0, 1.12, alpha=0.15, color=highlighting_color)
 	ax5.margins(x=0)
+	ax5.set_ylim(0,1.15)
 	ax5.set_ylabel('STJ', fontsize='20')
 	plt.yticks(fontsize='13')
 	ax5.set_xticklabels([], fontsize=0)
@@ -665,7 +700,10 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax6.fill_between(OTT_sw.index, OTT_sw['bottom_perc'], OTT_sw['top_perc'], alpha=0.3, color='red')
 	ax6.fill_between(OTT_bar.index, OTT_bar['OTT_bottom'], OTT_bar['OTT_top'], where=z2>z1, alpha=1, color='tab:green')
 	ax6.fill_between(OTT_bar.index, OTT_bar['pers_bottom'], OTT_bar['pers_top'], where=w2>w1, alpha=1, color='black')
+	for s, e in zip(shade_stimes, shade_etimes):
+		ax6.fill_between(OTT[s:e].index, 0, 1.12, alpha=0.15, color=highlighting_color)
 	ax6.margins(x=0)
+	ax6.set_ylim(0,1.15)
 	ax6.set_ylabel('OTT', fontsize='20')
 	plt.yticks(fontsize='13')
 	plt.xticks(fontsize=15)
@@ -682,7 +720,10 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax7.fill_between(NEW_sw.index, NEW_sw['bottom_perc'], NEW_sw['top_perc'], alpha=0.3, color='red')
 	ax7.fill_between(NEW_bar.index, NEW_bar['NEW_bottom'], NEW_bar['NEW_top'], where=z2>z1, alpha=1, color='tab:green')
 	ax7.fill_between(NEW_bar.index, NEW_bar['pers_bottom'], NEW_bar['pers_top'], where=w2>w1, alpha=1, color='black')
+	for s, e in zip(shade_stimes, shade_etimes):
+		ax7.fill_between(NEW[s:e].index, 0, 1.12, alpha=0.15, color=highlighting_color)
 	ax7.margins(x=0)
+	ax7.set_ylim(0,1.15)
 	ax7.set_ylabel('NEW', fontsize='20')
 	plt.yticks(fontsize='13')
 	plt.xticks(fontsize=5)
@@ -699,7 +740,10 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax8.fill_between(VIC_sw.index, VIC_sw['bottom_perc'], VIC_sw['top_perc'], alpha=0.3, color='red')
 	ax8.fill_between(VIC_bar.index, VIC_bar['VIC_bottom'], VIC_bar['VIC_top'], where=z2>z1, alpha=1, color='tab:green')
 	ax8.fill_between(VIC_bar.index, VIC_bar['pers_bottom'], VIC_bar['pers_top'], where=w2>w1, alpha=1, color='black')
+	for s, e in zip(shade_stimes, shade_etimes):
+		ax8.fill_between(VIC[s:e].index, 0, 1.12, alpha=0.15, color=highlighting_color)
 	ax8.margins(x=0)
+	ax8.set_ylim(0,1.15)
 	ax8.set_ylabel('VIC', fontsize='20')
 	plt.yticks(fontsize='13')
 	plt.xticks(fontsize=15)
@@ -707,7 +751,7 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	# # adds the date to the bottom of the plot
 	ax8.xaxis.set_major_formatter(mdates.DateFormatter('%b %d\n %H:%M'))
 
-	plt.savefig('plots/{0}_storm.png'.format(storm), bbox_inches='tight')
+	plt.savefig('plots/trying_labeling_test_{0}_storm.png'.format(storm), bbox_inches='tight')
 
 
 def main():
@@ -726,22 +770,22 @@ def main():
 
 
 	# Plotting the individual storm metrics and the total metrics for each station
-	plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'], sw=False)
-	plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'], sw=True)
+	# plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'], sw=False)
+	# plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'], sw=True)
 	plot_total_metrics(metrics_dict, sw_metrics_dict, CONFIG['stations'], metrics=['AUC', 'HSS'])
 	plot_total_metrics(metrics_dict, sw_metrics_dict, CONFIG['stations'], metrics=['RMSE', 'BIAS'])
 
 
 	# Plotting the individual storm metrics and the total metrics for each station
-	plot_metrics(sw_metrics_dict, CONFIG['stations'], CONFIG['metrics'])
+	# plot_metrics(sw_metrics_dict, CONFIG['stations'], CONFIG['metrics'])
 
 	# plotting the precision recall curves and the reliability diagrams for each station
 	for station in CONFIG['stations']:
-		plot_precision_recall(results_dict, station, CONFIG['plot_titles'])
+	# 	plot_precision_recall(results_dict, station, CONFIG['plot_titles'])
 		reliability_plots(results_dict, station, CONFIG['splits'], CONFIG['plot_titles'])
 
 	# getting the full model outputs for each testing storm
-	for i, title, stime, etime in zip(range(len(CONFIG['test_storm_stime'])), CONFIG['plot_titles'], CONFIG['test_storm_stime'], CONFIG['test_storm_etime']):		# looping through all of the relevent lists to plots the model outputs
+	for i, title in zip(range(len(CONFIG['test_storm_stime'])), CONFIG['plot_titles']):		# looping through all of the relevent lists to plots the model outputs
 		plot_model_outputs(results_dict, i, CONFIG['splits'], title)
 		plot_model_outputs(results_dict, i, CONFIG['splits'], title)
 

@@ -51,20 +51,28 @@ def load_feather(station, i):
     pd.dataframe: dataframe contining the model predictions for the station and storm
   '''
 
-  df = pd.read_feather(f'outputs/{station}/pytorch_test_storm_{i}.feather')
+  df = pd.read_feather(f'outputs/{station}/version_5_storm_{i}.feather')
 
   # making the Date_UTC the index
   pd.to_datetime(df['Date_UTC'], format='%Y-%m-%d %H:%M:%S')
   df.reset_index(drop=True, inplace=True)
   df.set_index('Date_UTC', inplace=True, drop=True)
+  if i == 4:
+    df = df[CONFIG['test_storm_stime'][i]:CONFIG['test_storm_etime'][i]]
   df.index = pd.to_datetime(df.index)
 
-  sw_df = pd.read_feather('outputs/{0}/SW_only_storm_{1}.feather'.format(station, i))
+  if station == 'BFE':
+    sw_df = pd.read_feather(f'outputs/{station}/SW_only_check_storm_{i}.feather')
+  else:
+    sw_df = pd.read_feather(f'outputs/{station}/SW_only_storm_{i}.feather')
+
 
   # making the Date_UTC the index
   pd.to_datetime(sw_df['Date_UTC'], format='%Y-%m-%d %H:%M:%S')
   sw_df.reset_index(drop=True, inplace=True)
   sw_df.set_index('Date_UTC', inplace=True, drop=True)
+  if i == 4:
+    sw_df = sw_df[CONFIG['test_storm_stime'][i]:CONFIG['test_storm_etime'][i]]
   sw_df.index = pd.to_datetime(sw_df.index)
 
   return df, sw_df
@@ -87,7 +95,7 @@ def getting_model_input_data():
   for station in CONFIG['stations']:
 
     # loads the testing data for this station
-    with open('../data/prepared_data/{0}_test_dict.pkl'.format(station), 'rb') as f:
+    with open('../data/prepared_data/quiet_time_{0}_test_dict.pkl'.format(station), 'rb') as f:
       test_dict = pickle.load(f)
 
     # creating a lsit of all the storm dataframes
@@ -144,6 +152,7 @@ def calculating_scores(df, splits, station):
                           plotting, the metric scores, the spead and difference dfs
 	'''
 
+
   # Definging the index column for saving the metric results
   index_column = ['mean', 'max' ,'min']
 
@@ -159,11 +168,13 @@ def calculating_scores(df, splits, station):
   diff_df.set_index('Date_UTC', inplace=True)
   spread_df.set_index('Date_UTC', inplace=True)
 
+
   # segmenting a df containing only the model predictions and calculating the percentiles and spread
   newdf = df[['predicted_split_{0}'.format(split) for split in range(splits)]]
   top_perc = newdf.quantile(0.975, axis=1)
   bottom_perc = newdf.quantile(0.025, axis=1)
   spread_df[station] = top_perc - bottom_perc
+
 
   # looping through the number of plots and calculating the values for each model's output
   for split in range(splits):
@@ -482,8 +493,10 @@ def main():
   # plotting_corrs(std_diff_df, std_spread_df, CONFIG['params'], 'std')
   # plotting_corrs(max_diff_df, max_spread_df, CONFIG['params'], 'max')
 
+  print(stations_dict['OTT']['storm_4']['sw_results'].shape)
+  print('THIS ONE!')
   # saving the dict with all the station metric results for plotting
-  with open('outputs/pytorch_test.pkl', 'wb') as f:
+  with open('outputs/stations_results_dict.pkl', 'wb') as f:
     pickle.dump(stations_dict, f)
 
 

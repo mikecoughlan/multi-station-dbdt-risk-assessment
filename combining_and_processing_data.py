@@ -41,6 +41,8 @@ with open('config.json', 'r') as con:
 with open('model_config.json', 'r') as mcon:
 	MODEL_CONFIG = json.load(mcon)
 
+quiet_stime = ['1998-10-12 00:00:00', '2008-07-18 00:00:00', '2017-01-14 00:00:00']
+quiet_etime = ['1998-10-16 00:00:00', '2008-07-22 00:00:00', '2017-01-18 00:00:00']
 
 # setting the random seeds for reproducibility
 random.seed(CONFIG['random_seed'])
@@ -213,7 +215,7 @@ def split_sequences(sequences, result_y1=None, n_steps=30, include_target=True):
 		return np.array(X)
 
 
-def prep_test_data(df, stime, etime, params, scaler, time_history, prediction_length):
+def prep_test_data(df, stime, etime, params, scaler, time_history, prediction_length, sw_only=False):
 	'''
 		Function that segments the selected storms for testing the models. Pulls the data out of the
 		dataframe, splits the sequences, and stores the model input arrays and the real results.
@@ -226,6 +228,7 @@ def prep_test_data(df, stime, etime, params, scaler, time_history, prediction_le
 			scaler (object): pre-fit scaler that is uesd to scale the model input data.
 			time_history (int): amount of time history used to define the 2nd dimension of the model input arrays.
 			prediction_length (int): forecast length + prediction window. Used to cut off the end of the df.
+			sw_only (bool): True if this is the solar wind only data, will drop dbht from the feature list.
 
 		Returns:
 			dict: dictonary with input arrays for each storm and real data from comparison
@@ -247,26 +250,33 @@ def prep_test_data(df, stime, etime, params, scaler, time_history, prediction_le
 
 		storm_df = storm_df[params]												# cuts out the model input parameters
 		storm_df.drop(storm_df.tail(prediction_length).index,inplace=True)		# chopping off the prediction length. Cannot predict past the avalable data
-		storm_df.drop(['Date_UTC', 'dBHt'], axis=1, inplace=True)				# don't want to train on datetime string
+
+		if sw_only:
+			storm_df.drop(['Date_UTC', 'dBHt'], axis=1, inplace=True)				# dropping columns we don't want included in training
+		else:
+			storm_df.drop(['Date_UTC'], axis=1, inplace=True)
+
 		storm_df.reset_index(inplace=True, drop=True)
+		unscaled_storm_df = storm_df.copy().to_numpy()
 		storm_df = scaler.transform(storm_df)									# scaling the model input data
 		storm_df = split_sequences(storm_df, n_steps=time_history, include_target=False)	# calling the split sequences function to create the additional demension
+		unscaled_storm_df = split_sequences(unscaled_storm_df, n_steps=time_history, include_target=False)	# calling the split sequences function to create the additional demension
 
 		print('Length of testing inputs: '+str(len(storm_df)))
 		print('Length of real storm: '+str(len(real_df)))
-		test_dict['storm_{0}'.format(i)]['Y'] = storm_df				# creating a dict element for the model input data
-		test_dict['storm_{0}'.format(i)]['real_df'] = real_df			# dict element for the real data for comparison
+		test_dict[f'storm_{i}']['unscaled_array'] = unscaled_storm_df
+		test_dict[f'storm_{i}']['Y'] = storm_df				# creating a dict element for the model input data
+		test_dict[f'storm_{i}']['real_df'] = real_df			# dict element for the real data for comparison
 		re = real_df['crossing']
 		total_ratio = pd.concat([total_ratio,re], axis=0) 				# checking the ratio of crossings to non crossings
 		ratio = re.sum(axis=0)/len(re)
 		ratios.append(ratio)
 
-	print(ratios)
-	print(total_ratio.sum(axis=0)/len(total_ratio))
+
 	return test_dict
 
 
-def storm_extract(data, storm_list, lead, recovery):
+def storm_extract(data, storm_list, lead, recovery, sw_only=False):
 	'''
 		Pulling out storms using a defined list of datetime strings, adding a lead and recovery time to it and
 		appending each storm to a list which will be later processed.
@@ -276,19 +286,22 @@ def storm_extract(data, storm_list, lead, recovery):
 			storm_list (str or list of str): datetime list of storms minimums as strings.
 			lead (int): how much time in hours to add to the beginning of the storm.
 			recovery (int): how much recovery time in hours to add to the end of the storm.
+			sw_only (bool): True if this is the solar wind only data, will drop dbht from the feature list.
 
 		Returns:
 			list: ace and supermag dataframes for storm times
 			list: np.arrays of shape (n,2) containing a one hot encoded boolean target array
 		'''
 	storms, y_1 = list(), list()				# initalizing the lists
-	df = pd.concat(data, ignore_index=True)		# putting all of the dataframes together, makes the searching for stomrs easier
+	temp_df = pd.DataFrame()
+	df = pd.concat(data, ignore_index=True)		# putting all of the dataframes together, makes the searching for storms easier
 
 	# setting the datetime index
 	pd.to_datetime(df['Date_UTC'], format='%Y-%m-%d %H:%M:%S')
 	df.reset_index(drop=True, inplace=True)
 	df.set_index('Date_UTC', inplace=True, drop=True)
 	df.index = pd.to_datetime(df.index)
+
 
 	stime, etime = [], []					# will store the resulting time stamps here then append them to the storm time df
 
@@ -307,14 +320,20 @@ def storm_extract(data, storm_list, lead, recovery):
 			storms.append(storm)			# creates a list of smaller storm time dataframes
 
 	for storm in storms:
+		temp_df = pd.concat([temp_df, storm], axis=0, ignore_index=False)
 		storm.reset_index(drop=True, inplace=True)		# resetting the storm index and simultaniously dropping the date so it doesn't get trained on
 		y_1.append(to_categorical(storm['crossing'].to_numpy(), num_classes=2))		# turns the one demensional resulting array for the storm into a
-		storm.drop(['persistance', 'crossing', 'dBHt'], axis=1, inplace=True)  		# removing the target variable from the storm data so we don't train on it
 
+		if sw_only:
+			storm.drop(['persistance', 'crossing', 'dBHt'], axis=1, inplace=True)  		# removing the target variable from the storm data so we don't train on it
+		else:
+			storm.drop(['persistance', 'crossing'], axis=1, inplace=True)  		# removing the target variable from the storm data so we don't train on it
+	temp_df.dropna(inplace=True)
+	print(temp_df['dBHt'].median())
 	return storms, y_1
 
 
-def prep_train_data(df, stime, etime, lead, recovery, time_history):
+def prep_train_data(df, stime, etime, lead, recovery, time_history, sw_only=False):
 	'''
 		Function that prepares the training data.
 
@@ -325,6 +344,7 @@ def prep_train_data(df, stime, etime, lead, recovery, time_history):
 			lead (int): how much time in hours to add to the beginning of the storm.
 			recovery (int): how much recovery time in hours to add to the end of the storm.
 			time_history (int): amount of time history used to define the 2nd dimension of the model input arrays.
+			sw_only (bool): True if this is the solar wind only data, will be included in the strom extract parameters.
 
 		Returns:
 			dict: containing model input data, target data, and any other relevent data
@@ -366,10 +386,19 @@ def prep_train_data(df, stime, etime, lead, recovery, time_history):
 	dates = storm_list['dates']				# just saving it to a variable so I can work with it a bit easier
 
 	print('\nFinding storms...')
-	storms, y_1 = storm_extract(data, dates, lead=lead, recovery=recovery)		# extracting the storms using list method
+
+	if sw_only:
+		storms, y_1 = storm_extract(data, dates, lead=lead, recovery=recovery, sw_only=True)		# extracting the storms using list method
+	else:
+		storms, y_1 = storm_extract(data, dates, lead=lead, recovery=recovery, sw_only=False)		# extracting the storms using list method
+
 	print('Number of storms: '+str(len(storms)))
 
+	checking_median = pd.concat(storms, axis=0, ignore_index=True)
+	print('Storm median for OTT == '+str(checking_median['dBHt'].median()))
+
 	to_scale_with = pd.concat(storms, axis=0, ignore_index=True)	# finding the largest storm with which we can scale the data. Not sure this is the best way to do this
+	raise
 	scaler = StandardScaler()									# defining the type of scaler to use
 	print('Fitting scaler')
 	scaler.fit(to_scale_with)									# fitting the scaler to the longest storm
@@ -412,22 +441,38 @@ def main(station):
 	print('Entering main...')
 
 	splits = CONFIG['splits']		# denines the number of splits
+
 	df, threshold = data_prep(station, CONFIG['threshold'], CONFIG['params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep function
+	sw_df, sw_threshold = data_prep(station, CONFIG['threshold'], CONFIG['sw_params'], CONFIG['forecast'], CONFIG['window'], do_calc=True)		# calling the data prep function
+
 	print('Station: '+str(station))
-	train_dict, scaler = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'],
-											MODEL_CONFIG['time_history'])  												# calling the training data prep function
+	train_dict, scaler = prep_train_data(df, quiet_stime, quiet_etime, CONFIG['lead'], CONFIG['recovery'],
+											MODEL_CONFIG['time_history'], sw_only=False)  			# calling the training data prep function
+	sw_train_dict, sw_scaler = prep_train_data(sw_df, quiet_stime, quiet_etime, CONFIG['lead'], CONFIG['recovery'],
+											MODEL_CONFIG['time_history'], sw_only=True)  			# calling the training data prep function
+
 	if not os.path.exists('multi-station-dbdt-risk-assessment/models/scalers/'):
 		os.makedirs('multi-station-dbdt-risk-assessment/models/scalers/')
 
-	with open('multi-station-dbdt-risk-assessment/models/scalers/_SW_only_{0}_standardscaler.pkl'.format(station), 'wb') as f:					# saving the scaler in case I have to run this again
+	with open(f'multi-station-dbdt-risk-assessment/models/scalers/combined_model_{station}_standardscaler.pkl', 'wb') as f:		# saving the scaler in case I have to run this again
 		pickle.dump(scaler, f)			# Goes through all the model training processes if first time going through model
+	with open(f'multi-station-dbdt-risk-assessment/models/scalers/_SW_only_{station}_standardscaler.pkl', 'wb') as g:			# saving the scaler in case I have to run this again
+		pickle.dump(sw_scaler, g)			# Goes through all the model training processes if first time going through model
 
 	train_indicies = pd.DataFrame()
 	val_indicies = pd.DataFrame()
 
 	train_dict['threshold'] = threshold
+	sw_train_dict['threshold'] = sw_threshold
+
 	test_dict = prep_test_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['params'],
-								scaler, MODEL_CONFIG['time_history'], prediction_length=CONFIG['forecast']+CONFIG['window'])						# processing the tesing data
+								scaler, MODEL_CONFIG['time_history'],
+								prediction_length=CONFIG['forecast']+CONFIG['window'], sw_only=False)	# processing the tesing data
+
+	sw_test_dict = prep_test_data(sw_df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['sw_params'],
+								sw_scaler, MODEL_CONFIG['time_history'],
+								prediction_length=CONFIG['forecast']+CONFIG['window'], sw_only=True)	# processing the tesing data
+
 
 	sss = ShuffleSplit(n_splits=splits, test_size=0.2, random_state=CONFIG['random_seed'])		# defines the lists of training and validation indicies to perform the k fold splitting
 
@@ -444,13 +489,18 @@ def main(station):
 
 
 	# saving all files for use in modeling scripts
-	train_indicies.to_feather('../data/prepared_data/SW_only_{0}_train_indicies.feather'.format(station))
-	val_indicies.to_feather('../data/prepared_data/SW_only_{0}_val_indicies.feather'.format(station))
+	train_indicies.to_feather(f'../data/prepared_data/{station}_train_indicies.feather')
+	val_indicies.to_feather(f'../data/prepared_data/{station}_val_indicies.feather')
 
-	with open('../data/prepared_data/SW_only_{0}_train_dict.pkl'.format(station), 'wb') as train:
-		pickle.dump(train_dict, train)
-	with open('../data/prepared_data/SW_only_{0}_test_dict.pkl'.format(station), 'wb') as test:
-		pickle.dump(test_dict, test)
+	with open(f'../data/prepared_data/combined_{station}_train_dict.pkl', 'wb') as combined_train:
+		pickle.dump(train_dict, combined_train)
+	with open(f'../data/prepared_data/combined_{station}_test_dict.pkl', 'wb') as combined_test:
+		pickle.dump(test_dict, combined_test)
+
+	with open(f'../data/prepared_data/SW_only_{station}_train_dict.pkl', 'wb') as sw_train:
+		pickle.dump(sw_train_dict, sw_train)
+	with open(f'../data/prepared_data/SW_only_{station}_test_dict.pkl', 'wb') as sw_test:
+		pickle.dump(sw_test_dict, sw_test)
 
 
 if __name__ == '__main__':

@@ -1,1 +1,2 @@
-{"version": 5, "splits": 10, "time_history": 30, "epochs": 10, "layers": 1, "filters": 128, "dropout": 0.2, "loss": "mse", "learning_rate": 1e-06, "lr_decay_steps": 230, "early_stop_patience": 5}
+{"version": 5, "splits": 100, "time_history": 30, "epochs": 100, "layers": 1, "filters": 128, "dropout": 0.2,
+"loss": "mse", "learning_rate": 1e-06, "lr_decay_steps": 230, "early_stop_patience": 5}
