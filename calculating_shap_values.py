@@ -1,33 +1,28 @@
 import gc
 import json
+import os
 import pickle
 import random
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 import shap
 import tensorflow as tf
 from matplotlib import colors
-from numba import cuda
 from tensorflow.keras.models import Sequential, load_model
-from tqdm import tqdm
-
-# stops this program from hogging the GPU
-physical_devices = tf.config.list_physical_devices('GPU')
-try:
-    tf.config.experimental.set_memory_growth(physical_devices[0], True)
-except:
-    # Invalid device or cannot modify virtual devices once initialized.
-    pass
-
 
 # loading config and specific model config files. Using them as dictonaries
 with open('config.json', 'r') as con:
 	CONFIG = json.load(con)
 
 
-def loading_data(station, split):
+def main(station):
+
+	splits = [2, 13, 19, 20, 39, 43, 54, 65, 72, 97]
+
+	storms = [4,7]
 
 	with open(f'../data/prepared_data/SW_only_{station}_train_dict.pkl', 'rb') as f:
 		sw_train_dict = pickle.load(f)
@@ -41,76 +36,138 @@ def loading_data(station, split):
 	with open(f'../data/prepared_data/combined_{station}_test_dict.pkl', 'rb') as b:
 		combined_test_dict = pickle.load(b)
 
-	sw_model = load_model(f'models/{station}/CNN_SW_only_split_{split}.h5')
-	combined_model = load_model(f'models/{station}/CNN_version_5_split_{split}.h5')
+	for storm in storms:
 
-	return sw_train_dict, sw_test_dict, combined_train_dict, combined_test_dict, sw_model, combined_model
+		sw_storm = sw_test_dict[f'storm_{storm}']['Y']
+		combined_storm = combined_test_dict[f'storm_{storm}']['Y']
 
-
-def calculating_shap_values(train_dict, xtest, model):
-
-	xtest = xtest.reshape((xtest.shape[0], xtest.shape[1], xtest.shape[2], 1))
-
-	# reducing the amount of the training dataset used to find the shap values
-	xtrain = train_dict['X']
-	xtrain = xtrain.reshape((xtrain.shape[0], xtrain.shape[1], xtrain.shape[2], 1))
-	background = xtrain[np.random.choice(xtrain.shape[0], 1000, replace=False)]
-
-	# attempting to use shap
-	explainer = shap.DeepExplainer(model, background)
-
-	shap_values = explainer.shap_values(xtest, check_additivity=True)
+		sw_storm = sw_storm.reshape(sw_storm.shape[0], sw_storm.shape[1], sw_storm.shape[2], 1)
+		combined_storm = combined_storm.reshape(combined_storm.shape[0], combined_storm.shape[1], combined_storm.shape[2], 1)
 
 
-	return shap_values
+		for model_split in splits:
+
+			if os.path.exists(f'outputs/shap_values/sw_values_{station}_storm_{storm}_split_{model_split}.pkl') \
+				and os.path.exists(f'outputs/shap_values/combined_values_{station}_storm_{storm}_split_{model_split}.pkl'):
+				continue
+
+			sw_model = load_model(f'models/{station}/CNN_SW_only_split_{model_split}.h5')
+			combined_model = load_model(f'models/{station}/CNN_version_5_split_{model_split}.h5')
 
 
-def combining_arrays(combined_test_dict, sw_test_dict):
+			# reducing the amount of the training dataset used to find the shap values
+			combined_xtrain = combined_train_dict['X']
+			combined_xtrain = combined_xtrain.reshape((combined_xtrain.shape[0], combined_xtrain.shape[1], combined_xtrain.shape[2], 1))
+			combined_background = combined_xtrain[np.random.choice(combined_xtrain.shape[0], 1000, replace=False)]
 
-	combined, solar = [], []
+			# attempting to use shap
+			combined_explainer = shap.DeepExplainer(combined_model, combined_background)
 
-	for comb, sw in zip(combined_test_dict.keys(), sw_test_dict.keys()):
-		combined.append(combined_test_dict[comb]['Y'])
-		solar.append(sw_test_dict[sw]['Y'])
+			sw_xtrain = sw_train_dict['X']
+			sw_xtrain = sw_xtrain.reshape((sw_xtrain.shape[0], sw_xtrain.shape[1], sw_xtrain.shape[2], 1))
+			sw_background = sw_xtrain[np.random.choice(sw_xtrain.shape[0], 1000, replace=False)]
 
-	combined_xtest = np.concatenate(combined, axis=0)
-	sw_xtest = np.concatenate(solar, axis=0)
-
-	return combined_xtest, sw_xtest
+			# attempting to use shap
+			sw_explainer = shap.DeepExplainer(sw_model, sw_background)
 
 
-def main(station):
+			combined_shap_values_check = combined_explainer.shap_values(combined_storm, check_additivity=False)
+			print('Finished Combined Shap values. Onto solar wind ones....')
+			sw_shap_values_check = sw_explainer.shap_values(sw_storm, check_additivity=False)
 
-	random.seed(42)
-	integers = []
 
-	for i in range(10):
-		random_int = random.randint(0,100)
-		integers.append(random_int)
+			with open(f'outputs/shap_values/sw_values_{station}_storm_{storm}_split_{model_split}.pkl', 'wb') as s:
+				pickle.dump(sw_shap_values_check, s)
+			with open(f'outputs/shap_values/combined_values_{station}_storm_{storm}_split_{model_split}.pkl', 'wb') as c:
+				pickle.dump(combined_shap_values_check, c)
 
-	for split in tqdm(integers):
 
-		shap_dict = {}
+			gc.collect()
 
-		sw_train_dict, sw_test_dict, combined_train_dict, combined_test_dict, sw_model, combined_model = loading_data(station, split)
 
-		combined_xtest, sw_xtest = combining_arrays(combined_test_dict, sw_test_dict)
+		solar, com = [], []
+		for split in splits:
+			with open(f'outputs/shap_values/sw_values_{station}_storm_{storm}_split_{split}.pkl', 'rb') as s:
+				sw_shap_values_check = pickle.load(s)
+			with open(f'outputs/shap_values/combined_values_{station}_storm_{storm}_split_{split}.pkl', 'rb') as c:
+				combined_shap_values_check = pickle.load(c)
 
-		combined_shap_values = calculating_shap_values(combined_train_dict, combined_xtest, combined_model)
-		sw_shap_values = calculating_shap_values(sw_train_dict, sw_xtest, sw_model)
+			solar.append(sw_shap_values_check[1])
+			com.append(combined_shap_values_check[1])
 
-		shap_dict[f'combined_split_{split}'] = combined_shap_values
-		shap_dict[f'sw_split_{split}'] = sw_shap_values
 
-		cuda.select_device(0)
-		cuda.close()
+		sw_shap_values = np.stack(solar, axis=3)
+		combined_shap_values = np.stack(com, axis=3)
 
-		del combined_shap_values, sw_shap_values
-		gc.collect()
+		sw_shap_values_check = np.mean(sw_shap_values, axis=3)
+		combined_shap_values_check = np.mean(combined_shap_values, axis=3)
 
-		with open(f'outputs/shap_values/{station}_split_{split}.pkl', 'wb') as f:
-			pickle.dump(shap_dict, f)
+		sw_storm_condensed = np.sum(sw_shap_values_check, axis=1)
+		combined_storm_condensed = np.sum(combined_shap_values_check, axis=1)
 
+		sw_storm_condensed = sw_storm_condensed.reshape(sw_storm_condensed.shape[0], sw_storm_condensed.shape[1])
+		combined_storm_condensed = combined_storm_condensed.reshape(combined_storm_condensed.shape[0], combined_storm_condensed.shape[1])
+
+
+		sw_features = ["sinMLT", "cosMLT", "B_Total", "BY_GSM",
+					"BZ_GSM", "Vx", "Vy", "Vz", "proton_density", "T"]
+		combined_features = ["N", "E", "sinMLT", "cosMLT", "B_Total", "BY_GSM",
+								"BZ_GSM", "Vx", "Vy", "Vz", "proton_density", "T",
+								"AE_INDEX", "SZA", "dBHt", "B"]
+
+
+		sw_df = pd.DataFrame(sw_storm_condensed, columns=sw_features)
+		combined_df = pd.DataFrame(combined_storm_condensed, columns=combined_features)
+
+		sw_df['Date_UTC'] = sw_test_dict[f'storm_{storm}']['real_df']['Date_UTC']
+		combined_df['Date_UTC'] = combined_test_dict[f'storm_{storm}']['real_df']['Date_UTC']
+
+		sw_df.set_index('Date_UTC', inplace=True)
+		combined_df.set_index('Date_UTC', inplace=True)
+
+
+		perc_sw_df = (sw_df.abs().div(sw_df.abs().sum(axis=1), axis=0))*100
+		perc_combined_df = (combined_df.abs().div(combined_df.abs().sum(axis=1), axis=0))*100
+
+		prec_sw_x = perc_sw_df.index
+		prec_combined_x = perc_combined_df.index
+
+		perc_sw_df.reset_index(drop=True, inplace=True)
+		perc_combined_df.reset_index(drop=True, inplace=True)
+
+		perc_sw_dict, perc_combined_dict = {}, {}
+
+		for col in perc_sw_df:
+			perc_sw_dict[col] = perc_sw_df[col].to_numpy()
+
+		for col in perc_combined_df:
+			perc_combined_dict[col] = perc_combined_df[col].to_numpy()
+
+		perc_combined_dict = {k : perc_combined_dict[k] for k in ["sinMLT", "cosMLT", "B_Total", "BY_GSM",
+								"BZ_GSM", "Vx", "Vy", "Vz", "proton_density", "T",
+								"AE_INDEX", "SZA", "N", "E", "B", "dBHt"]}
+
+
+		fig = plt.figure(figsize=(10,7))
+
+		ax1 = plt.subplot(111)
+		ax1.set_title('Solar Wind Model')
+		plt.stackplot(prec_sw_x, perc_sw_dict.values(), labels=perc_sw_dict.keys(), colors=sns.color_palette('tab20', len(perc_sw_dict.keys())))
+		plt.ylabel('Percent Contribution')
+		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
+
+		plt.savefig(f'plots/shap/sw_percent_contribution_{station}_storm_{storm}.png')
+
+
+		fig = plt.figure(figsize=(10,7))
+
+		ax2 = plt.subplot(111)
+		ax2.set_title('Combined Model')
+		plt.stackplot(prec_combined_x, perc_combined_dict.values(), labels=perc_combined_dict.keys(), colors=sns.color_palette('tab20', len(perc_combined_dict.keys())))
+		plt.ylabel('Percent Contribution')
+		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
+
+		plt.savefig(f'plots/shap/combined_percent_contribution_{station}_storm_{storm}.png')
 
 
 if __name__ == '__main__':
