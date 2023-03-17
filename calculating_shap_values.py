@@ -126,8 +126,8 @@ def main(station):
 		combined_df.set_index('Date_UTC', inplace=True)
 
 
-		perc_sw_df = (sw_df.abs().div(sw_df.abs().sum(axis=1), axis=0))*100
-		perc_combined_df = (combined_df.abs().div(combined_df.abs().sum(axis=1), axis=0))*100
+		perc_sw_df = (sw_df.div(sw_df.abs().sum(axis=1), axis=0))*100
+		perc_combined_df = (combined_df.div(combined_df.abs().sum(axis=1), axis=0))*100
 
 		prec_sw_x = perc_sw_df.index
 		prec_combined_x = perc_combined_df.index
@@ -135,15 +135,30 @@ def main(station):
 		perc_sw_df.reset_index(drop=True, inplace=True)
 		perc_combined_df.reset_index(drop=True, inplace=True)
 
-		perc_sw_dict, perc_combined_dict = {}, {}
+		print(perc_sw_df.head())
 
-		for col in perc_sw_df:
-			perc_sw_dict[col] = perc_sw_df[col].to_numpy()
+		perc_sw_pos_df = perc_sw_df.mask(perc_sw_df < 0, other=0)
+		print(perc_sw_pos_df.head())
+		perc_sw_neg_df = perc_sw_df.mask(perc_sw_df > 0, other=0)
+		perc_combined_pos_df = perc_combined_df.mask(perc_combined_df < 0, other=0)
+		perc_combined_neg_df = perc_combined_df.mask(perc_combined_df > 0, other=0)
 
-		for col in perc_combined_df:
-			perc_combined_dict[col] = perc_combined_df[col].to_numpy()
+		perc_sw_pos_dict, perc_sw_neg_dict, perc_combined_pos_dict, perc_combined_neg_dict = {}, {}, {}, {}
 
-		perc_combined_dict = {k : perc_combined_dict[k] for k in ["sinMLT", "cosMLT", "B_Total", "BY_GSM",
+		for pos, neg in zip(perc_sw_pos_df, perc_sw_neg_df):
+			perc_sw_pos_dict[pos] = perc_sw_pos_df[pos].to_numpy()
+			perc_sw_neg_dict[neg] = perc_sw_neg_df[neg].to_numpy()
+
+		for pos, neg in zip(perc_combined_pos_df, perc_combined_neg_df):
+			perc_combined_pos_dict[pos] = perc_combined_pos_df[pos].to_numpy()
+			perc_combined_neg_dict[neg] = perc_combined_neg_df[neg].to_numpy()
+
+
+		perc_combined_pos_dict = {k : perc_combined_pos_dict[k] for k in ["sinMLT", "cosMLT", "B_Total", "BY_GSM",
+								"BZ_GSM", "Vx", "Vy", "Vz", "proton_density", "T",
+								"AE_INDEX", "SZA", "N", "E", "B", "dBHt"]}
+
+		perc_combined_neg_dict = {k : perc_combined_neg_dict[k] for k in ["sinMLT", "cosMLT", "B_Total", "BY_GSM",
 								"BZ_GSM", "Vx", "Vy", "Vz", "proton_density", "T",
 								"AE_INDEX", "SZA", "N", "E", "B", "dBHt"]}
 
@@ -152,22 +167,27 @@ def main(station):
 
 		ax1 = plt.subplot(111)
 		ax1.set_title('Solar Wind Model')
-		plt.stackplot(prec_sw_x, perc_sw_dict.values(), labels=perc_sw_dict.keys(), colors=sns.color_palette('tab20', len(perc_sw_dict.keys())))
+		plt.stackplot(prec_sw_x, perc_sw_pos_dict.values(), labels=perc_sw_pos_dict.keys(), colors=sns.color_palette('tab20', len(perc_sw_pos_dict.keys())))
+		plt.stackplot(prec_sw_x, perc_sw_neg_dict.values(), colors=sns.color_palette('tab20', len(perc_sw_neg_dict.keys())))
 		plt.ylabel('Percent Contribution')
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
+		plt.axhline(0, color='black')
 
-		plt.savefig(f'plots/shap/sw_percent_contribution_{station}_storm_{storm}.png')
+		plt.savefig(f'plots/shap/sw_percent_contribution_{station}_storm_{storm}_pos_neg.png')
 
 
 		fig = plt.figure(figsize=(10,7))
 
 		ax2 = plt.subplot(111)
 		ax2.set_title('Combined Model')
-		plt.stackplot(prec_combined_x, perc_combined_dict.values(), labels=perc_combined_dict.keys(), colors=sns.color_palette('tab20', len(perc_combined_dict.keys())))
+		# plt.stackplot(prec_combined_x, perc_combined_dict.values(), labels=perc_combined_dict.keys(), colors=sns.color_palette('tab20', len(perc_combined_dict.keys())))
+		plt.stackplot(prec_combined_x, perc_combined_pos_dict.values(), labels=perc_combined_pos_dict.keys(), colors=sns.color_palette('tab20', len(perc_combined_pos_dict.keys())))
+		plt.stackplot(prec_combined_x, perc_combined_neg_dict.values(), colors=sns.color_palette('tab20', len(perc_combined_neg_dict.keys())))
 		plt.ylabel('Percent Contribution')
+		plt.axhline(0, color='black')
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
 
-		plt.savefig(f'plots/shap/combined_percent_contribution_{station}_storm_{storm}.png')
+		plt.savefig(f'plots/shap/combined_percent_contribution_{station}_storm_{storm}_pos_neg.png')
 
 
 if __name__ == '__main__':
