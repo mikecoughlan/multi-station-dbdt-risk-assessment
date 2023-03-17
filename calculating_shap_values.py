@@ -22,7 +22,7 @@ def main(station):
 
 	splits = [2, 13, 19, 20, 39, 43, 54, 65, 72, 97]
 
-	storms = [4,7]
+	storms = [7,4]
 
 	with open(f'../data/prepared_data/SW_only_{station}_train_dict.pkl', 'rb') as f:
 		sw_train_dict = pickle.load(f)
@@ -172,9 +172,10 @@ def main(station):
 
 if __name__ == '__main__':
 
-	for station in CONFIG['stations']:
+	stations = ["OTT", "BFE", "WNG", "LER", "ESK", "STJ", "NEW", "VIC"]
+	for station in stations:
 		main(station)
-		print('Finished {0}'.format(station))
+		print(f'Finished {station}')
 
 	print('It ran. Good job!')
 
