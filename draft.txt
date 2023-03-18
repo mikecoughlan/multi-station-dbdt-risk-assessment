@@ -1,0 +1,14 @@
+The exclusion of ground magnetometer data in forecasting models is often done to prevent the models from over-relying on the ground magnetometer data and becoming no
+better than a simple persistence model (citations). However, using only solar wind data from the L1 monitors as input to forecasting models presents a different issue.
+In their study on Region-to-Specific Difference (RSD), Dimmock (2020) was able to find correlations between solar wind parameters and the difference in dB/dt between
+a single magnetometer station and the average dB/dt value of nearby stations. Specifically, they found that when Bz was southward and the solar wind velocity is elevated
+RSD could reach more than 100 nT/min, meaning that the differences in the dB/dt measured at stations close to one another could differ by a similar degree. If we are
+creating forecasting models for stations close to one another using only solar wind parameters, we are only supplying the models with data that correlates to differences
+in station dB/dt values. If the differences between the station values are consistent and one of the stations is always the one with higher values ex. for geological
+reasons, the models may be able to learn this behavior and make appropriate forecasts for each station. However, Ngwira et al found that localized dB/dt can be attributed to
+magnetospheric and ionospheric processes, indicating that RSD would not always be attributable to one station consistently having higher dB/dt values. If this is the case
+we must seek to include additional information as input to the models. Here, we include ground magnetometer data from the SuperMAG network as its data overlaps well with
+the solar wind monitors, and it represents the final stange in the chain from sun to changes in teh ground mangnetic field. Future work will seek to include additional
+data from sources in between the sun and earth's surface. To evaluate how the additional ground magnetometer input parameters affect the models, we compare a model
+using only solar wind inputs to one using solar wind and ground magnetometer inputs. By using input data at time t, we predict the probability of dB/dt exceeding
+a threshold value in a time window set from t+30 to t+60.
