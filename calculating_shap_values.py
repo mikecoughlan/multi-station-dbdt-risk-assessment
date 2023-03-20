@@ -170,7 +170,7 @@ def main(station):
 		sw_greys = sns.color_palette('light:#C0C0C0', len(perc_sw_pos_dict.keys()))
 		combined_greys = sns.color_palette('light:#C0C0C0', len(perc_combined_pos_dict.keys()))
 
-		params = ['Vx']
+		params = ['dBHt', 'B']
 
 		for param in params:
 			if param in sw_features:
