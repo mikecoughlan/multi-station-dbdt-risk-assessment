@@ -160,11 +160,10 @@ def main(station):
 
 		perc_combined_neg_dict = {k : perc_combined_neg_dict[k] for k in reordered_combined_model_parameters}
 
-		sw_colors = sns.color_palette('tab20', len(perc_sw_pos_dict.keys())+4)
+		sw_colors = sns.color_palette('tab20', len(perc_sw_pos_dict.keys()))
 		combined_colors = sns.color_palette('tab20', len(perc_combined_pos_dict.keys())+4)
 
 		for i in range(4):
-			sw_colors.pop(-3)
 			combined_colors.pop(-3)
 
 		sw_greys = sns.color_palette('light:#C0C0C0', len(perc_sw_pos_dict.keys()))
@@ -186,26 +185,32 @@ def main(station):
 
 		ax1 = plt.subplot(111)
 		ax1.set_title('Solar Wind Model')
-		plt.stackplot(prec_sw_x, perc_sw_pos_dict.values(), labels=perc_sw_pos_dict.keys(), colors=sw_greys)
-		plt.stackplot(prec_sw_x, perc_sw_neg_dict.values(), colors=sw_greys)
+		# plt.stackplot(prec_sw_x, perc_sw_pos_dict.values(), labels=perc_sw_pos_dict.keys(), colors=sw_greys)
+		# plt.stackplot(prec_sw_x, perc_sw_neg_dict.values(), colors=sw_greys)
+		plt.plot(perc_sw_pos_dict['Vx'], color='blue')
+		plt.plot(perc_sw_neg_dict['Vx'], color='blue')
 		plt.ylabel('Percent Contribution')
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
 		plt.axhline(0, color='black')
 
-		plt.savefig(f'plots/shap/sw_percent_contribution_{station}_storm_{storm}_highlight_{params}.png')
+		# plt.savefig(f'plots/shap/sw_percent_contribution_{station}_storm_{storm}_highlight_{params}.png')
+		plt.savefig(f'plots/shap/sw_percent_contribution_{station}_storm_{storm}_line.png')
 
 
 		fig = plt.figure(figsize=(20,17))
 
 		ax2 = plt.subplot(111)
 		ax2.set_title('Combined Model')
-		plt.stackplot(prec_combined_x, perc_combined_pos_dict.values(), labels=perc_combined_pos_dict.keys(), colors=combined_greys)
-		plt.stackplot(prec_combined_x, perc_combined_neg_dict.values(), colors=combined_greys)
+		# plt.stackplot(prec_combined_x, perc_combined_pos_dict.values(), labels=perc_combined_pos_dict.keys(), colors=combined_greys)
+		# plt.stackplot(prec_combined_x, perc_combined_neg_dict.values(), colors=combined_greys)
+		plt.plot(perc_combined_pos_dict['Vx'], color='blue')
+		plt.plot(perc_combined_neg_dict['Vx'], color='blue')
 		plt.ylabel('Percent Contribution')
 		plt.axhline(0, color='black')
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
 
-		plt.savefig(f'plots/shap/combined_percent_contribution_{station}_storm_{storm}_highlight_{params}.png')
+		# plt.savefig(f'plots/shap/combined_percent_contribution_{station}_storm_{storm}_highlight_{params}.png')
+		plt.savefig(f'plots/shap/combined_percent_contribution_{station}_storm_{storm}_line.png')
 
 
 if __name__ == '__main__':
