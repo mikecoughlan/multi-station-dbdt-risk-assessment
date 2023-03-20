@@ -5,18 +5,15 @@ was able to find correlations between solar wind parameters and differences in d
 average dB/dt value of nearby stations. Specifically, they found that when Bz was southward and the solar wind velocity is elevated
 RSD could reach more than 100 nT/min, meaning that the differences in the dB/dt measured at stations close to one another could differ
 by a similar magnitude during storm time conditions. In creating forecasting models for stations close to one another using only solar
-wind parameters, we are only supplying the models with data that correlates high RSD. If the differences between the station
-values are consistent and one of the stations is always the one with higher values ex. for geological reasons
-
-(internal magnetotelluric currents
-can contribute up to tens of percent to the total dB/dt value measured at a magnetometer station (Dimmock discussion section)),
-
-the models may be able
+wind parameters, we are supplying the models with data that correlates high RSD. If the differences between the station
+values are consistent with one of the stations always having higher values the models may be able
 to learn this behavior and make appropriate forecasts for each station. However, Ngwira et al found that localized dB/dt can be attributed to
 magnetospheric and ionospheric processes, indicating that RSD cannot always be attributable to one station consistently having higher
 dB/dt values. If this is the case we must seek to include additional inputs to forecasting models to caputre localized information. Here,
 we include ground magnetometer data from the SuperMAG network as its data overlaps well with the solar wind monitors, and it represents the
-final stage in the chain from sun to ground mangnetic field fluctuations. Future work will seek to include additional data from sources in
-between the sun and earth's surface. To evaluate how the additional ground magnetometer input parameters affect the models, we compare a
-model using only solar wind inputs to one using solar wind and ground magnetometer inputs. By using input data at time t, we predict the
-probability of dB/dt exceeding a threshold value in a time window set from t+30 to t+60.
+final stage in the chain from sun to ground mangnetic field fluctuations. Additionally, the use of ground magnetometer data will allow the models
+to capture the second order effect of internal magnetotelluric currents, which in some area that have been studied can contribute up to tens
+of percent to the total dB/dt value measured at a magnetometer station (Tanskanen et al 2001). Future work will seek to include additional data
+from sources in between the sun and earth's surface. To evaluate how the additional ground magnetometer input parameters affect the models,
+we compare a model using only solar wind inputs to one using solar wind and ground magnetometer inputs. By using input data at time t, we
+predict the probability of dB/dt exceeding a threshold value in a time window set from t+30 to t+60.
