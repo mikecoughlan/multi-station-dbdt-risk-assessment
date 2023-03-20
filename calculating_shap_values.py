@@ -163,7 +163,7 @@ def main(station):
 								"AE_INDEX", "SZA", "N", "E", "B", "dBHt"]}
 
 
-		fig = plt.figure(figsize=(10,7))
+		fig = plt.figure(figsize=(20,17))
 
 		ax1 = plt.subplot(111)
 		ax1.set_title('Solar Wind Model')
@@ -176,7 +176,7 @@ def main(station):
 		plt.savefig(f'plots/shap/sw_percent_contribution_{station}_storm_{storm}_pos_neg.png')
 
 
-		fig = plt.figure(figsize=(10,7))
+		fig = plt.figure(figsize=(20,17))
 
 		ax2 = plt.subplot(111)
 		ax2.set_title('Combined Model')

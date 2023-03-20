@@ -85,12 +85,12 @@ def loading_data_and_indicies(station):
 		train_indicies, val_indicies: dataframes containing the indicies for doing the boothstrapping
 	'''
 
-	with open('../data/prepared_data/SW_only_{0}_train_dict.pkl'.format(station), 'rb') as train:
+	with open('../data/prepared_data/combined_{0}_train_dict.pkl'.format(station), 'rb') as train:
 		train_dict = pickle.load(train)
-	with open('../data/prepared_data/SW_only_{0}_test_dict.pkl'.format(station), 'rb') as test:
+	with open('../data/prepared_data/combined_{0}_test_dict.pkl'.format(station), 'rb') as test:
 		test_dict = pickle.load(test)
-	train_indicies = pd.read_feather('../data/prepared_data/SW_only_{0}_train_indicies.feather'.format(station))
-	val_indicies = pd.read_feather('../data/prepared_data/SW_only_{0}_val_indicies.feather'.format(station))
+	train_indicies = pd.read_feather('../data/prepared_data/{0}_train_indicies.feather'.format(station))
+	val_indicies = pd.read_feather('../data/prepared_data/{0}_val_indicies.feather'.format(station))
 
 	return train_dict, test_dict, train_indicies, val_indicies
 
@@ -163,12 +163,12 @@ def fit_CNN(model, xtrain, xval, ytrain, yval, early_stop, split, station, first
 			os.makedirs('models/{0}'.format(station))
 
 		# saving the model
-		model.save('models/{0}/CNN_SW_only_split_{1}.h5'.format(station, split))
+		model.save('models/{0}/CNN_version_5_split_{1}.h5'.format(station, split))
 
 	if not first_time:
 
 		# loading the model if it has already been trained.
-		model = load_model('models/{0}/CNN_SW_only_split_{1}.h5'.format(station, split))				# loading the models if already trained
+		model = load_model('models/{0}/CNN_version_5_split_{1}.h5'.format(station, split))				# loading the models if already trained
 
 	return model
 
@@ -192,6 +192,9 @@ def making_predictions(model, test_dict, split):
 		Xtest = test_dict[key]['Y']							# defining the testing inputs
 		Xtest = Xtest.reshape((Xtest.shape[0], Xtest.shape[1], Xtest.shape[2], 1))			# reshpaing for one channel input
 		print('Test input Nans: '+str(np.isnan(Xtest).sum()))
+		print(np.isnan(Xtest.sum(axis=1).sum(axis=1)))
+		print(np.isnan(Xtest.sum(axis=1).sum(axis=1)).shape)
+		nans = pd.Series(np.isnan(Xtest.sum(axis=1).sum(axis=1)).reshape(len(np.isnan(Xtest.sum(axis=1).sum(axis=1))),))
 
 		predicted = model.predict(Xtest, verbose=1)						# predicting on the testing input data
 
@@ -202,8 +205,13 @@ def making_predictions(model, test_dict, split):
 		predicted = predicted.numpy()									# turning to a numpy array
 		predicted = pd.Series(predicted.reshape(len(predicted),))		# and then into a pd.series
 
+		temp_df = pd.DataFrame({'predicted':predicted,
+								'nans':nans})
+
+		temp_df.loc[temp_df['nans'] == True, 'predicted'] = np.nan
+
 		df = test_dict[key]['real_df']									# calling the correct dataframe
-		df[f'predicted_split_{split}'] = predicted						# and storing the results
+		df[f'predicted_split_{split}'] = temp_df['predicted']						# and storing the results
 		re = df['crossing']
 
 		# checking for nan data in the results
@@ -251,7 +259,7 @@ def main(station):
 		print('Y Val input Nans: '+str(np.isnan(yval).sum()))
 
 		# if the saved model already exists, loads the pre-fit model
-		if os.path.exists('models/{0}/CNN_SW_only_split_{1}.h5'.format(station, split)):
+		if os.path.exists('models/{0}/CNN_version_5_split_{1}.h5'.format(station, split)):
 			model = fit_CNN(MODEL, xtrain, xval, ytrain, yval, early_stop, split, station, first_time=False)
 
 		# if model has not been fit, fits the model
@@ -270,7 +278,7 @@ def main(station):
 		if not os.path.exists('outputs/{0}'.format(station)):
 			os.makedirs('outputs/{0}'.format(station))
 
-		real_df.to_feather('outputs/{0}/SW_only_storm_{1}.feather'.format(station, i))
+		real_df.to_feather('outputs/{0}/version_5_storm_{1}.feather'.format(station, i))
 
 
 if __name__ == '__main__':

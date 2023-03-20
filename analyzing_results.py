@@ -61,10 +61,7 @@ def load_feather(station, i):
     df = df[CONFIG['test_storm_stime'][i]:CONFIG['test_storm_etime'][i]]
   df.index = pd.to_datetime(df.index)
 
-  if station == 'BFE':
-    sw_df = pd.read_feather(f'outputs/{station}/SW_only_check_storm_{i}.feather')
-  else:
-    sw_df = pd.read_feather(f'outputs/{station}/SW_only_storm_{i}.feather')
+  sw_df = pd.read_feather(f'outputs/{station}/SW_only_storm_{i}.feather')
 
 
   # making the Date_UTC the index

@@ -445,7 +445,7 @@ def reliability_plots(results_dict, station, splits, plot_titles):
 	plt.plot([0, 1], [0, 1], 'xkcd:black')
 
 	# calculating the calibration curve
-	true, pred = calibration_curve(newdf['cross'], newdf['mean'], n_bins=10)
+	true, pred = calibration_curve(newdf['cross'], newdf['mean'], n_bins=100)
 	plt.plot(pred, true, marker='.')
 	ax.set_xlabel('Predicted Probability', fontsize=20)
 	ax.set_ylabel('Observed Probability', fontsize=20)
@@ -453,7 +453,7 @@ def reliability_plots(results_dict, station, splits, plot_titles):
 	plt.xticks(fontsize=15)
 	ax.margins(x=0, y=0)
 
-	plt.savefig('plots/quiet_time_{0}_reliability_plot.png'.format(station))
+	plt.savefig('plots/{0}_reliability_plot.png'.format(station))
 
 
 def plot_model_outputs(results_dict, storm, splits, title):
