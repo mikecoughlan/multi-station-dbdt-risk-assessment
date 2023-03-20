@@ -282,7 +282,7 @@ def plot_total_metrics(metrics_dict, sw_metrics_dict, stations, metrics=['HSS', 
 	plt.ylabel('Score', fontsize='15')			# adding the y axis label
 	plt.xticks(X, stations, fontsize='15')		# adding ticks to the points on the x axis
 	plt.yticks(fontsize='15')					# making the y ticks a bit bigger. They're a bit more important
-	plt.legend(fontsize='10')
+	plt.legend(bbox_to_anchor=(1,1), loc='upper left', fontsize='10')
 
 	plt.savefig(f'plots/lat_sorted{metrics[0]}_{metrics[1]}_metrics_total.png', bbox_inches='tight')
 

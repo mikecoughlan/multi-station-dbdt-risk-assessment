@@ -153,41 +153,59 @@ def main(station):
 			perc_combined_pos_dict[pos] = perc_combined_pos_df[pos].to_numpy()
 			perc_combined_neg_dict[neg] = perc_combined_neg_df[neg].to_numpy()
 
+		reordered_combined_model_parameters = ["sinMLT", "cosMLT", "B_Total", "BY_GSM",
+												"BZ_GSM", "Vx", "Vy", "Vz", "proton_density", "T",
+												"AE_INDEX", "SZA", "N", "E", "B", "dBHt"]
+		perc_combined_pos_dict = {k : perc_combined_pos_dict[k] for k in reordered_combined_model_parameters}
 
-		perc_combined_pos_dict = {k : perc_combined_pos_dict[k] for k in ["sinMLT", "cosMLT", "B_Total", "BY_GSM",
-								"BZ_GSM", "Vx", "Vy", "Vz", "proton_density", "T",
-								"AE_INDEX", "SZA", "N", "E", "B", "dBHt"]}
+		perc_combined_neg_dict = {k : perc_combined_neg_dict[k] for k in reordered_combined_model_parameters}
 
-		perc_combined_neg_dict = {k : perc_combined_neg_dict[k] for k in ["sinMLT", "cosMLT", "B_Total", "BY_GSM",
-								"BZ_GSM", "Vx", "Vy", "Vz", "proton_density", "T",
-								"AE_INDEX", "SZA", "N", "E", "B", "dBHt"]}
+		sw_colors = sns.color_palette('tab20', len(perc_sw_pos_dict.keys())+4)
+		combined_colors = sns.color_palette('tab20', len(perc_combined_pos_dict.keys())+4)
+
+		for i in range(4):
+			sw_colors.pop(-3)
+			combined_colors.pop(-3)
+
+		sw_greys = sns.color_palette('light:#C0C0C0', len(perc_sw_pos_dict.keys()))
+		combined_greys = sns.color_palette('light:#C0C0C0', len(perc_combined_pos_dict.keys()))
+
+		params = ['Vx']
+
+		for param in params:
+			if param in sw_features:
+
+				sw_param_location = sw_features.index(param)
+				sw_greys[sw_param_location] = sw_colors[sw_param_location]
+
+			combined_param_location = reordered_combined_model_parameters.index(param)
+			combined_greys[combined_param_location] = combined_colors[combined_param_location]
 
 
 		fig = plt.figure(figsize=(20,17))
 
 		ax1 = plt.subplot(111)
 		ax1.set_title('Solar Wind Model')
-		plt.stackplot(prec_sw_x, perc_sw_pos_dict.values(), labels=perc_sw_pos_dict.keys(), colors=sns.color_palette('tab20', len(perc_sw_pos_dict.keys())))
-		plt.stackplot(prec_sw_x, perc_sw_neg_dict.values(), colors=sns.color_palette('tab20', len(perc_sw_neg_dict.keys())))
+		plt.stackplot(prec_sw_x, perc_sw_pos_dict.values(), labels=perc_sw_pos_dict.keys(), colors=sw_greys)
+		plt.stackplot(prec_sw_x, perc_sw_neg_dict.values(), colors=sw_greys)
 		plt.ylabel('Percent Contribution')
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
 		plt.axhline(0, color='black')
 
-		plt.savefig(f'plots/shap/sw_percent_contribution_{station}_storm_{storm}_pos_neg.png')
+		plt.savefig(f'plots/shap/sw_percent_contribution_{station}_storm_{storm}_highlight_{params}.png')
 
 
 		fig = plt.figure(figsize=(20,17))
 
 		ax2 = plt.subplot(111)
 		ax2.set_title('Combined Model')
-		# plt.stackplot(prec_combined_x, perc_combined_dict.values(), labels=perc_combined_dict.keys(), colors=sns.color_palette('tab20', len(perc_combined_dict.keys())))
-		plt.stackplot(prec_combined_x, perc_combined_pos_dict.values(), labels=perc_combined_pos_dict.keys(), colors=sns.color_palette('tab20', len(perc_combined_pos_dict.keys())))
-		plt.stackplot(prec_combined_x, perc_combined_neg_dict.values(), colors=sns.color_palette('tab20', len(perc_combined_neg_dict.keys())))
+		plt.stackplot(prec_combined_x, perc_combined_pos_dict.values(), labels=perc_combined_pos_dict.keys(), colors=combined_greys)
+		plt.stackplot(prec_combined_x, perc_combined_neg_dict.values(), colors=combined_greys)
 		plt.ylabel('Percent Contribution')
 		plt.axhline(0, color='black')
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
 
-		plt.savefig(f'plots/shap/combined_percent_contribution_{station}_storm_{storm}_pos_neg.png')
+		plt.savefig(f'plots/shap/combined_percent_contribution_{station}_storm_{storm}_highlight_{params}.png')
 
 
 if __name__ == '__main__':
