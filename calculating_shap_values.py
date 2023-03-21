@@ -137,6 +137,9 @@ def main(station):
 
 		print(perc_sw_df.head())
 
+		perc_sw_rolling = perc_sw_df.rolling(10).mean()
+		perc_combined_rolling = perc_combined_df.rolling(10).mean()
+
 		perc_sw_pos_df = perc_sw_df.mask(perc_sw_df < 0, other=0)
 		print(perc_sw_pos_df.head())
 		perc_sw_neg_df = perc_sw_df.mask(perc_sw_df > 0, other=0)
@@ -156,6 +159,7 @@ def main(station):
 		reordered_combined_model_parameters = ["sinMLT", "cosMLT", "B_Total", "BY_GSM",
 												"BZ_GSM", "Vx", "Vy", "Vz", "proton_density", "T",
 												"AE_INDEX", "SZA", "N", "E", "B", "dBHt"]
+
 		perc_combined_pos_dict = {k : perc_combined_pos_dict[k] for k in reordered_combined_model_parameters}
 
 		perc_combined_neg_dict = {k : perc_combined_neg_dict[k] for k in reordered_combined_model_parameters}
@@ -169,7 +173,7 @@ def main(station):
 		sw_greys = sns.color_palette('light:#C0C0C0', len(perc_sw_pos_dict.keys()))
 		combined_greys = sns.color_palette('light:#C0C0C0', len(perc_combined_pos_dict.keys()))
 
-		params = ['dBHt', 'B']
+		params = ['dBHt', 'Vx', 'B']
 
 		for param in params:
 			if param in sw_features:
@@ -185,32 +189,54 @@ def main(station):
 
 		ax1 = plt.subplot(111)
 		ax1.set_title('Solar Wind Model')
-		# plt.stackplot(prec_sw_x, perc_sw_pos_dict.values(), labels=perc_sw_pos_dict.keys(), colors=sw_greys)
-		# plt.stackplot(prec_sw_x, perc_sw_neg_dict.values(), colors=sw_greys)
-		plt.plot(perc_sw_pos_dict['Vx'], color='blue')
-		plt.plot(perc_sw_neg_dict['Vx'], color='blue')
+		plt.stackplot(prec_sw_x, perc_sw_pos_dict.values(), labels=perc_sw_pos_dict.keys(), colors=sw_greys)
+		plt.stackplot(prec_sw_x, perc_sw_neg_dict.values(), colors=sw_greys)
 		plt.ylabel('Percent Contribution')
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
 		plt.axhline(0, color='black')
 
-		# plt.savefig(f'plots/shap/sw_percent_contribution_{station}_storm_{storm}_highlight_{params}.png')
-		plt.savefig(f'plots/shap/sw_percent_contribution_{station}_storm_{storm}_line.png')
+		plt.savefig(f'plots/shap/rolling_sw_percent_contribution_{station}_storm_{storm}_highlight_{params}.png')
 
 
 		fig = plt.figure(figsize=(20,17))
 
 		ax2 = plt.subplot(111)
 		ax2.set_title('Combined Model')
-		# plt.stackplot(prec_combined_x, perc_combined_pos_dict.values(), labels=perc_combined_pos_dict.keys(), colors=combined_greys)
-		# plt.stackplot(prec_combined_x, perc_combined_neg_dict.values(), colors=combined_greys)
-		plt.plot(perc_combined_pos_dict['Vx'], color='blue')
-		plt.plot(perc_combined_neg_dict['Vx'], color='blue')
+		plt.stackplot(prec_combined_x, perc_combined_pos_dict.values(), labels=perc_combined_pos_dict.keys(), colors=combined_greys)
+		plt.stackplot(prec_combined_x, perc_combined_neg_dict.values(), colors=combined_greys)
 		plt.ylabel('Percent Contribution')
 		plt.axhline(0, color='black')
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
 
-		# plt.savefig(f'plots/shap/combined_percent_contribution_{station}_storm_{storm}_highlight_{params}.png')
-		plt.savefig(f'plots/shap/combined_percent_contribution_{station}_storm_{storm}_line.png')
+		plt.savefig(f'plots/shap/rolling_combined_percent_contribution_{station}_storm_{storm}_highlight_{params}.png')
+
+
+
+		fig = plt.figure(figsize=(20,17))
+
+		ax1 = plt.subplot(111)
+		ax1.set_title('Solar Wind Model')
+		for param in params:
+			if param in perc_sw_rolling.columns:
+				plt.plot(perc_sw_rolling[param], label=param)
+		plt.ylabel('Percent Contribution')
+		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
+		plt.axhline(0, color='black')
+
+		plt.savefig(f'plots/shap/rolling_line_sw_percent_contribution_{station}_storm_{storm}.png')
+
+
+		fig = plt.figure(figsize=(20,17))
+
+		ax2 = plt.subplot(111)
+		ax2.set_title('Combined Model')
+		for param in params:
+			plt.plot(perc_combined_rolling[param], label=param)
+		plt.ylabel('Percent Contribution')
+		plt.axhline(0, color='black')
+		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
+
+		plt.savefig(f'plots/shap/rolling_line_combined_percent_contribution_{station}_storm_{storm}.png')
 
 
 if __name__ == '__main__':
