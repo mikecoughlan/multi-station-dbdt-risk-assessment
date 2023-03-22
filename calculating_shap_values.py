@@ -12,6 +12,7 @@ import shap
 import tensorflow as tf
 from matplotlib import colors
 from tensorflow.keras.models import Sequential, load_model
+from tqdm import tqdm
 
 # loading config and specific model config files. Using them as dictonaries
 with open('config.json', 'r') as con:
@@ -22,7 +23,7 @@ def main(station):
 
 	splits = [2, 13, 19, 20, 39, 43, 54, 65, 72, 97]
 
-	storms = [7,4]
+	storms = [0,1,2,3,4,5,6,7]
 
 	with open(f'../data/prepared_data/SW_only_{station}_train_dict.pkl', 'rb') as f:
 		sw_train_dict = pickle.load(f)
@@ -36,7 +37,7 @@ def main(station):
 	with open(f'../data/prepared_data/combined_{station}_test_dict.pkl', 'rb') as b:
 		combined_test_dict = pickle.load(b)
 
-	for storm in storms:
+	for storm in tqdm(storms):
 
 		sw_storm = sw_test_dict[f'storm_{storm}']['Y']
 		combined_storm = combined_test_dict[f'storm_{storm}']['Y']
@@ -189,26 +190,28 @@ def main(station):
 
 		ax1 = plt.subplot(111)
 		ax1.set_title('Solar Wind Model')
-		plt.stackplot(prec_sw_x, perc_sw_pos_dict.values(), labels=perc_sw_pos_dict.keys(), colors=sw_greys)
-		plt.stackplot(prec_sw_x, perc_sw_neg_dict.values(), colors=sw_greys)
+		plt.stackplot(prec_sw_x, perc_sw_pos_dict.values(), labels=perc_sw_pos_dict.keys(), colors=sw_greys, alpha=0.1)
+		plt.stackplot(prec_sw_x, perc_sw_neg_dict.values(), colors=sw_greys, alpha=0.1)
 		plt.ylabel('Percent Contribution')
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
 		plt.axhline(0, color='black')
 
-		plt.savefig(f'plots/shap/rolling_sw_percent_contribution_{station}_storm_{storm}_highlight_{params}.png')
-
+		plt.show()
+		# plt.savefig(f'plots/shap/sw_percent_contribution_{station}_storm_{storm}_highlight_{params}.png')
+		raise
 
 		fig = plt.figure(figsize=(20,17))
 
 		ax2 = plt.subplot(111)
 		ax2.set_title('Combined Model')
-		plt.stackplot(prec_combined_x, perc_combined_pos_dict.values(), labels=perc_combined_pos_dict.keys(), colors=combined_greys)
-		plt.stackplot(prec_combined_x, perc_combined_neg_dict.values(), colors=combined_greys)
+		plt.stackplot(prec_combined_x, perc_combined_pos_dict.values(), labels=perc_combined_pos_dict.keys(), colors=combined_greys, alpha=0)
+		plt.stackplot(prec_combined_x, perc_combined_neg_dict.values(), colors=combined_greys, alpha=0)
 		plt.ylabel('Percent Contribution')
 		plt.axhline(0, color='black')
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
 
-		plt.savefig(f'plots/shap/rolling_combined_percent_contribution_{station}_storm_{storm}_highlight_{params}.png')
+		plt.show()
+		# plt.savefig(f'plots/shap/combined_percent_contribution_{station}_storm_{storm}_highlight_{params}.png')
 
 
 
@@ -243,6 +246,7 @@ if __name__ == '__main__':
 
 	stations = ["OTT", "BFE", "WNG", "LER", "ESK", "STJ", "NEW", "VIC"]
 	for station in stations:
+		print(f'Starting {station}....')
 		main(station)
 		print(f'Finished {station}')
 
