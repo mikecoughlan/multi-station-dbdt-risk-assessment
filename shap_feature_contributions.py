@@ -18,7 +18,7 @@ splits = [2, 13, 19, 20, 39, 43, 54, 65, 72, 97]
 
 stations = ["OTT", "BFE", "WNG", "LER", "ESK", "STJ", "NEW", "VIC"]
 
-storms = [7,4]
+storms = [0,1,2,3,4,5,6,7]
 
 sw_features = ["sinMLT", "cosMLT", "B_Total", "BY_GSM",
 					"BZ_GSM", "Vx", "Vy", "Vz", "proton_density", "T"]
@@ -90,6 +90,9 @@ for station in stations:
 				combined_feats[combined_features[i]] = pd.concat([combined_feats[combined_features[i]], temp], axis=0, ignore_index=True)
 
 combined_feats['dBHt'] = combined_feats['dBHt'][combined_feats['dBHt']['input']<300]
+combined_feats['B'] = combined_feats['B'][combined_feats['B']['input']<1750]
+combined_feats['proton_density'] = combined_feats['proton_density'][combined_feats['proton_density']['input']<50]
+combined_feats['E'] = combined_feats['E'][combined_feats['E']['input']>-395]
 
 plotting_feature = ["B_Total", "BY_GSM", "BZ_GSM", "Vx", "proton_density", "N", "E",  "dBHt", "B"]
 
@@ -102,15 +105,17 @@ for i, feat in enumerate(plotting_feature):
 
 	plt.title(feat)
 	plt.hist2d(x=combined_feats[feat]['input'], y=combined_feats[feat]['cont'], bins=100, norm=colors.LogNorm(), cmap='magma')
+	plt.axhline(0, color='black', linestyle='--')
 	# plt.scatter(x=combined_feats[feat]['input'], y=combined_feats[feat]['cont'], s=2, color='black')
 	plt.colorbar()
-	plt.ylim(-10,25)
+	plt.ylim(-15,30)
 	plt.ylabel('contribution')
 
 plt.savefig('plots/shap/combined_feature_contributions.png')
 
 
 sw_plotting_feature = ["B_Total", "BY_GSM", "BZ_GSM", "Vy", "Vx", "proton_density"]
+sw_feats['proton_density'] = sw_feats['proton_density'][sw_feats['proton_density']['input']<50]
 
 fig = plt.figure(figsize=(25,15))
 
@@ -121,9 +126,10 @@ for i, feat in enumerate(sw_plotting_feature):
 
 	plt.title(feat)
 	plt.hist2d(x=sw_feats[feat]['input'], y=sw_feats[feat]['cont'], bins=100, norm=colors.LogNorm(), cmap='magma')
+	plt.axhline(0, color='black', linestyle='--')
 	# plt.scatter(x=sw_feats[feat]['input'], y=sw_feats[feat]['cont'], s=2, color='black')
 	plt.colorbar()
-	plt.ylim(-10,25)
+	plt.ylim(-15,30)
 	plt.ylabel('contribution')
 
 plt.savefig('plots/shap/sw_feature_contributions.png')

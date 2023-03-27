@@ -126,7 +126,6 @@ def main(station):
 		sw_df.set_index('Date_UTC', inplace=True)
 		combined_df.set_index('Date_UTC', inplace=True)
 
-
 		perc_sw_df = (sw_df.div(sw_df.abs().sum(axis=1), axis=0))*100
 		perc_combined_df = (combined_df.div(combined_df.abs().sum(axis=1), axis=0))*100
 
@@ -136,13 +135,10 @@ def main(station):
 		perc_sw_df.reset_index(drop=True, inplace=True)
 		perc_combined_df.reset_index(drop=True, inplace=True)
 
-		print(perc_sw_df.head())
-
 		perc_sw_rolling = perc_sw_df.rolling(10).mean()
 		perc_combined_rolling = perc_combined_df.rolling(10).mean()
 
 		perc_sw_pos_df = perc_sw_df.mask(perc_sw_df < 0, other=0)
-		print(perc_sw_pos_df.head())
 		perc_sw_neg_df = perc_sw_df.mask(perc_sw_df > 0, other=0)
 		perc_combined_pos_df = perc_combined_df.mask(perc_combined_df < 0, other=0)
 		perc_combined_neg_df = perc_combined_df.mask(perc_combined_df > 0, other=0)
@@ -160,6 +156,14 @@ def main(station):
 		reordered_combined_model_parameters = ["sinMLT", "cosMLT", "B_Total", "BY_GSM",
 												"BZ_GSM", "Vx", "Vy", "Vz", "proton_density", "T",
 												"AE_INDEX", "SZA", "N", "E", "B", "dBHt"]
+
+		perc_combined_rolling = perc_combined_rolling[reordered_combined_model_parameters]
+
+		perc_combined_rolling['Date_UTC'] = prec_combined_x
+		perc_sw_rolling['Date_UTC'] = prec_sw_x
+
+		perc_combined_rolling.set_index('Date_UTC', inplace=True)
+		perc_sw_rolling.set_index('Date_UTC', inplace=True)
 
 		perc_combined_pos_dict = {k : perc_combined_pos_dict[k] for k in reordered_combined_model_parameters}
 
@@ -185,33 +189,52 @@ def main(station):
 			combined_param_location = reordered_combined_model_parameters.index(param)
 			combined_greys[combined_param_location] = combined_colors[combined_param_location]
 
+		results_df = combined_test_dict[f'storm_{storm}']['real_df']
+		results_df.set_index('Date_UTC', inplace=True)
+
+		line_max = np.max([perc_sw_rolling.max().max(), perc_combined_rolling.max().max()])
+		bar = pd.DataFrame({'stack_bottom':results_df['crossing']*100,
+							'stack_top':results_df['crossing']*106,
+							'line_bottom':results_df['crossing']*(line_max+(0.05*line_max)),
+							'line_top':results_df['crossing']*(line_max+(0.1*line_max))},
+							index=results_df.index)
+
+		bar.index=pd.to_datetime(bar.index)
+
+		w1=np.array(bar['stack_bottom'])
+		w2=np.array(bar['stack_top'])
+
+		z1=np.array(bar['line_bottom'])
+		z2=np.array(bar['line_top'])
+
 
 		fig = plt.figure(figsize=(20,17))
 
 		ax1 = plt.subplot(111)
 		ax1.set_title('Solar Wind Model')
-		plt.stackplot(prec_sw_x, perc_sw_pos_dict.values(), labels=perc_sw_pos_dict.keys(), colors=sw_greys, alpha=0.1)
-		plt.stackplot(prec_sw_x, perc_sw_neg_dict.values(), colors=sw_greys, alpha=0.1)
+		plt.stackplot(prec_sw_x, perc_sw_pos_dict.values(), labels=perc_sw_pos_dict.keys(), colors=sw_colors, alpha=1)
+		plt.stackplot(prec_sw_x, perc_sw_neg_dict.values(), colors=sw_colors, alpha=1)
+		ax1.fill_between(bar.index, bar['stack_bottom'], bar['stack_top'], where=w2>w1, alpha=1, label='ground truth', color='black')
 		plt.ylabel('Percent Contribution')
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
 		plt.axhline(0, color='black')
 
-		plt.show()
-		# plt.savefig(f'plots/shap/sw_percent_contribution_{station}_storm_{storm}_highlight_{params}.png')
-		raise
+		# plt.show()
+		plt.savefig(f'plots/shap/sw_percent_contribution_{station}_storm_{storm}.png')
 
 		fig = plt.figure(figsize=(20,17))
 
 		ax2 = plt.subplot(111)
 		ax2.set_title('Combined Model')
-		plt.stackplot(prec_combined_x, perc_combined_pos_dict.values(), labels=perc_combined_pos_dict.keys(), colors=combined_greys, alpha=0)
-		plt.stackplot(prec_combined_x, perc_combined_neg_dict.values(), colors=combined_greys, alpha=0)
+		plt.stackplot(prec_combined_x, perc_combined_pos_dict.values(), labels=perc_combined_pos_dict.keys(), colors=combined_colors, alpha=1)
+		plt.stackplot(prec_combined_x, perc_combined_neg_dict.values(), colors=combined_colors, alpha=1)
+		ax2.fill_between(bar.index, bar['stack_bottom'], bar['stack_top'], where=w2>w1, alpha=1, label='ground truth', color='black')
 		plt.ylabel('Percent Contribution')
 		plt.axhline(0, color='black')
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
 
-		plt.show()
-		# plt.savefig(f'plots/shap/combined_percent_contribution_{station}_storm_{storm}_highlight_{params}.png')
+		# plt.show()
+		plt.savefig(f'plots/shap/combined_percent_contribution_{station}_storm_{storm}.png')
 
 
 
@@ -219,9 +242,9 @@ def main(station):
 
 		ax1 = plt.subplot(111)
 		ax1.set_title('Solar Wind Model')
-		for param in params:
-			if param in perc_sw_rolling.columns:
-				plt.plot(perc_sw_rolling[param], label=param)
+		for param, color in zip(perc_sw_rolling.columns, sw_greys):
+			plt.plot(perc_sw_rolling[param], label=param, color=color)
+		ax1.fill_between(bar.index, bar['line_bottom'], bar['line_top'], where=z2>z1, alpha=1, label='ground truth', color='black')
 		plt.ylabel('Percent Contribution')
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
 		plt.axhline(0, color='black')
@@ -233,8 +256,9 @@ def main(station):
 
 		ax2 = plt.subplot(111)
 		ax2.set_title('Combined Model')
-		for param in params:
-			plt.plot(perc_combined_rolling[param], label=param)
+		for param, color in zip(perc_combined_rolling.columns, combined_greys):
+			plt.plot(perc_combined_rolling[param], label=param, color=color)
+		ax2.fill_between(bar.index, bar['line_bottom'], bar['line_top'], where=z2>z1, alpha=1, label='ground truth', color='black')
 		plt.ylabel('Percent Contribution')
 		plt.axhline(0, color='black')
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
