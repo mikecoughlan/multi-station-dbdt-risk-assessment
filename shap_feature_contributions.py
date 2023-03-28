@@ -103,7 +103,7 @@ for i, feat in enumerate(plotting_feature):
 	combined_feats[feat].dropna(inplace=True)
 	ax = plt.subplot(3,3,i+1)
 
-	plt.title(feat)
+	plt.title(feat, fontsize=15)
 	plt.hist2d(x=combined_feats[feat]['input'], y=combined_feats[feat]['cont'], bins=100, norm=colors.LogNorm(), cmap='magma')
 	plt.axhline(0, color='black', linestyle='--')
 	# plt.scatter(x=combined_feats[feat]['input'], y=combined_feats[feat]['cont'], s=2, color='black')
@@ -124,7 +124,7 @@ for i, feat in enumerate(sw_plotting_feature):
 	sw_feats[feat].dropna(inplace=True)
 	ax = plt.subplot(2,3,i+1)
 
-	plt.title(feat)
+	plt.title(feat, fontsize=15)
 	plt.hist2d(x=sw_feats[feat]['input'], y=sw_feats[feat]['cont'], bins=100, norm=colors.LogNorm(), cmap='magma')
 	plt.axhline(0, color='black', linestyle='--')
 	# plt.scatter(x=sw_feats[feat]['input'], y=sw_feats[feat]['cont'], s=2, color='black')
