@@ -108,7 +108,7 @@ for i, feat in enumerate(plotting_feature):
 	plt.axhline(0, color='black', linestyle='--')
 	# plt.scatter(x=combined_feats[feat]['input'], y=combined_feats[feat]['cont'], s=2, color='black')
 	plt.colorbar()
-	# plt.ylim(-15,30)
+	plt.ylim(-10,25)
 	plt.ylabel('contribution')
 
 plt.savefig('plots/shap/combined_feature_contributions.png')
@@ -129,7 +129,7 @@ for i, feat in enumerate(sw_plotting_feature):
 	plt.axhline(0, color='black', linestyle='--')
 	# plt.scatter(x=sw_feats[feat]['input'], y=sw_feats[feat]['cont'], s=2, color='black')
 	plt.colorbar()
-	# plt.ylim(-15,30)
+	plt.ylim(-10,25)
 	plt.ylabel('contribution')
 
 plt.savefig('plots/shap/sw_feature_contributions.png')

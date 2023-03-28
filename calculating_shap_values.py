@@ -283,7 +283,7 @@ def main(station):
 		fig = plt.figure(figsize=(20,17))
 
 		ax1 = plt.subplot(211)
-		ax1.set_title(f'{station} Solar Wind Model')
+		ax1.set_title(f'{station} Solar Wind Model', fontsize=20)
 		ax1.fill_between(bar.index, bar['stack_bottom'], bar['stack_top'], where=w2>w1, alpha=1, label='ground truth', color='black')
 
 		highlighting_color = 'black'
@@ -299,7 +299,7 @@ def main(station):
 		plt.axhline(0, color='black')
 
 		ax2 = plt.subplot(212, sharex=ax1)
-		ax2.set_title(f'{station} Combined Model')
+		ax2.set_title(f'{station} Combined Model', fontsize=20)
 		ax2.fill_between(bar.index, bar['stack_bottom'], bar['stack_top'], where=w2>w1, alpha=1, label='ground truth', color='black')
 		# Highlihting area of interest
 		for s, e, xpos, ypos, lab in zip(shade_stimes, shade_etimes, ann_xpositions, ann_ypositions, ann_labels):
