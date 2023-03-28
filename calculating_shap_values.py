@@ -1,3 +1,4 @@
+import datetime as dt
 import gc
 import json
 import os
@@ -38,6 +39,24 @@ def main(station):
 		combined_test_dict = pickle.load(b)
 
 	for storm in tqdm(storms):
+
+		if storm == 4:
+			shade_stimes = ['2006-12-14 16:00:00', '2006-12-15 04:45:00', '2006-12-15 15:15:00', '2006-12-15 21:00:00']
+			shade_etimes = ['2006-12-14 22:00:00', '2006-12-15 14:00:00', '2006-12-15 16:45:00', '2006-12-15 23:30:00']
+			ann_xpositions = ['2006-12-14 18:30:00', '2006-12-15 09:00:00', '2006-12-15 15:25:00', '2006-12-15 21:45:00']
+			ann_xpositions = [dt.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for x in ann_xpositions]
+			ann_ypositions = [-95, -95, -95, -95]
+			ann_labels = ['A', 'B', 'C', 'D']
+		elif storm == 7:
+			shade_stimes = ['2015-03-17 04:05:00', '2015-03-17 08:45:00', '2015-03-17 23:00:00', '2015-03-18 05:00:00']
+			shade_etimes = ['2015-03-17 05:30:00', '2015-03-17 10:15:00', '2015-03-18 03:00:00', '2015-03-19 03:00:00']
+			ann_xpositions = ['2015-03-17 04:05:00', '2015-03-17 08:50:00', '2015-03-18 00:30:00', '2015-03-18 14:30:00']
+			ann_xpositions = [dt.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') for x in ann_xpositions]
+			ann_ypositions = [-95, -95, -95, -95]
+			ann_labels = ['A', 'B', 'C', 'D']
+		else:
+			shade_stimes, shade_etimes, ann_xpositions, ann_ypositions, ann_labels = [], [], [], [], []
+
 
 		sw_storm = sw_test_dict[f'storm_{storm}']['Y']
 		combined_storm = combined_test_dict[f'storm_{storm}']['Y']
@@ -192,11 +211,18 @@ def main(station):
 		results_df = combined_test_dict[f'storm_{storm}']['real_df']
 		results_df.set_index('Date_UTC', inplace=True)
 
-		line_max = np.max([perc_sw_rolling.max().max(), perc_combined_rolling.max().max()])
-		bar = pd.DataFrame({'stack_bottom':results_df['crossing']*100,
+		sw_line_max = perc_sw_rolling.max().max()
+		combined_line_max = perc_combined_rolling.max().max()
+
+		sw_line_min = perc_sw_rolling.min().min()
+		combined_line_min = perc_combined_rolling.min().min()
+
+		bar = pd.DataFrame({'stack_bottom':results_df['crossing']*101,
 							'stack_top':results_df['crossing']*106,
-							'line_bottom':results_df['crossing']*(line_max+(0.05*line_max)),
-							'line_top':results_df['crossing']*(line_max+(0.1*line_max))},
+							'sw_line_bottom':results_df['crossing']*(sw_line_max),
+							'sw_line_top':results_df['crossing']*(sw_line_max+(0.05*sw_line_max)),
+							'combined_line_bottom':results_df['crossing']*(combined_line_max),
+							'combined_line_top':results_df['crossing']*(combined_line_max+(0.05*combined_line_max))},
 							index=results_df.index)
 
 		bar.index=pd.to_datetime(bar.index)
@@ -204,17 +230,27 @@ def main(station):
 		w1=np.array(bar['stack_bottom'])
 		w2=np.array(bar['stack_top'])
 
-		z1=np.array(bar['line_bottom'])
-		z2=np.array(bar['line_top'])
+		sw_z1=np.array(bar['sw_line_bottom'])
+		sw_z2=np.array(bar['sw_line_top'])
+
+		com_z1=np.array(bar['combined_line_bottom'])
+		com_z2=np.array(bar['combined_line_top'])
 
 
 		fig = plt.figure(figsize=(20,17))
 
 		ax1 = plt.subplot(111)
 		ax1.set_title('Solar Wind Model')
+		ax1.fill_between(bar.index, bar['stack_bottom'], bar['stack_top'], where=w2>w1, alpha=1, label='ground truth', color='black')
+
+		highlighting_color = 'black'
+		# Highlihting area of interest
+		for s, e, xpos, ypos, lab in zip(shade_stimes, shade_etimes, ann_xpositions, ann_ypositions, ann_labels):
+			ax1.fill_between(bar[s:e].index, -100, 106, alpha=0.15, color=highlighting_color)
+			ax1.text(xpos, ypos, s=lab, color='black', fontsize=22)
 		plt.stackplot(prec_sw_x, perc_sw_pos_dict.values(), labels=perc_sw_pos_dict.keys(), colors=sw_colors, alpha=1)
 		plt.stackplot(prec_sw_x, perc_sw_neg_dict.values(), colors=sw_colors, alpha=1)
-		ax1.fill_between(bar.index, bar['stack_bottom'], bar['stack_top'], where=w2>w1, alpha=1, label='ground truth', color='black')
+		ax1.margins(x=0, y=0)
 		plt.ylabel('Percent Contribution')
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
 		plt.axhline(0, color='black')
@@ -226,9 +262,14 @@ def main(station):
 
 		ax2 = plt.subplot(111)
 		ax2.set_title('Combined Model')
+		ax2.fill_between(bar.index, bar['stack_bottom'], bar['stack_top'], where=w2>w1, alpha=1, label='ground truth', color='black')
+		# Highlihting area of interest
+		for s, e, xpos, ypos, lab in zip(shade_stimes, shade_etimes, ann_xpositions, ann_ypositions, ann_labels):
+			ax2.fill_between(bar[s:e].index, -100, 106, alpha=0.15, color=highlighting_color)
+			ax2.text(xpos, ypos, s=lab, color='black', fontsize=22)
 		plt.stackplot(prec_combined_x, perc_combined_pos_dict.values(), labels=perc_combined_pos_dict.keys(), colors=combined_colors, alpha=1)
 		plt.stackplot(prec_combined_x, perc_combined_neg_dict.values(), colors=combined_colors, alpha=1)
-		ax2.fill_between(bar.index, bar['stack_bottom'], bar['stack_top'], where=w2>w1, alpha=1, label='ground truth', color='black')
+		ax2.margins(x=0, y=0)
 		plt.ylabel('Percent Contribution')
 		plt.axhline(0, color='black')
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
@@ -238,13 +279,54 @@ def main(station):
 
 
 
+
+		fig = plt.figure(figsize=(20,17))
+
+		ax1 = plt.subplot(211)
+		ax1.set_title(f'{station} Solar Wind Model')
+		ax1.fill_between(bar.index, bar['stack_bottom'], bar['stack_top'], where=w2>w1, alpha=1, label='ground truth', color='black')
+
+		highlighting_color = 'black'
+		# Highlihting area of interest
+		for s, e, xpos, ypos, lab in zip(shade_stimes, shade_etimes, ann_xpositions, ann_ypositions, ann_labels):
+			ax1.fill_between(bar[s:e].index, -100, 106, alpha=0.15, color=highlighting_color)
+			ax1.text(xpos, ypos, s=lab, color='black', fontsize=22)
+		plt.stackplot(prec_sw_x, perc_sw_pos_dict.values(), labels=perc_sw_pos_dict.keys(), colors=sw_colors, alpha=1)
+		plt.stackplot(prec_sw_x, perc_sw_neg_dict.values(), colors=sw_colors, alpha=1)
+		ax1.margins(x=0, y=0)
+		plt.ylabel('Percent Contribution')
+		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
+		plt.axhline(0, color='black')
+
+		ax2 = plt.subplot(212, sharex=ax1)
+		ax2.set_title(f'{station} Combined Model')
+		ax2.fill_between(bar.index, bar['stack_bottom'], bar['stack_top'], where=w2>w1, alpha=1, label='ground truth', color='black')
+		# Highlihting area of interest
+		for s, e, xpos, ypos, lab in zip(shade_stimes, shade_etimes, ann_xpositions, ann_ypositions, ann_labels):
+			ax2.fill_between(bar[s:e].index, -100, 106, alpha=0.15, color=highlighting_color)
+			ax2.text(xpos, ypos, s=lab, color='black', fontsize=22)
+		plt.stackplot(prec_combined_x, perc_combined_pos_dict.values(), labels=perc_combined_pos_dict.keys(), colors=combined_colors, alpha=1)
+		plt.stackplot(prec_combined_x, perc_combined_neg_dict.values(), colors=combined_colors, alpha=1)
+		ax2.margins(x=0, y=0)
+		plt.ylabel('Percent Contribution')
+		plt.axhline(0, color='black')
+		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
+
+		# plt.show()
+		plt.savefig(f'plots/shap/stacked_{station}_storm_{storm}.png')
+
 		fig = plt.figure(figsize=(20,17))
 
 		ax1 = plt.subplot(111)
 		ax1.set_title('Solar Wind Model')
-		for param, color in zip(perc_sw_rolling.columns, sw_greys):
+		ax1.fill_between(bar.index, bar['sw_line_bottom'], bar['sw_line_top'], where=sw_z2>sw_z1, alpha=1, label='ground truth', color='black')
+		# Highlihting area of interest
+		for s, e, xpos, ypos, lab in zip(shade_stimes, shade_etimes, ann_xpositions, ann_ypositions, ann_labels):
+			ax1.fill_between(bar[s:e].index, sw_line_min, (sw_line_max+(0.05*sw_line_max)), alpha=0.15, color=highlighting_color)
+			ax1.text(xpos, ypos, s=lab, color='black', fontsize=22)
+		for param, color in zip(perc_sw_rolling.columns, sw_colors):
 			plt.plot(perc_sw_rolling[param], label=param, color=color)
-		ax1.fill_between(bar.index, bar['line_bottom'], bar['line_top'], where=z2>z1, alpha=1, label='ground truth', color='black')
+		ax1.margins(x=0, y=0)
 		plt.ylabel('Percent Contribution')
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
 		plt.axhline(0, color='black')
@@ -256,9 +338,14 @@ def main(station):
 
 		ax2 = plt.subplot(111)
 		ax2.set_title('Combined Model')
-		for param, color in zip(perc_combined_rolling.columns, combined_greys):
+		ax2.fill_between(bar.index, bar['combined_line_bottom'], bar['combined_line_top'], where=com_z2>com_z1, alpha=1, label='ground truth', color='black')
+		# Highlihting area of interest
+		for s, e, xpos, ypos, lab in zip(shade_stimes, shade_etimes, ann_xpositions, ann_ypositions, ann_labels):
+			ax2.fill_between(bar[s:e].index, combined_line_min, (combined_line_max+(0.05*combined_line_max)), alpha=0.15, color=highlighting_color)
+			ax2.text(xpos, ypos, s=lab, color='black', fontsize=22)
+		for param, color in zip(perc_combined_rolling.columns, combined_colors):
 			plt.plot(perc_combined_rolling[param], label=param, color=color)
-		ax2.fill_between(bar.index, bar['line_bottom'], bar['line_top'], where=z2>z1, alpha=1, label='ground truth', color='black')
+		ax2.margins(x=0, y=0)
 		plt.ylabel('Percent Contribution')
 		plt.axhline(0, color='black')
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
