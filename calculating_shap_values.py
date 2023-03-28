@@ -313,7 +313,7 @@ def main(station):
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
 
 		# plt.show()
-		plt.savefig(f'plots/shap/stacked_{station}_storm_{storm}.png')
+		plt.savefig(f'plots/shap/stacked_{station}_storm_{storm}.png', bbox_inches='tight')
 
 		fig = plt.figure(figsize=(20,17))
 
