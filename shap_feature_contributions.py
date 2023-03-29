@@ -94,42 +94,47 @@ combined_feats['B'] = combined_feats['B'][combined_feats['B']['input']<1750]
 combined_feats['proton_density'] = combined_feats['proton_density'][combined_feats['proton_density']['input']<45]
 combined_feats['E'] = combined_feats['E'][combined_feats['E']['input']>-395]
 
-plotting_feature = ["B_Total", "BY_GSM", "BZ_GSM", "Vx", "proton_density", "N", "E",  "dBHt", "B"]
+plotting_feature = ["B_Total", "BY_GSM", "BZ_GSM", "Vx", "Vy", "proton_density", "AE_INDEX", "B", "dBHt"]
+titles = ["$\mathregular{B_{total}^{GSM}}$", "$\mathregular{B_{y}^{GSM}}$", "$\mathregular{B_{z}^{GSM}}$",
+			"$\mathregular{V_{x}}$", "$\mathregular{V_{y}}$", "$\mathregular{\u03C1_{SW}}$", "AE Index",
+			"$\mathregular{B_{H}}$", "dB/dt"]
 
-fig = plt.figure(figsize=(25,15))
+fig = plt.figure(figsize=(20,13))
 
 for i, feat in enumerate(plotting_feature):
 
 	combined_feats[feat].dropna(inplace=True)
 	ax = plt.subplot(3,3,i+1)
 
-	plt.title(feat, fontsize=15)
+	plt.title(titles[i], fontsize=17)
 	plt.hist2d(x=combined_feats[feat]['input'], y=combined_feats[feat]['cont'], bins=100, norm=colors.LogNorm(), cmap='magma')
 	plt.axhline(0, color='black', linestyle='--')
 	# plt.scatter(x=combined_feats[feat]['input'], y=combined_feats[feat]['cont'], s=2, color='black')
 	plt.colorbar()
 	plt.ylim(-10,25)
-	plt.ylabel('contribution')
+	plt.ylabel('% Contribution')
 
 plt.savefig('plots/shap/combined_feature_contributions.png', bbox_inches='tight')
 
 
-sw_plotting_feature = ["B_Total", "BY_GSM", "BZ_GSM", "Vx", "proton_density"]
+sw_plotting_feature = ["B_Total", "BY_GSM", "BZ_GSM", "Vx", "Vy", "proton_density"]
+titles = ["$\mathregular{B_{total}^{GSM}}$", "$\mathregular{B_{y}^{GSM}}$", "$\mathregular{B_{z}^{GSM}}$",
+			"$\mathregular{V_{x}}$", "$\mathregular{V_{y}}$", "$\mathregular{\u03C1_{SW}}$"]
 sw_feats['proton_density'] = sw_feats['proton_density'][sw_feats['proton_density']['input']<45]
 
-fig = plt.figure(figsize=(25,15))
+fig = plt.figure(figsize=(20,13))
 
 for i, feat in enumerate(sw_plotting_feature):
 
 	sw_feats[feat].dropna(inplace=True)
 	ax = plt.subplot(2,3,i+1)
 
-	plt.title(feat, fontsize=15)
+	plt.title(titles[i], fontsize=17)
 	plt.hist2d(x=sw_feats[feat]['input'], y=sw_feats[feat]['cont'], bins=100, norm=colors.LogNorm(), cmap='magma')
 	plt.axhline(0, color='black', linestyle='--')
 	# plt.scatter(x=sw_feats[feat]['input'], y=sw_feats[feat]['cont'], s=2, color='black')
 	plt.colorbar()
 	plt.ylim(-10,25)
-	plt.ylabel('contribution')
+	plt.ylabel('% Contribution')
 
 plt.savefig('plots/shap/sw_feature_contributions.png', bbox_inches='tight')

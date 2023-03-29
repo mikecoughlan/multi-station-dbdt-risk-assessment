@@ -593,8 +593,8 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax1.fill_between(BFE_sw.index, BFE_sw['bottom_perc'], BFE_sw['top_perc'], alpha=0.3, label='SW $95^{th}$ perc.', color='red')
 
 	# creates a bar at the top of the plot indicating the positve part of the binary real data
-	ax1.fill_between(BFE_bar.index, BFE_bar['BFE_bottom'], BFE_bar['BFE_top'], where=z2>z1, alpha=1, label='ground truth', color='tab:green')
-	ax1.fill_between(BFE_bar.index, BFE_bar['pers_bottom'], BFE_bar['pers_top'], where=w2>w1, alpha=1, color='black', label='persistance')
+	ax1.fill_between(BFE_bar.index, BFE_bar['BFE_bottom'], BFE_bar['BFE_top'], where=z2>z1, alpha=1, label='ground truth', color='black')
+	ax1.fill_between(BFE_bar.index, BFE_bar['pers_bottom'], BFE_bar['pers_top'], where=w2>w1, alpha=1, color='tab:green', label='persistance')
 
 	# Highlihting area of interest
 	for s, e, xpos, ypos, lab in zip(shade_stimes, shade_etimes, ann_xpositions, ann_ypositions, ann_labels):
@@ -621,8 +621,8 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax2.plot(WNG_sw['mean'], label='sw mean', color='red')
 	ax2.fill_between(WNG.index, WNG['bottom_perc'], WNG['top_perc'], alpha=0.3)
 	ax2.fill_between(WNG_sw.index, WNG_sw['bottom_perc'], WNG_sw['top_perc'], alpha=0.3, label='SW only $95^{th}$ percentile', color='red')
-	ax2.fill_between(WNG_bar.index, WNG_bar['WNG_bottom'], WNG_bar['WNG_top'], where=z2>z1, alpha=1, color='tab:green')
-	ax2.fill_between(WNG_bar.index, WNG_bar['pers_bottom'], WNG_bar['pers_top'], where=w2>w1, alpha=1, color='black')
+	ax2.fill_between(WNG_bar.index, WNG_bar['WNG_bottom'], WNG_bar['WNG_top'], where=z2>z1, alpha=1, color='black')
+	ax2.fill_between(WNG_bar.index, WNG_bar['pers_bottom'], WNG_bar['pers_top'], where=w2>w1, alpha=1, color='tab:green')
 	for s, e in zip(shade_stimes, shade_etimes):
 		ax2.fill_between(WNG[s:e].index, 0, 1.12, alpha=0.15, color=highlighting_color)
 	ax2.margins(x=0)
@@ -640,8 +640,8 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax3.plot(LER_sw['mean'], label='sw mean', color='red')
 	ax3.fill_between(LER.index, LER['bottom_perc'], LER['top_perc'], alpha=0.3)
 	ax3.fill_between(LER_sw.index, LER_sw['bottom_perc'], LER_sw['top_perc'], alpha=0.3, label='SW only $95^{th}$ percentile', color='red')
-	ax3.fill_between(LER_bar.index, LER_bar['LER_bottom'], LER_bar['LER_top'], where=z2>z1, alpha=1, color='tab:green')
-	ax3.fill_between(LER_bar.index, LER_bar['pers_bottom'], LER_bar['pers_top'], where=w2>w1, alpha=1, color='black')
+	ax3.fill_between(LER_bar.index, LER_bar['LER_bottom'], LER_bar['LER_top'], where=z2>z1, alpha=1, color='black')
+	ax3.fill_between(LER_bar.index, LER_bar['pers_bottom'], LER_bar['pers_top'], where=w2>w1, alpha=1, color='tab:green')
 	for s, e in zip(shade_stimes, shade_etimes):
 		ax3.fill_between(LER[s:e].index, 0, 1.12, alpha=0.15, color=highlighting_color)
 	ax3.margins(x=0)
@@ -659,8 +659,8 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax4.plot(ESK_sw['mean'], label='sw mean', color='red')
 	ax4.fill_between(ESK.index, ESK['bottom_perc'], ESK['top_perc'], alpha=0.3)
 	ax4.fill_between(ESK_sw.index, ESK_sw['bottom_perc'], ESK_sw['top_perc'], alpha=0.3, label='SW only $95^{th}$ percentile', color='red')
-	ax4.fill_between(ESK_bar.index, ESK_bar['ESK_bottom'], ESK_bar['ESK_top'], where=z2>z1, alpha=1, color='tab:green')
-	ax4.fill_between(ESK_bar.index, ESK_bar['pers_bottom'], ESK_bar['pers_top'], where=w2>w1, alpha=1, color='black')
+	ax4.fill_between(ESK_bar.index, ESK_bar['ESK_bottom'], ESK_bar['ESK_top'], where=z2>z1, alpha=1, color='black')
+	ax4.fill_between(ESK_bar.index, ESK_bar['pers_bottom'], ESK_bar['pers_top'], where=w2>w1, alpha=1, color='tab:green')
 	for s, e in zip(shade_stimes, shade_etimes):
 		ax4.fill_between(ESK[s:e].index, 0, 1.12, alpha=0.15, color=highlighting_color)
 	ax4.margins(x=0)
@@ -679,8 +679,8 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax5.plot(STJ_sw['mean'], label='mean', color='red')
 	ax5.fill_between(STJ.index, STJ['bottom_perc'], STJ['top_perc'], alpha=0.3, label='$95^{th}$ percentile')
 	ax5.fill_between(STJ_sw.index, STJ_sw['bottom_perc'], STJ_sw['top_perc'], alpha=0.3, label='SW only $95^{th}$ percentile', color='red')
-	ax5.fill_between(STJ_bar.index, STJ_bar['STJ_bottom'], STJ_bar['STJ_top'], where=z2>z1, alpha=1, label='ground truth', color='tab:green')
-	ax5.fill_between(STJ_bar.index, STJ_bar['pers_bottom'], STJ_bar['pers_top'], where=w2>w1, alpha=1, color='black', label='persistance')
+	ax5.fill_between(STJ_bar.index, STJ_bar['STJ_bottom'], STJ_bar['STJ_top'], where=z2>z1, alpha=1, label='ground truth', color='black')
+	ax5.fill_between(STJ_bar.index, STJ_bar['pers_bottom'], STJ_bar['pers_top'], where=w2>w1, alpha=1, color='tab:green', label='persistance')
 	for s, e in zip(shade_stimes, shade_etimes):
 		ax5.fill_between(STJ[s:e].index, 0, 1.12, alpha=0.15, color=highlighting_color)
 	ax5.margins(x=0)
@@ -698,8 +698,8 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax6.plot(OTT_sw['mean'], color='red')
 	ax6.fill_between(OTT.index, OTT['bottom_perc'], OTT['top_perc'], alpha=0.3)
 	ax6.fill_between(OTT_sw.index, OTT_sw['bottom_perc'], OTT_sw['top_perc'], alpha=0.3, color='red')
-	ax6.fill_between(OTT_bar.index, OTT_bar['OTT_bottom'], OTT_bar['OTT_top'], where=z2>z1, alpha=1, color='tab:green')
-	ax6.fill_between(OTT_bar.index, OTT_bar['pers_bottom'], OTT_bar['pers_top'], where=w2>w1, alpha=1, color='black')
+	ax6.fill_between(OTT_bar.index, OTT_bar['OTT_bottom'], OTT_bar['OTT_top'], where=z2>z1, alpha=1, color='black')
+	ax6.fill_between(OTT_bar.index, OTT_bar['pers_bottom'], OTT_bar['pers_top'], where=w2>w1, alpha=1, color='tab:green')
 	for s, e in zip(shade_stimes, shade_etimes):
 		ax6.fill_between(OTT[s:e].index, 0, 1.12, alpha=0.15, color=highlighting_color)
 	ax6.margins(x=0)
@@ -718,8 +718,8 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax7.plot(NEW_sw['mean'], color='red')
 	ax7.fill_between(NEW.index, NEW['bottom_perc'], NEW['top_perc'], alpha=0.3)
 	ax7.fill_between(NEW_sw.index, NEW_sw['bottom_perc'], NEW_sw['top_perc'], alpha=0.3, color='red')
-	ax7.fill_between(NEW_bar.index, NEW_bar['NEW_bottom'], NEW_bar['NEW_top'], where=z2>z1, alpha=1, color='tab:green')
-	ax7.fill_between(NEW_bar.index, NEW_bar['pers_bottom'], NEW_bar['pers_top'], where=w2>w1, alpha=1, color='black')
+	ax7.fill_between(NEW_bar.index, NEW_bar['NEW_bottom'], NEW_bar['NEW_top'], where=z2>z1, alpha=1, color='black')
+	ax7.fill_between(NEW_bar.index, NEW_bar['pers_bottom'], NEW_bar['pers_top'], where=w2>w1, alpha=1, color='tab:green')
 	for s, e in zip(shade_stimes, shade_etimes):
 		ax7.fill_between(NEW[s:e].index, 0, 1.12, alpha=0.15, color=highlighting_color)
 	ax7.margins(x=0)
@@ -738,8 +738,8 @@ def plot_model_outputs(results_dict, storm, splits, title):
 	ax8.plot(VIC_sw['mean'], color='red')
 	ax8.fill_between(VIC.index, VIC['bottom_perc'], VIC['top_perc'], alpha=0.3)
 	ax8.fill_between(VIC_sw.index, VIC_sw['bottom_perc'], VIC_sw['top_perc'], alpha=0.3, color='red')
-	ax8.fill_between(VIC_bar.index, VIC_bar['VIC_bottom'], VIC_bar['VIC_top'], where=z2>z1, alpha=1, color='tab:green')
-	ax8.fill_between(VIC_bar.index, VIC_bar['pers_bottom'], VIC_bar['pers_top'], where=w2>w1, alpha=1, color='black')
+	ax8.fill_between(VIC_bar.index, VIC_bar['VIC_bottom'], VIC_bar['VIC_top'], where=z2>z1, alpha=1, color='black')
+	ax8.fill_between(VIC_bar.index, VIC_bar['pers_bottom'], VIC_bar['pers_top'], where=w2>w1, alpha=1, color='tab:green')
 	for s, e in zip(shade_stimes, shade_etimes):
 		ax8.fill_between(VIC[s:e].index, 0, 1.12, alpha=0.15, color=highlighting_color)
 	ax8.margins(x=0)

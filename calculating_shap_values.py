@@ -236,6 +236,13 @@ def main(station):
 		com_z1=np.array(bar['combined_line_bottom'])
 		com_z2=np.array(bar['combined_line_top'])
 
+		combined_labels = ["sinMLT", "cosMLT", "$\mathregular{B_{total}^{GSM}}$", "$\mathregular{B_{y}^{GSM}}$", "$\mathregular{B_{z}^{GSM}}$",
+					"$\mathregular{V_{x}}$", "$\mathregular{V_{y}}$", "$\mathregular{V_{z}}$", "$\mathregular{\u03C1_{SW}}$", "T" "AE Index",
+					"SZA", "$\mathregular{B_{N}}$", "$\mathregular{B_{E}}$", "$\mathregular{B_{H}}$", "dB/dt"]
+
+		sw_labels = ["sinMLT", "cosMLT", "$\mathregular{B_{total}^{GSM}}$", "$\mathregular{B_{y}^{GSM}}$", "$\mathregular{B_{z}^{GSM}}$",
+					"$\mathregular{V_{x}}$", "$\mathregular{V_{y}}$", "$\mathregular{V_{z}}$", "$\mathregular{\u03C1_{SW}}$", "T"]
+
 
 		fig = plt.figure(figsize=(20,17))
 
@@ -248,7 +255,7 @@ def main(station):
 		for s, e, xpos, ypos, lab in zip(shade_stimes, shade_etimes, ann_xpositions, ann_ypositions, ann_labels):
 			ax1.fill_between(bar[s:e].index, -100, 106, alpha=0.15, color=highlighting_color)
 			ax1.text(xpos, ypos, s=lab, color='black', fontsize=22)
-		plt.stackplot(prec_sw_x, perc_sw_pos_dict.values(), labels=perc_sw_pos_dict.keys(), colors=sw_colors, alpha=1)
+		plt.stackplot(prec_sw_x, perc_sw_pos_dict.values(), labels=sw_labels, colors=sw_colors, alpha=1)
 		plt.stackplot(prec_sw_x, perc_sw_neg_dict.values(), colors=sw_colors, alpha=1)
 		ax1.margins(x=0, y=0)
 		plt.ylabel('Percent Contribution')
@@ -267,7 +274,7 @@ def main(station):
 		for s, e, xpos, ypos, lab in zip(shade_stimes, shade_etimes, ann_xpositions, ann_ypositions, ann_labels):
 			ax2.fill_between(bar[s:e].index, -100, 106, alpha=0.15, color=highlighting_color)
 			ax2.text(xpos, ypos, s=lab, color='black', fontsize=22)
-		plt.stackplot(prec_combined_x, perc_combined_pos_dict.values(), labels=perc_combined_pos_dict.keys(), colors=combined_colors, alpha=1)
+		plt.stackplot(prec_combined_x, perc_combined_pos_dict.values(), labels=combined_labels, colors=combined_colors, alpha=1)
 		plt.stackplot(prec_combined_x, perc_combined_neg_dict.values(), colors=combined_colors, alpha=1)
 		ax2.margins(x=0, y=0)
 		plt.ylabel('Percent Contribution')
@@ -276,8 +283,6 @@ def main(station):
 
 		# plt.show()
 		plt.savefig(f'plots/shap/combined_percent_contribution_{station}_storm_{storm}.png')
-
-
 
 
 		fig = plt.figure(figsize=(20,17))
@@ -291,7 +296,7 @@ def main(station):
 		for s, e, xpos, ypos, lab in zip(shade_stimes, shade_etimes, ann_xpositions, ann_ypositions, ann_labels):
 			ax1.fill_between(bar[s:e].index, -100, 106, alpha=0.15, color=highlighting_color)
 			ax1.text(xpos, ypos, s=lab, color='black', fontsize=22)
-		plt.stackplot(prec_sw_x, perc_sw_pos_dict.values(), labels=perc_sw_pos_dict.keys(), colors=sw_colors, alpha=1)
+		plt.stackplot(prec_sw_x, perc_sw_pos_dict.values(), labels=sw_labels, colors=sw_colors, alpha=1)
 		plt.stackplot(prec_sw_x, perc_sw_neg_dict.values(), colors=sw_colors, alpha=1)
 		ax1.margins(x=0, y=0)
 		plt.ylabel('Percent Contribution')
@@ -305,7 +310,7 @@ def main(station):
 		for s, e, xpos, ypos, lab in zip(shade_stimes, shade_etimes, ann_xpositions, ann_ypositions, ann_labels):
 			ax2.fill_between(bar[s:e].index, -100, 106, alpha=0.15, color=highlighting_color)
 			ax2.text(xpos, ypos, s=lab, color='black', fontsize=22)
-		plt.stackplot(prec_combined_x, perc_combined_pos_dict.values(), labels=perc_combined_pos_dict.keys(), colors=combined_colors, alpha=1)
+		plt.stackplot(prec_combined_x, perc_combined_pos_dict.values(), labels=combined_labels, colors=combined_colors, alpha=1)
 		plt.stackplot(prec_combined_x, perc_combined_neg_dict.values(), colors=combined_colors, alpha=1)
 		ax2.margins(x=0, y=0)
 		plt.ylabel('Percent Contribution')
@@ -324,8 +329,8 @@ def main(station):
 		for s, e, xpos, ypos, lab in zip(shade_stimes, shade_etimes, ann_xpositions, ann_ypositions, ann_labels):
 			ax1.fill_between(bar[s:e].index, sw_line_min, (sw_line_max+(0.05*sw_line_max)), alpha=0.15, color=highlighting_color)
 			ax1.text(xpos, ypos, s=lab, color='black', fontsize=22)
-		for param, color in zip(perc_sw_rolling.columns, sw_colors):
-			plt.plot(perc_sw_rolling[param], label=param, color=color)
+		for param, label, color in zip(perc_sw_rolling.columns, sw_labels, sw_colors):
+			plt.plot(perc_sw_rolling[param], label=label, color=color)
 		ax1.margins(x=0, y=0)
 		plt.ylabel('Percent Contribution')
 		plt.legend(bbox_to_anchor=(1,1), loc='upper left')
@@ -343,8 +348,8 @@ def main(station):
 		for s, e, xpos, ypos, lab in zip(shade_stimes, shade_etimes, ann_xpositions, ann_ypositions, ann_labels):
 			ax2.fill_between(bar[s:e].index, combined_line_min, (combined_line_max+(0.05*combined_line_max)), alpha=0.15, color=highlighting_color)
 			ax2.text(xpos, ypos, s=lab, color='black', fontsize=22)
-		for param, color in zip(perc_combined_rolling.columns, combined_colors):
-			plt.plot(perc_combined_rolling[param], label=param, color=color)
+		for param, label, color in zip(perc_combined_rolling.columns, combined_labels, combined_colors):
+			plt.plot(perc_combined_rolling[param], label=label, color=color)
 		ax2.margins(x=0, y=0)
 		plt.ylabel('Percent Contribution')
 		plt.axhline(0, color='black')
