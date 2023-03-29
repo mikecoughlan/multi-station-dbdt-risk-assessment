@@ -111,7 +111,7 @@ for i, feat in enumerate(plotting_feature):
 	plt.ylim(-10,25)
 	plt.ylabel('contribution')
 
-plt.savefig('plots/shap/combined_feature_contributions.png')
+plt.savefig('plots/shap/combined_feature_contributions.png', bbox_inches='tight')
 
 
 sw_plotting_feature = ["B_Total", "BY_GSM", "BZ_GSM", "Vx", "proton_density"]
@@ -132,4 +132,4 @@ for i, feat in enumerate(sw_plotting_feature):
 	plt.ylim(-10,25)
 	plt.ylabel('contribution')
 
-plt.savefig('plots/shap/sw_feature_contributions.png')
+plt.savefig('plots/shap/sw_feature_contributions.png', bbox_inches='tight')
