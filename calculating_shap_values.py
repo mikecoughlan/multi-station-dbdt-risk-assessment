@@ -237,7 +237,7 @@ def main(station):
 		com_z2=np.array(bar['combined_line_top'])
 
 		combined_labels = ["sinMLT", "cosMLT", "$\mathregular{B_{total}^{GSM}}$", "$\mathregular{B_{y}^{GSM}}$", "$\mathregular{B_{z}^{GSM}}$",
-					"$\mathregular{V_{x}}$", "$\mathregular{V_{y}}$", "$\mathregular{V_{z}}$", "$\mathregular{\u03C1_{SW}}$", "T" "AE Index",
+					"$\mathregular{V_{x}}$", "$\mathregular{V_{y}}$", "$\mathregular{V_{z}}$", "$\mathregular{\u03C1_{SW}}$", "T", "AE Index",
 					"SZA", "$\mathregular{B_{N}}$", "$\mathregular{B_{E}}$", "$\mathregular{B_{H}}$", "dB/dt"]
 
 		sw_labels = ["sinMLT", "cosMLT", "$\mathregular{B_{total}^{GSM}}$", "$\mathregular{B_{y}^{GSM}}$", "$\mathregular{B_{z}^{GSM}}$",
