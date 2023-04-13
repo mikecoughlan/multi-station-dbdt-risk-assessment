@@ -1,6 +1,6 @@
 
-{"stations": ["LER", "OTT", "NEW", "VIC", "STJ", "ESK", "BFE", "WNG"],
-"lon_stations": ["BFE", "WNG", "LER", "ESK", "STJ", "OTT", "NEW", "VIC"],
+{"lat_stations": ["LER", "OTT", "NEW", "VIC", "STJ", "ESK", "BFE", "WNG"],
+"stations": ["BFE", "WNG", "LER", "ESK", "STJ", "OTT", "NEW", "VIC"],
 	"threshold": 0.99,
 	"params": ["Date_UTC", "N", "E", "sinMLT", "cosMLT", "B_Total", "BY_GSM",
 	   					"BZ_GSM", "Vx", "Vy", "Vz", "proton_density", "T",
