@@ -427,8 +427,19 @@ def fitting_and_predicting(xtrain, xval, xtest, ytrain, yval):
 
 
 def getting_metrics(ytest, ypred):
+	'''
+	Calculates the metrics
+
+	Args:
+		ytest (list of np.arrays): real values for all of the cross vals
+		ypred (list of np.arrays): predicted values for all cross vals
+
+	Returns:
+		floats: mean and std of the
+	'''
 
 	AUC, rmse = [], []
+	# Loops through each cross val results and adds it to a list
 	for test, pred in zip(ytest, ypred):
 		prec, rec, ____ = precision_recall_curve(test, pred)
 		area = auc(rec, prec)
@@ -439,6 +450,12 @@ def getting_metrics(ytest, ypred):
 
 
 def plotting_results(results):
+	'''
+	Plots the Cross validation results
+
+	Args:
+		results (pd.DataFrame): Dataframe of the cross validation results metric scores
+	'''
 
 	x = [n+1 for n in range(len(results))]
 	fig = plt.figure(figsize=(30,25))
