@@ -421,15 +421,14 @@ def reliability_plots(results_dict, station, splits, plot_titles):
 	storm0 = prep_k_fold_results(results_dict[station]['storm_0']['raw_results'], splits)
 	storm1 = prep_k_fold_results(results_dict[station]['storm_1']['raw_results'], splits)
 	storm2 = prep_k_fold_results(results_dict[station]['storm_2']['raw_results'], splits)
-	# storm3 = prep_k_fold_results(results_dict[station]['storm_3']['raw_results'], splits)
-	# storm4 = prep_k_fold_results(results_dict[station]['storm_4']['raw_results'], splits)
-	# storm5 = prep_k_fold_results(results_dict[station]['storm_5']['raw_results'], splits)
-	# storm6 = prep_k_fold_results(results_dict[station]['storm_6']['raw_results'], splits)
-	# storm7 = prep_k_fold_results(results_dict[station]['storm_7']['raw_results'], splits)
+	storm3 = prep_k_fold_results(results_dict[station]['storm_3']['raw_results'], splits)
+	storm4 = prep_k_fold_results(results_dict[station]['storm_4']['raw_results'], splits)
+	storm5 = prep_k_fold_results(results_dict[station]['storm_5']['raw_results'], splits)
+	storm6 = prep_k_fold_results(results_dict[station]['storm_6']['raw_results'], splits)
+	storm7 = prep_k_fold_results(results_dict[station]['storm_7']['raw_results'], splits)
 
 	# putting them together into a lsit
-	# newdfs = [storm0, storm1, storm2, storm3, storm4, storm5, storm6, storm7]
-	newdfs = [storm0, storm1, storm2]
+	newdfs = [storm0, storm1, storm2, storm3, storm4, storm5, storm6, storm7]
 
 	# concatingating the dataframes together
 	newdf = pd.concat(newdfs, axis=0)
@@ -469,6 +468,7 @@ def plot_model_outputs(results_dict, storm, splits, title):
 		title (str): plot title
 	'''
 
+	# Adding highlighting regions
 	highlighting_color = 'black'
 	if storm == 4:
 		shade_stimes = ['2006-12-14 16:00:00', '2006-12-15 04:45:00', '2006-12-15 15:15:00', '2006-12-15 21:00:00']
@@ -770,18 +770,18 @@ def main():
 
 
 	# Plotting the individual storm metrics and the total metrics for each station
-	# plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'], sw=False)
-	# plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'], sw=True)
+	plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'], sw=False)
+	plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'], sw=True)
 	plot_total_metrics(metrics_dict, sw_metrics_dict, CONFIG['stations'], metrics=['AUC', 'HSS'])
 	plot_total_metrics(metrics_dict, sw_metrics_dict, CONFIG['stations'], metrics=['RMSE', 'BIAS'])
 
 
 	# Plotting the individual storm metrics and the total metrics for each station
-	# plot_metrics(sw_metrics_dict, CONFIG['stations'], CONFIG['metrics'])
+	plot_metrics(sw_metrics_dict, CONFIG['stations'], CONFIG['metrics'])
 
 	# plotting the precision recall curves and the reliability diagrams for each station
 	for station in CONFIG['stations']:
-	# 	plot_precision_recall(results_dict, station, CONFIG['plot_titles'])
+		plot_precision_recall(results_dict, station, CONFIG['plot_titles'])
 		reliability_plots(results_dict, station, CONFIG['splits'], CONFIG['plot_titles'])
 
 	# getting the full model outputs for each testing storm
