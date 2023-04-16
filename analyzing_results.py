@@ -19,15 +19,15 @@ import pandas as pd
 import tensorflow as tf
 from sklearn.metrics import auc, mean_squared_error, precision_recall_curve
 
-# # stops this program from hogging the GPU
-# physical_devices = tf.config.list_physical_devices('GPU')
-# try:
-#   tf.config.experimental.set_memory_growth(physical_devices[0], True)
-# except:
-#   # Invalid device or cannot modify virtual devices once initialized.
-#   pass
+# stops this program from hogging the GPU
+physical_devices = tf.config.list_physical_devices('GPU')
+try:
+  tf.config.experimental.set_memory_growth(physical_devices[0], True)
+except:
+  # Invalid device or cannot modify virtual devices once initialized.
+  pass
 
-pd.options.mode.chained_assignment = None  # default='warn'
+pd.options.mode.chained_assignment = None  # default='warn', muting a warning
 
 
 # loading config and specific model config files. Using them as dictonaries
@@ -460,35 +460,35 @@ def main():
     # saving the resulting metric df to the staion key
     stations_dict[station] = results_dict
 
-  # # concatenating together all the diff and spread dfs
-  # diff_df, spread_df = pd.DataFrame(), pd.DataFrame()
-  # for i in range(len(CONFIG['test_storm_stime'])):
-  #   temp_diff, temp_spread = pd.DataFrame(), pd.DataFrame()
-  #   for station in CONFIG['stations']:
-  #     temp_diff = pd.concat([temp_diff, stations_dict[station]['storm_{0}'.format(i)]['diff_df']], axis=1, ignore_index=False)
-  #     temp_spread = pd.concat([temp_spread, stations_dict[station]['storm_{0}'.format(i)]['spread_df']], axis=1, ignore_index=False)
+  # concatenating together all the diff and spread dfs
+  diff_df, spread_df = pd.DataFrame(), pd.DataFrame()
+  for i in range(len(CONFIG['test_storm_stime'])):
+    temp_diff, temp_spread = pd.DataFrame(), pd.DataFrame()
+    for station in CONFIG['stations']:
+      temp_diff = pd.concat([temp_diff, stations_dict[station]['storm_{0}'.format(i)]['diff_df']], axis=1, ignore_index=False)
+      temp_spread = pd.concat([temp_spread, stations_dict[station]['storm_{0}'.format(i)]['spread_df']], axis=1, ignore_index=False)
 
-  #   diff_df = pd.concat([diff_df, temp_diff], axis=0)
-  #   spread_df = pd.concat([spread_df, temp_spread], axis=0)
+    diff_df = pd.concat([diff_df, temp_diff], axis=0)
+    spread_df = pd.concat([spread_df, temp_spread], axis=0)
 
-  # # getting the max std and mean dfs
-  # mean_df, std_df, max_df = getting_model_input_data()
-  # diff_df.reset_index(inplace=True, drop=True)
-  # spread_df.reset_index(inplace=True, drop=True)
+  # getting the max std and mean dfs
+  mean_df, std_df, max_df = getting_model_input_data()
+  diff_df.reset_index(inplace=True, drop=True)
+  spread_df.reset_index(inplace=True, drop=True)
 
-  # # creating dfs for all the stat and model result combinations to make the plotting easier
-  # mean_diff_df = pd.concat([diff_df, mean_df], axis=1, ignore_index=False)
-  # std_diff_df = pd.concat([diff_df, std_df], axis=1, ignore_index=False)
-  # max_diff_df = pd.concat([diff_df, max_df], axis=1, ignore_index=False)
+  # creating dfs for all the stat and model result combinations to make the plotting easier
+  mean_diff_df = pd.concat([diff_df, mean_df], axis=1, ignore_index=False)
+  std_diff_df = pd.concat([diff_df, std_df], axis=1, ignore_index=False)
+  max_diff_df = pd.concat([diff_df, max_df], axis=1, ignore_index=False)
 
-  # mean_spread_df = pd.concat([spread_df, mean_df], axis=1, ignore_index=False)
-  # std_spread_df = pd.concat([spread_df, std_df], axis=1, ignore_index=False)
-  # max_spread_df = pd.concat([spread_df, max_df], axis=1, ignore_index=False)
+  mean_spread_df = pd.concat([spread_df, mean_df], axis=1, ignore_index=False)
+  std_spread_df = pd.concat([spread_df, std_df], axis=1, ignore_index=False)
+  max_spread_df = pd.concat([spread_df, max_df], axis=1, ignore_index=False)
 
-  # # putting all the correlation dfs into the plotting functions
-  # plotting_corrs(mean_diff_df, mean_spread_df, CONFIG['params'], 'mean')
-  # plotting_corrs(std_diff_df, std_spread_df, CONFIG['params'], 'std')
-  # plotting_corrs(max_diff_df, max_spread_df, CONFIG['params'], 'max')
+  # putting all the correlation dfs into the plotting functions
+  plotting_corrs(mean_diff_df, mean_spread_df, CONFIG['params'], 'mean')
+  plotting_corrs(std_diff_df, std_spread_df, CONFIG['params'], 'std')
+  plotting_corrs(max_diff_df, max_spread_df, CONFIG['params'], 'max')
 
   print(stations_dict['OTT']['storm_4']['sw_results'].shape)
   print('THIS ONE!')
