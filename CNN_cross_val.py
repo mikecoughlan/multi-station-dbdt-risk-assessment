@@ -1,11 +1,9 @@
 ##########################################################################################
 #
+#	multi-station-dbdt-risk-assessment/CNN_cross_val.py
 #
-#
-#
-#
-#
-#
+#	Performs a cross validation for the CNN models for hyperparameter turning.
+#	Displays the value for several metric scores for anaylsis.
 #
 ##########################################################################################
 

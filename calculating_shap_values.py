@@ -1,6 +1,6 @@
 ##############################################################################################################
 #
-#	multi-station-dbdt-risk-assessment/calculating_shap_values
+#	multi-station-dbdt-risk-assessment/calculating_shap_values.py
 #
 #   Calculates the SHAP values for the solar wind and combined models for each station. 10 randomly chosen
 # 	of the 100 split models have their resulting 2D SHAP value arrays averaged. The sum of the values across
