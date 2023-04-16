@@ -1,6 +1,0 @@
-0: yes - late
-1: multiple - early
-2: yes- early
-3: no
-4: yes - early
-5:
