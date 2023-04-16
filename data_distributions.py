@@ -1,11 +1,9 @@
 ##########################################################################################
 #
+#	multi-station-dbdt-risk-assessment/data_distributions.py
 #
-#
-#
-#
-#
-#
+#	Calculates and plots the data distributions for all available data, the data used
+#	for training, and the testing data.
 #
 ##########################################################################################
 
@@ -332,12 +330,22 @@ def prep_train_data(df, stime, etime, lead, recovery):
 
 
 def getting_distributions(all_dfs):
+	'''
+	calculating the distributions
+
+	Args:
+		all_dfs (dict): dictonary containing all of the data
+
+	Returns:
+		pd.DataFrames: resulting dataframes
+	'''
 
 	all_mean, all_std = [], []
 	train_mean, train_std = [], []
 	test_mean, test_std = [], []
 	ratios = []
 
+	# adding the mean or std to the appropriate list
 	for station in all_dfs.keys():
 		all_mean.append(all_dfs[station]['all']['dBHt'].mean())
 		all_std.append(all_dfs[station]['all']['dBHt'].std())
@@ -347,6 +355,7 @@ def getting_distributions(all_dfs):
 		test_std.append(all_dfs[station]['test']['dBHt'].std())
 		ratios.append(all_dfs[station]['ratio'])
 
+	# Creating dataframes for all of the data categories for plotting
 	all_data = pd.DataFrame({'mean':all_mean,
 								'std':all_std},
 								index=CONFIG['stations'])
@@ -405,7 +414,7 @@ def plotting_data_distributions(all_data, train_data, test_data):
 
 
 def main():
-	'''Here we go baby! bringing it all together.
+	'''bringing it all together.
 		Inputs:
 		path: path to the data.
 		CONFIG: dictonary containing different specifications for the data prep and other things that aren;t the models themselves.
