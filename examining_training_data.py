@@ -1,10 +1,9 @@
 ##########################################################################################
 #
-#	multi-station-dbdt-risk-assessment/preparing_SW_data.py
+#	multi-station-dbdt-risk-assessment/examining_training_data.py
 #
-#
-#
-#
+#	Calculates the amount of data available for different limits on linear interpolation
+# 	over missing data. Does this for each station and plots the results.
 #
 #
 ##########################################################################################
@@ -351,6 +350,7 @@ def main():
 		# 						MODEL_CONFIG['time_history'], prediction_length=CONFIG['forecast']+CONFIG['window'])
 
 
+	# Plotting the results
 	fig = plt.figure(figsize=(10,5))
 	plt.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, hspace=0.03)
 
