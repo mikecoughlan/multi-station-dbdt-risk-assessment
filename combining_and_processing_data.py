@@ -9,8 +9,8 @@
 #
 ##########################################################################################
 
-import json
 # importing relevent packages
+import json
 import os
 import pickle
 import random
