@@ -7,7 +7,7 @@
 # 	the time dimension producing only one value per input parameter. The total values are then normalized to
 # 	a percentage of total SHAP values for that input array, giving a percent contribution for each parameter.
 # 	Plots the results in a stackplot for the combined and the solar wind models. Also calculates the rolling
-# 	average of these percent contributions to smooth the plots. THis was not used in analysis.
+# 	average of these percent contributions to smooth the plots. This was not used in analysis.
 #
 ##############################################################################################################
 

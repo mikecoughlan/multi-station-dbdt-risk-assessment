@@ -346,8 +346,8 @@ def main():
 			Total, Nans = prep_train_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['lead'], CONFIG['recovery'])
 			interp_len.append(100-((Nans/Total)*100))											# calling the training data prep function
 
-		# test_dict = prep_test_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['params'],
-		# 						MODEL_CONFIG['time_history'], prediction_length=CONFIG['forecast']+CONFIG['window'])
+		test_dict = prep_test_data(df, CONFIG['test_storm_stime'], CONFIG['test_storm_etime'], CONFIG['params'],
+								MODEL_CONFIG['time_history'], prediction_length=CONFIG['forecast']+CONFIG['window'])
 
 
 	# Plotting the results
