@@ -55,7 +55,7 @@ Plots the SHAP percentage contributions against the input parameter values. Does
 Notebook for exploring the use of SHAP values for interpreting the model outputs. This is an experimental notebook used for learning about the SHAP values, how they can best be displayed, and to probe their robustness. This notebook is not well documented and will be continully updated as I continue to experiment with these values, the SHAP package, and overall model interpretibility.
 
 ### storm_list.csv
-List of the SYM-H minimums for the storms used in training. Lead and recovery time are added to the SYM-H minimum and then extracted from the larger dataset to be used in training. File is used in the [combining_and_processing_data.py](https://github.com/mikecoughlan/multi-station-dbht-risk-assessment/combining_and_processing_data.py) script.
+List of the SYM-H minimums for the storms used in training. Lead and recovery time are added to the SYM-H minimum and then extracted from the larger dataset to be used in training. File is used in the [combining_and_processing_data.py](/combining_and_processing_data.py) script.
 
 
 
