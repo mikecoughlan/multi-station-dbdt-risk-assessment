@@ -131,6 +131,7 @@ dmypy.json
 # Files and folders
 outputs/
 models/
+plots/
 .pylintrc
 exe_modeling_OTT.sh
 overlaying_results.ipynb
