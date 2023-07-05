@@ -230,7 +230,7 @@ def plot_metrics(metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE'], sw=Fals
 
 
 
-def plot_total_metrics(metrics_dict, sw_metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE']):
+def plot_total_metrics(metrics_dict, sw_metrics_dict, stations, metrics=['HSS', 'AUC', 'RMSE'], persistence=True):
 	'''
 	Plotting the total metrics instead of the individual storm metrics. Very similar
 	to the plot_metrics function above. Seperated the functions to make it easier to
@@ -239,7 +239,8 @@ def plot_total_metrics(metrics_dict, sw_metrics_dict, stations, metrics=['HSS', 
 	Args:
 		metrics_dict (dict): contains the metric results in a format that makes the plotting simplier
 		stations (str or list of str): stations to plot metric results for
-		metrics (str or list of str): list of metrics being plotted. Defaults to ['HSS', 'AUC', 'RMSE'].
+		metrics (str or list of str): list of metrics being plotted. Defaults to ['HSS', 'AUC', 'RMSE']
+		persistence (bool): if True, plot persistence results.
 	'''
 
 	fig = plt.figure(figsize=(10,7))													# establishing the figure
@@ -276,7 +277,8 @@ def plot_total_metrics(metrics_dict, sw_metrics_dict, stations, metrics=['HSS', 
 
 		ax.errorbar(X, y0, yerr=[ymin0, ymax0], fmt='.', color=color0, label='combined {0}'.format(metric), elinewidth=3, markersize=15, capsize=4, capthick=3)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
 		ax.errorbar(X, sw_y0, yerr=[sw_ymin0, sw_ymax0], fmt='.', color=color_sw, label='sw {0}'.format(metric), elinewidth=3, markersize=15, capsize=4, capthick=3)		# plotting the center point with the error bars. list order is important in the y array so it cooresponds to the x label
-		ax.scatter(X, metrics_dict['pers_{0}'.format(metric)], marker='^', color=color1, label='pers {0}'.format(metric), s=150)
+		if persistence:
+			ax.scatter(X, metrics_dict['pers_{0}'.format(metric)], marker='^', color=color1, label='pers {0}'.format(metric), s=150)
 
 	plt.xlabel('Stations', fontsize='15')		# adding the label on the x axis label
 	plt.ylabel('Score', fontsize='15')			# adding the y axis label
@@ -774,6 +776,7 @@ def main():
 	plot_metrics(metrics_dict, CONFIG['stations'], CONFIG['metrics'], sw=True)
 	plot_total_metrics(metrics_dict, sw_metrics_dict, CONFIG['stations'], metrics=['AUC', 'HSS'])
 	plot_total_metrics(metrics_dict, sw_metrics_dict, CONFIG['stations'], metrics=['RMSE', 'BIAS'])
+	plot_total_metrics(metrics_dict, sw_metrics_dict, CONFIG['stations'], metrics=['BSS_climatology', 'BSS_persistence'], persistence=False)
 
 
 	# Plotting the individual storm metrics and the total metrics for each station

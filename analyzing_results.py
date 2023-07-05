@@ -17,7 +17,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from sklearn.metrics import auc, mean_squared_error, precision_recall_curve
+from sklearn.metrics import (auc, brier_score_loss, mean_squared_error,
+                             precision_recall_curve)
 
 # stops this program from hogging the GPU
 physical_devices = tf.config.list_physical_devices('GPU')
@@ -156,7 +157,7 @@ def calculating_scores(df, splits, station):
   prec_recall = pd.DataFrame()
   metrics = pd.DataFrame({'ind':index_column})
 
-  bias, std_pred, rmse, area_uc, precision, recall, hss = [], [], [], [], [], [], []      # initalizing the lists for storing the individual scores
+  bias, std_pred, rmse, area_uc, precision, recall, hss, bss_climatology, bss_persistence = [], [], [], [], [], [], [], [], []      # initalizing the lists for storing the individual scores
   diff_df, spread_df = pd.DataFrame(), pd.DataFrame()
 
   # setting the index for the spead and diff data frames
@@ -177,13 +178,14 @@ def calculating_scores(df, splits, station):
   for split in range(splits):
 
     # creating a temporary df for just the ground truth data and this model's prediction
-    temp_df = df[['crossing', 'predicted_split_{0}'.format(split)]]
+    temp_df = df[['crossing', 'predicted_split_{0}'.format(split), 'persistance']]
 
     # metric calcualtions cannot handle nan so they are dropped
     temp_df.dropna(inplace=True)
 
     pred = temp_df['predicted_split_{0}'.format(split)]        # Grabbing the specific predicted data
     re = temp_df['crossing']                   # and the real data for comparison
+    perc = temp_df['persistance']
 
     # calculating the difference and adding it as a column to the diff df for this split
     diff_df['{0}_split_{1}'.format(station, split)] = abs(re-pred)
@@ -191,6 +193,12 @@ def calculating_scores(df, splits, station):
     # getting the precision and recall, then calculating the auc for this split
     prec, rec, ____ = precision_recall_curve(re, pred)
     area = auc(rec, prec)
+
+    # calculating the Brier skill score
+    bs = brier_score_loss(re, pred)
+    bs_persistence = brier_score_loss(re, perc)
+    bs_score_climatology = 1-(bs/re.mean())
+    bs_score_persistence = 1-(bs/bs_persistence)
 
     # segmenting the pd.series into the confusion matrix indicies
     A = temp_df[(temp_df['predicted_split_{0}'.format(split)] >= 0.5) & (temp_df['crossing'] == 1)]
@@ -229,6 +237,8 @@ def calculating_scores(df, splits, station):
     rmse.append(np.sqrt(mean_squared_error(re,pred)))             # calculating the root mean square error
     precision.append(prec)
     recall.append(rec)
+    bss_climatology.append(bs_score_climatology)
+    bss_persistence.append(bs_score_persistence)
 
 
   # getting the median of the auc and getting the precision recall curves that correspond
@@ -246,6 +256,8 @@ def calculating_scores(df, splits, station):
   std_pred = np.array(std_pred)
   rmse = np.array(rmse)
   area_uc = np.array(area_uc)
+  bss_climatology = np.array(bss_climatology)
+  bss_persistence = np.array(bss_persistence)
 
   # defining the top and bottom percentiles to be calculated. Corresponds to the 95th percentile
   max_perc = 97.5
@@ -256,6 +268,8 @@ def calculating_scores(df, splits, station):
   metrics['STD_PRED'] = [np.mean(std_pred), np.percentile(std_pred, max_perc), np.percentile(std_pred, min_perc)]
   metrics['RMSE'] = [np.mean(rmse), np.percentile(rmse, max_perc), np.percentile(rmse, min_perc)]
   metrics['AUC'] = [np.mean(area_uc), np.percentile(area_uc, max_perc), np.percentile(area_uc, min_perc)]
+  metrics['BSS_climatology'] = [np.mean(bss_climatology), np.percentile(bss_climatology, max_perc), np.percentile(bss_climatology, min_perc)]
+  metrics['BSS_persistence'] = [np.mean(bss_persistence), np.percentile(bss_persistence, max_perc), np.percentile(bss_persistence, min_perc)]
 
   # setting the index of the metrics to make the plotting easier
   metrics.set_index('ind', drop=True, inplace=True)
